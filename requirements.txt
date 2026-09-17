@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic
+psycopg2-binary
+python-dotenv
+bcrypt
+pyjwt
+python-multipart
+requests
+google-genai
+langchain-google-genai
+langchain-community
+faiss-cpu
+email-validator
+bncc

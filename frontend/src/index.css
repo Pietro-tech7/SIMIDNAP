@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9fafb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   CSS DE IMPRESSÃO
+   Aplica quando o professor clica em "Baixar PDF"
+   ============================================================ */
+@media print {
+  /* Esconde sidebar, header, botões e elementos de navegação */
+  aside,
+  nav,
+  header,
+  button,
+  .print\\:hidden,
+  [class*="print:hidden"] {
+    display: none !important;
+  }
+
+  /* Remove padding e margin do container principal */
+  body,
+  html {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Remove o deslocamento causado pela sidebar */
+  main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* Ajusta o container do conteúdo */
+  .max-w-5xl,
+  .max-w-4xl,
+  .max-w-3xl,
+  .max-w-7xl {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Remove sombras e bordas decorativas */
+  .shadow-sm,
+  .shadow,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl {
+    box-shadow: none !important;
+  }
+
+  /* Evita quebra de página dentro de blocos de questões */
+  .border-l-4 {
+    page-break-inside: avoid;
+  }
+
+  /* Garante que o cabeçalho do material fique visível */
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+
+  /* Define margens da página impressa */
+  @page {
+    margin: 1.5cm;
+  }
+
+  /* Mostra elementos que estavam escondidos apenas na tela */
+  .print\\:block,
+  [class*="print:block"] {
+    display: block !important;
+  }
+}

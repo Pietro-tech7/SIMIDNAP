@@ -1,0 +1,43 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.log
+
+# Ambiente
+.env
+.env.local
+
+# Banco
+*.db
+*.sqlite3
+
+# VS Code
+.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Ambiente
+.env.local
+.env.production
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# VS Code
+.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db
