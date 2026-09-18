@@ -19,6 +19,7 @@ import AdminPerfil from './pages/AdminPerfil';
 import AdminLogin from './pages/AdminLogin';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminBanners from './pages/AdminBanners';
+import LandingPage from './pages/LandingPage';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -46,9 +47,26 @@ const SuperuserRoute = ({ children }) => {
   return children;
 };
 
+// Página inicial: se logado vai para dashboard, senão mostra a landing
+const HomeRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-500">Carregando...</div>
+      </div>
+    );
+  }
+  if (user) return <Navigate to="/dashboard" />;
+  return <LandingPage />;
+};
+
 function AppRoutes() {
   return (
     <Routes>
+      {/* Página inicial (landing pública) */}
+      <Route path="/" element={<HomeRoute />} />
+
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
@@ -87,8 +105,6 @@ function AppRoutes() {
         <Route path="/admin/banners" element={<AdminBanners />} />
         <Route path="/admin/perfil" element={<AdminPerfil />} />
       </Route>
-
-      <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>
   );
 }
