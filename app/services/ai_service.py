@@ -46,6 +46,8 @@ class MockAIService(BaseAIService):
             return self._mock_jogo(payload, diferenciado)
         elif task_type == "simulado":
             return self._mock_simulado(payload, diferenciado)
+        elif task_type == "pratica_exitosa":
+            return self._mock_pratica_exitosa(payload)
         else:
             return {"erro": f"Tipo de tarefa não suportado: {task_type}"}
 
@@ -469,7 +471,92 @@ class MockAIService(BaseAIService):
         resultado["inclusao"] = gerar_adaptacoes_inclusivas(dificuldades)
         return resultado
 
-
+    # ============================================================
+    # PRÁTICAS EXITOSAS
+    # ============================================================
+    def _mock_pratica_exitosa(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Mock de Práticas Exitosas. Retorna estrutura de exemplo."""
+        return {
+            "cabecalho": {
+                "titulo": payload.get("title") or "Prática Pedagógica Exitosa",
+                "subtitulo": "Uma experiência que transforma a aprendizagem",
+                "perfil": payload.get("perfil") or "professor",
+                "fluxo": payload.get("flow_type") or "criar",
+                "categoria": payload.get("category") or "ciclo_alfabetizacao",
+                "escola": payload.get("school") or "",
+                "municipio": payload.get("city") or "",
+                "gre": payload.get("gre") or "",
+                "serie_ou_etapa": payload.get("grade") or "",
+                "disciplina_ou_area": payload.get("subject") or "",
+                "duracao": payload.get("duration") or "A definir",
+                "num_alunos": payload.get("num_alunos") or 0,
+            },
+            "resumo_executivo": "Prática em construção. Conteúdo completo será gerado pela IA real.",
+            "justificativa": "Torna a aprendizagem mais significativa, contextualizada e inclusiva.",
+            "objetivos": {
+                "geral": "Promover aprendizagem significativa e engajadora.",
+                "especificos": [
+                    "Desenvolver habilidades previstas na BNCC para a etapa.",
+                    "Garantir a participação de todos os alunos, com ou sem laudo.",
+                ],
+            },
+            "metodologia": {
+                "descricao_geral": "Organizada em etapas sequenciais com metodologias ativas.",
+                "etapas": [
+                    {
+                        "numero": 1,
+                        "titulo": "Diagnóstico inicial",
+                        "duracao": "1 semana",
+                        "descricao": "Levantamento dos conhecimentos prévios.",
+                        "acao_do_educador": "Aplicar sondagem diagnóstica e registrar hipóteses.",
+                        "acao_dos_estudantes": "Participar das atividades diagnósticas.",
+                        "recursos_necessarios": ["Folha de sondagem", "Lápis"],
+                        "como_avaliar": "Observação e registro pedagógico.",
+                    },
+                    {
+                        "numero": 2,
+                        "titulo": "Desenvolvimento",
+                        "duracao": "8 semanas",
+                        "descricao": "Execução das atividades sequenciais.",
+                        "acao_do_educador": "Mediar as atividades e acompanhar cada aluno.",
+                        "acao_dos_estudantes": "Realizar as atividades em duplas e grupos.",
+                        "recursos_necessarios": ["Material impresso", "Recursos visuais"],
+                        "como_avaliar": "Produções dos alunos e observação contínua.",
+                    },
+                ],
+            },
+            "cronograma": [
+                {"periodo": "1º bimestre", "foco": "Diagnóstico", "atividades_principais": ["Sondagem inicial"]},
+                {"periodo": "2º bimestre", "foco": "Desenvolvimento", "atividades_principais": ["Atividades sequenciais"]},
+                {"periodo": "3º bimestre", "foco": "Consolidação", "atividades_principais": ["Avaliação processual"]},
+                {"periodo": "4º bimestre", "foco": "Culminância", "atividades_principais": ["Mostra de resultados"]},
+            ],
+            "adaptacoes_inclusivas": (
+                [
+                    {
+                        "necessidade": "Aluno com TDAH",
+                        "estrategias": [
+                            "Dividir as atividades em blocos curtos de 5 a 7 minutos.",
+                            "Usar checkpoints visuais para marcar progresso.",
+                        ],
+                    }
+                ]
+                if payload.get("has_special_needs")
+                else []
+            ),
+            "avaliacao": {
+                "instrumentos": ["Observação contínua", "Produções dos alunos"],
+                "indicadores_de_sucesso": ["Participação ativa", "Evolução na aprendizagem"],
+                "como_registrar_evidencias": ["Fotos das atividades", "Portfólio dos alunos"],
+            },
+            "resultados_esperados": ["Melhoria na aprendizagem", "Maior engajamento dos alunos"],
+            "dicas_de_aprimoramento": ["Documente cada etapa", "Compartilhe com colegas"],
+            "referencias_regionais": ["Práticas do PPAIC voltadas à alfabetização na idade certa."],
+            "imagens_sugeridas": [
+                {"secao": "capa", "prompt_imagem": "Brazilian teachers and students collaborating in a classroom, vibrant colors, storybook style"}
+            ],
+        }
+    
 class AIService(BaseAIService):
     """
     Serviço principal de IA.

@@ -43,6 +43,7 @@ CUSTOS = {
     "chat_message": 2,             # 0.2 crédito por mensagem de chat
     "meu_aluno_analyze": 5,        # 0.5 crédito
     "image_generation": 15,        # 1.5 crédito por imagem gerada
+    "pratica_exitosa": 30,         # 3.0 créditos (Práticas Exitosas)
 }
 
 # Tipos de tarefa que têm versão diferenciada

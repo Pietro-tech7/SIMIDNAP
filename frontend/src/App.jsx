@@ -12,6 +12,7 @@ import AulaQueFunciona from './pages/AulaQueFunciona';
 import TerapiaPedagogica from './pages/TerapiaPedagogica';
 import GeradorMateriais from './pages/GeradorMateriais';
 import MeuAluno from './pages/MeuAluno';
+import PraticasExitosas from './pages/PraticasExitosas';
 import Perfil from './pages/Perfil';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
@@ -87,6 +88,7 @@ function AppRoutes() {
         <Route path="/aula-que-funciona" element={<AulaQueFunciona />} />
         <Route path="/terapia-pedagogica" element={<TerapiaPedagogica />} />
         <Route path="/gerador-materiais" element={<GeradorMateriais />} />
+        <Route path="/praticas-exitosas" element={<PraticasExitosas />} />
         <Route path="/meu-aluno" element={<MeuAluno />} />
         <Route path="/perfil" element={<Perfil />} />
       </Route>

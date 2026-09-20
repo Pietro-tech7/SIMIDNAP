@@ -11,6 +11,7 @@ const Dashboard = () => {
     { path: '/modulo/aula_que_funciona', name: 'Aula que Funciona', icon: '🎯', desc: 'Planeje e melhore sua aula.', gradient: 'from-blue-500 to-cyan-500' },
     { path: '/modulo/meu_aluno', name: 'Meu Aluno', icon: '📊', desc: 'Observe, acompanhe e intervenha.', gradient: 'from-green-500 to-emerald-500' },
     { path: '/modulo/ia_para_professor', name: 'IA para Professor', icon: '🤖', desc: 'Use IA para resolver tarefas pedagógicas.', gradient: 'from-orange-500 to-amber-500' },
+    { path: '/modulo/praticas_exitosas', name: 'Práticas Exitosas', icon: '🏆', desc: 'Crie, melhore ou documente práticas pedagógicas que transformam.', gradient: 'from-teal-500 to-cyan-600' },
   ];
 
   const hoje = new Date().toLocaleDateString('pt-BR', {

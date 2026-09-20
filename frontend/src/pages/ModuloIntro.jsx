@@ -89,6 +89,24 @@ const conteudoModulos = {
     ],
     aviso: 'A IA é um copiloto. A decisão final é sempre do professor.',
   },
+  praticas_exitosas: {
+    icon: '🏆',
+    nome: 'Práticas Exitosas',
+    cor: 'from-teal-500 to-cyan-600',
+    resumo: 'Crie, melhore ou documente práticas pedagógicas que transformam.',
+    explicacao:
+      'Um motor pensado para professores e coordenadores que querem fazer a diferença na escola. Você pode CRIAR uma prática do zero (com metodologia, cronograma anual, atividades e avaliação), MELHORAR uma prática que já realizou, ou DOCUMENTAR uma prática para apresentar em seminários e premiações. A IA adapta tudo à sua realidade regional, ao seu perfil (professor ou coordenador) e inclui adaptações para alunos com laudo ou que precisam de atenção especial.',
+    exemplo:
+      'Exemplo: "Quero uma prática de matemática para trabalhar o ano todo no 3º ano." O sistema gera uma prática completa, com etapas, cronograma, atividades, adaptações inclusivas e resultados esperados.',
+    acoes: [
+      'Criar uma prática nova, do zero, executável durante o ano',
+      'Melhorar uma prática que você já realizou',
+      'Documentar uma prática para seminários e premiações',
+      'Adaptar a prática para uma nova turma/série',
+      'Integrar adaptações inclusivas para alunos com laudo ou atenção especial',
+      'Gerar um documento profissional pronto para apresentar',
+    ],
+  },
 };
 
 const ModuloIntro = () => {
@@ -181,6 +199,14 @@ const ModuloIntro = () => {
             <Link
               to="/meu-aluno"
               className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2.5 rounded-lg transition"
+            >
+              Começar a usar
+            </Link>
+          )}
+          {modulo === 'praticas_exitosas' && (
+            <Link
+              to="/praticas-exitosas"
+              className="inline-block bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-2.5 rounded-lg transition"
             >
               Começar a usar
             </Link>
