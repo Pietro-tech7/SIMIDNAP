@@ -1,8 +1,10 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 
 /**
  * Gera um PDF a partir de um elemento HTML e baixa automaticamente.
+ * Usa html2canvas-pro (suporte a Tailwind v4 / oklch).
+ *
  * @param {HTMLElement} elemento - O elemento DOM que será convertido em PDF
  * @param {string} nomeArquivo - Nome do arquivo PDF (sem .pdf)
  */
@@ -11,19 +13,31 @@ export async function gerarPDF(elemento, nomeArquivo = 'documento') {
     throw new Error('Elemento não encontrado.');
   }
 
-  // Captura o elemento como canvas com alta qualidade
-  const canvas = await html2canvas(elemento, {
-    scale: 2,              // 2x para melhor qualidade
-    useCORS: true,          // Permite imagens externas
-    backgroundColor: '#ffffff',
-    logging: false,
-  });
+  // ============================================================
+  // 1. Captura o elemento como canvas (com suporte a oklch/Tailwind v4)
+  // ============================================================
+  let canvas;
+  try {
+    canvas = await html2canvas(elemento, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      windowWidth: elemento.scrollWidth,
+      windowHeight: elemento.scrollHeight,
+    });
+  } catch (err) {
+    console.error('[PDF] Falha ao capturar o elemento:', err);
+    throw new Error('Falha ao processar o conteúdo para PDF.');
+  }
 
-  const imgData = canvas.toDataURL('image/jpeg', 0.95);
-  const imgWidth = canvas.width;
-  const imgHeight = canvas.height;
+  if (!canvas || canvas.width === 0 || canvas.height === 0) {
+    throw new Error('O conteúdo capturado está vazio.');
+  }
 
-  // A4: 210 x 297 mm
+  // ============================================================
+  // 2. Configura o PDF em A4 retrato
+  // ============================================================
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -33,28 +47,63 @@ export async function gerarPDF(elemento, nomeArquivo = 'documento') {
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = pdf.internal.pageSize.getHeight();
 
-  // Calcula a altura proporcional da imagem no PDF
-  const imgHeightInPdf = (imgHeight * pdfWidth) / imgWidth;
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+  const ratio = pdfWidth / canvasWidth;
+  const scaledHeight = canvasHeight * ratio;
 
-  if (imgHeightInPdf <= pdfHeight) {
-    // Cabe em uma página
-    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeightInPdf);
+  // ============================================================
+  // 3. Se cabe em uma página, adiciona direto
+  // ============================================================
+  if (scaledHeight <= pdfHeight) {
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, scaledHeight);
   } else {
-    // Múltiplas páginas
-    let alturaRestante = imgHeightInPdf;
-    let posicaoY = 0;
+    // ============================================================
+    // 4. Multi-página: fatia o canvas em blocos do tamanho de uma página
+    //    (abordagem correta — cada página recebe só a sua fatia)
+    // ============================================================
+    const pageHeightInCanvasPx = pdfHeight / ratio;
+    let positionY = 0;
+    let pageIndex = 0;
 
-    while (alturaRestante > 0) {
-      pdf.addImage(imgData, 'JPEG', 0, posicaoY, pdfWidth, imgHeightInPdf);
-      alturaRestante -= pdfHeight;
+    while (positionY < canvasHeight) {
+      const sliceHeight = Math.min(pageHeightInCanvasPx, canvasHeight - positionY);
 
-      if (alturaRestante > 0) {
-        pdf.addPage();
-        posicaoY = -pdfHeight * (pdf.getNumberOfPages() - 1);
-      }
+      // Cria um canvas temporário do tamanho da fatia
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvasWidth;
+      pageCanvas.height = sliceHeight;
+
+      const ctx = pageCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+      // Desenha apenas a fatia correspondente
+      ctx.drawImage(
+        canvas,
+        0, positionY, canvasWidth, sliceHeight,
+        0, 0, canvasWidth, sliceHeight
+      );
+
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+
+      if (pageIndex > 0) pdf.addPage();
+      pdf.addImage(
+        pageImgData,
+        'JPEG',
+        0, 0,
+        pdfWidth,
+        sliceHeight * ratio
+      );
+
+      positionY += sliceHeight;
+      pageIndex++;
     }
   }
 
-  // Salva o arquivo (baixa automaticamente)
+  // ============================================================
+  // 5. Salva (baixa) o arquivo
+  // ============================================================
   pdf.save(`${nomeArquivo}.pdf`);
 }
