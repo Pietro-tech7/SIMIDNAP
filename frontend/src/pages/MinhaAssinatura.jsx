@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/api';
+import PagamentoPix from '../components/PagamentoPix';
 
 const MinhaAssinatura = () => {
   const [searchParams] = useSearchParams();
@@ -12,7 +13,10 @@ const MinhaAssinatura = () => {
   const [acaoEmAndamento, setAcaoEmAndamento] = useState(null);
   const [msg, setMsg] = useState(null);
 
-  // Mensagem de retorno do MP
+  // Pagamento Pix ativo (QR Code)
+  const [pagamentoPix, setPagamentoPix] = useState(null);
+
+  // Mensagem de retorno do MP (Checkout Pro)
   useEffect(() => {
     const st = searchParams.get('status');
     if (st === 'success') {
@@ -54,36 +58,77 @@ const MinhaAssinatura = () => {
     carregarDados();
   }, []);
 
-  const assinarPlano = async (codigo, nome) => {
-    if (!window.confirm(`Assinar o plano ${nome}? Você será redirecionado para o Mercado Pago.`)) return;
+  // ============================================================
+  // PIX — Assinatura
+  // ============================================================
+  const assinarComPix = async (codigo, nome) => {
+    setAcaoEmAndamento(`pix_${codigo}`);
+    setMsg(null);
+    try {
+      const res = await api.post('/subscriptions/pix/subscription', { plan: codigo });
+      setPagamentoPix(res.data);
+    } catch (err) {
+      const detail = err?.response?.data?.detail || 'Erro ao gerar QR Code.';
+      setMsg({ tipo: 'erro', texto: detail });
+    } finally {
+      setAcaoEmAndamento(null);
+    }
+  };
 
-    setAcaoEmAndamento(`plano_${codigo}`);
+  // ============================================================
+  // PIX — Créditos avulsos
+  // ============================================================
+  const comprarComPix = async (codigo, nome) => {
+    setAcaoEmAndamento(`pix_${codigo}`);
+    setMsg(null);
+    try {
+      const res = await api.post('/subscriptions/pix/credits', { package: codigo });
+      setPagamentoPix(res.data);
+    } catch (err) {
+      const detail = err?.response?.data?.detail || 'Erro ao gerar QR Code.';
+      setMsg({ tipo: 'erro', texto: detail });
+    } finally {
+      setAcaoEmAndamento(null);
+    }
+  };
+
+  // ============================================================
+  // CARTÃO — Assinatura (redireciona para o MP)
+  // ============================================================
+  const assinarComCartao = async (codigo, nome) => {
+    if (!window.confirm(`Pagar com cartão o plano ${nome}? Você será redirecionado para o Mercado Pago.`)) return;
+    setAcaoEmAndamento(`cartao_${codigo}`);
     setMsg(null);
     try {
       const res = await api.post('/subscriptions/checkout', { plan: codigo });
       window.location.href = res.data.checkout_url;
     } catch (err) {
-      const detail = err?.response?.data?.detail || 'Erro ao iniciar assinatura.';
+      const detail = err?.response?.data?.detail || 'Erro ao iniciar pagamento com cartão.';
       setMsg({ tipo: 'erro', texto: detail });
       setAcaoEmAndamento(null);
     }
   };
 
-  const comprarCreditos = async (codigo, nome) => {
-    if (!window.confirm(`Comprar ${nome}? Você será redirecionado para o Mercado Pago.`)) return;
-
-    setAcaoEmAndamento(`pacote_${codigo}`);
+  // ============================================================
+  // CARTÃO — Créditos avulsos (redireciona para o MP)
+  // ============================================================
+  const comprarComCartao = async (codigo, nome) => {
+    if (!window.confirm(`Pagar com cartão ${nome}? Você será redirecionado para o Mercado Pago.`)) return;
+    setAcaoEmAndamento(`cartao_${codigo}`);
     setMsg(null);
     try {
       const res = await api.post('/subscriptions/checkout-credits', { package: codigo });
       window.location.href = res.data.checkout_url;
     } catch (err) {
-      const detail = err?.response?.data?.detail || 'Erro ao iniciar compra.';
+      const detail = err?.response?.data?.detail || 'Erro ao iniciar pagamento com cartão.';
       setMsg({ tipo: 'erro', texto: detail });
       setAcaoEmAndamento(null);
     }
   };
 
+  // ============================================================
+  // CANCELAMENTO
+  // ============================================================
   const cancelarAssinatura = async () => {
     if (!window.confirm('Tem certeza que deseja cancelar? Você perde o acesso ao final do ciclo atual.')) return;
     if (!window.confirm('Confirma o cancelamento?')) return;
@@ -100,6 +145,16 @@ const MinhaAssinatura = () => {
     } finally {
       setAcaoEmAndamento(null);
     }
+  };
+
+  // ============================================================
+  // SUCESSO DO PIX
+  // ============================================================
+  const handlePixSuccess = async () => {
+    setPagamentoPix(null);
+    setMsg({ tipo: 'sucesso', texto: 'Pagamento confirmado! Seus créditos foram atualizados.' });
+    await carregarDados();
+    window.dispatchEvent(new CustomEvent('subscription-updated'));
   };
 
   const pctUsado = status
@@ -217,19 +272,22 @@ const MinhaAssinatura = () => {
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-1">Assinar um plano</h2>
         <p className="text-sm text-gray-600 mb-5">
-          Todos os planos renovam automaticamente. Cancele quando quiser.
+          Pague com <strong>Pix</strong> (instantâneo) ou com <strong>cartão</strong> (crédito ou débito).
+          Cancele quando quiser.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {planos.filter(p => p.codigo !== 'trial').map((p) => {
             const isAtual = status?.plano === p.codigo && status?.status === 'active';
             const destaque = p.codigo === 'padrao';
-            const carregando = acaoEmAndamento === `plano_${p.codigo}`;
+            const carregandoPix = acaoEmAndamento === `pix_${p.codigo}`;
+            const carregandoCartao = acaoEmAndamento === `cartao_${p.codigo}`;
+            const qualquerCarregando = !!acaoEmAndamento;
 
             return (
               <div
                 key={p.codigo}
-                className={`rounded-xl border-2 p-5 transition relative ${
+                className={`rounded-xl border-2 p-5 transition relative flex flex-col ${
                   isAtual
                     ? 'border-blue-500 bg-blue-50'
                     : destaque
@@ -259,23 +317,40 @@ const MinhaAssinatura = () => {
                   <p className="text-xs text-gray-500 mt-1">por mês</p>
                 </div>
 
-                {!isAtual ? (
-                  <button
-                    onClick={() => assinarPlano(p.codigo, p.nome)}
-                    disabled={!!acaoEmAndamento}
-                    className={`w-full font-semibold py-2.5 rounded-lg transition text-sm ${
-                      destaque
-                        ? 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white'
-                    }`}
-                  >
-                    {carregando ? 'Redirecionando...' : 'Assinar este plano'}
-                  </button>
-                ) : (
-                  <p className="text-center text-xs text-blue-700 font-medium py-2">
-                    ✓ Você está neste plano
-                  </p>
-                )}
+                <div className="mt-auto">
+                  {!isAtual ? (
+                    <>
+                      <button
+                        onClick={() => assinarComPix(p.codigo, p.nome)}
+                        disabled={qualquerCarregando}
+                        className={`w-full font-semibold py-2.5 rounded-lg transition text-sm flex items-center justify-center gap-2 ${
+                          destaque
+                            ? 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white'
+                            : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white'
+                        }`}
+                      >
+                        {carregandoPix ? (
+                          'Gerando QR Code...'
+                        ) : (
+                          <>
+                            <span>⚡</span> Assinar com Pix
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => assinarComCartao(p.codigo, p.nome)}
+                        disabled={qualquerCarregando}
+                        className="w-full text-xs text-gray-500 hover:text-gray-700 py-2 mt-1 underline"
+                      >
+                        {carregandoCartao ? 'Redirecionando...' : 'ou pagar com cartão →'}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="text-center text-xs text-blue-700 font-medium py-2">
+                      ✓ Você está neste plano
+                    </p>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -294,13 +369,15 @@ const MinhaAssinatura = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {pacotes.map((pct) => {
-            const carregando = acaoEmAndamento === `pacote_${pct.codigo}`;
+            const carregandoPix = acaoEmAndamento === `pix_${pct.codigo}`;
+            const carregandoCartao = acaoEmAndamento === `cartao_${pct.codigo}`;
+            const qualquerCarregando = !!acaoEmAndamento;
             const precoPorCredito = pct.preco / pct.creditos;
 
             return (
               <div
                 key={pct.codigo}
-                className="rounded-xl border-2 border-teal-200 bg-teal-50 p-5 hover:shadow-md transition"
+                className="rounded-xl border-2 border-teal-200 bg-teal-50 p-5 hover:shadow-md transition flex flex-col"
               >
                 <h3 className="font-bold text-gray-900 text-lg mb-1">{pct.nome}</h3>
                 <p className="text-3xl font-bold text-teal-700 mt-2 mb-1">
@@ -311,16 +388,31 @@ const MinhaAssinatura = () => {
                 </p>
 
                 <div className="border-t border-teal-200 pt-4 mb-4">
-                  <p className="text-sm text-gray-700">💡 Créditos adicionados imediatamente após a confirmação do pagamento.</p>
+                  <p className="text-xs text-gray-700">💡 Créditos adicionados imediatamente após a confirmação do pagamento.</p>
                 </div>
 
-                <button
-                  onClick={() => comprarCreditos(pct.codigo, pct.nome)}
-                  disabled={!!acaoEmAndamento}
-                  className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-semibold py-2.5 rounded-lg transition text-sm"
-                >
-                  {carregando ? 'Redirecionando...' : 'Comprar agora'}
-                </button>
+                <div className="mt-auto">
+                  <button
+                    onClick={() => comprarComPix(pct.codigo, pct.nome)}
+                    disabled={qualquerCarregando}
+                    className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-semibold py-2.5 rounded-lg transition text-sm flex items-center justify-center gap-2"
+                  >
+                    {carregandoPix ? (
+                      'Gerando QR Code...'
+                    ) : (
+                      <>
+                        <span>⚡</span> Comprar com Pix
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => comprarComCartao(pct.codigo, pct.nome)}
+                    disabled={qualquerCarregando}
+                    className="w-full text-xs text-gray-500 hover:text-gray-700 py-2 mt-1 underline"
+                  >
+                    {carregandoCartao ? 'Redirecionando...' : 'ou pagar com cartão →'}
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -328,7 +420,7 @@ const MinhaAssinatura = () => {
       </div>
 
       {/* ============================================================ */}
-      {/* HISTÓRICO DE COMPRAS */}
+      {/* HISTÓRICO */}
       {/* ============================================================ */}
       {historico.length > 0 && (
         <div className="mb-8">
@@ -359,7 +451,7 @@ const MinhaAssinatura = () => {
                       <td className="px-4 py-3 text-sm text-teal-700 font-semibold">
                         +{item.credits_added}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3 text-sm text-gray-600 capitalize">
                         {item.payment_method || '—'}
                       </td>
                       <td className="px-4 py-3 text-sm">
@@ -383,14 +475,14 @@ const MinhaAssinatura = () => {
       )}
 
       {/* ============================================================ */}
-      {/* COMO USAR OS CRÉDITOS */}
+      {/* COMO USAR */}
       {/* ============================================================ */}
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-blue-900 mb-3">💡 Como usar seus créditos</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="bg-white rounded-lg p-4 border border-blue-100">
             <p className="text-2xl font-bold text-blue-600">1 crédito</p>
-            <p className="text-xs text-gray-600 mt-1">NeuroAula, Aula que Funciona, Atividade, Jogo, Simulado ou Prática Exitosa</p>
+            <p className="text-xs text-gray-600 mt-1">NeuroAula, Aula que Funciona, Atividade, Jogo ou Simulado</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-blue-100">
             <p className="text-2xl font-bold text-blue-600">2 créditos</p>
@@ -402,6 +494,17 @@ const MinhaAssinatura = () => {
           </div>
         </div>
       </div>
+
+      {/* ============================================================ */}
+      {/* MODAL DE PAGAMENTO PIX */}
+      {/* ============================================================ */}
+      {pagamentoPix && (
+        <PagamentoPix
+          paymentData={pagamentoPix}
+          onClose={() => setPagamentoPix(null)}
+          onSuccess={handlePixSuccess}
+        />
+      )}
     </div>
   );
 };

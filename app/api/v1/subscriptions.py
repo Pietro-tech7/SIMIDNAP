@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, Request, Body
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 from pydantic import BaseModel
@@ -13,6 +13,9 @@ from ...services.subscription_service import (
 from ...services.payment_service import (
     create_subscription_checkout,
     create_credits_checkout,
+    create_pix_subscription,
+    create_pix_credits,
+    get_payment_status,
     cancel_subscription,
     get_payment_history,
     list_packages,
@@ -57,12 +60,16 @@ class TrocarPlanoRequest(BaseModel):
 
 
 # ============================================================
-# LISTAR PLANOS
+# LISTAR PLANOS E PACOTES
 # ============================================================
 @router.get("/planos", response_model=List[PlanoOut])
 def planos():
-    """Lista os planos disponíveis."""
     return listar_planos()
+
+
+@router.get("/packages", response_model=List[PacoteCreditosOut])
+def packages():
+    return list_packages()
 
 
 # ============================================================
@@ -73,21 +80,84 @@ def status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Retorna o status da assinatura do usuário logado."""
     return info_assinatura(db, str(current_user.id))
 
 
 # ============================================================
-# LISTAR PACOTES DE CRÉDITOS AVULSOS
+# PIX — ASSINATURA (Checkout Transparente)
 # ============================================================
-@router.get("/packages", response_model=List[PacoteCreditosOut])
-def packages():
-    """Lista os pacotes de créditos avulsos disponíveis."""
-    return list_packages()
+@router.post("/pix/subscription")
+def pix_subscription(
+    data: CheckoutSubscriptionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Cria uma cobrança Pix para assinatura mensal.
+    Retorna o QR Code (base64) e o código copia-e-cola para o frontend renderizar.
+    """
+    try:
+        return create_pix_subscription(db, current_user, data.plan)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"[Pix Subscription] Erro: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao gerar QR Code Pix. Tente novamente em alguns instantes."
+        )
 
 
 # ============================================================
-# CHECKOUT DE ASSINATURA (recorrente)
+# PIX — CRÉDITOS AVULSOS (Checkout Transparente)
+# ============================================================
+@router.post("/pix/credits")
+def pix_credits(
+    data: CheckoutCreditsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Cria uma cobrança Pix para compra de créditos avulsos.
+    Retorna o QR Code (base64) e o código copia-e-cola.
+    """
+    try:
+        return create_pix_credits(db, current_user, data.package)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"[Pix Credits] Erro: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao gerar QR Code Pix. Tente novamente em alguns instantes."
+        )
+
+
+# ============================================================
+# CONSULTAR STATUS DE PAGAMENTO (polling do frontend)
+# ============================================================
+@router.get("/payment-status/{payment_id}")
+def payment_status(
+    payment_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Consulta o status de um pagamento Pix no Mercado Pago.
+    Usado pelo frontend para verificar se o Pix foi pago.
+    """
+    try:
+        return get_payment_status(db, current_user, payment_id)
+    except Exception as e:
+        print(f"[Payment Status] Erro: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao consultar status do pagamento."
+        )
+
+
+# ============================================================
+# CHECKOUT PRO — ASSINATURA (cartão/débito, com redirecionamento)
 # ============================================================
 @router.post("/checkout", response_model=CheckoutResponse)
 def checkout_subscription(
@@ -95,10 +165,6 @@ def checkout_subscription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Cria uma assinatura recorrente no Mercado Pago.
-    Retorna a URL para o usuário pagar (Pix, Cartão de Crédito ou Débito).
-    """
     try:
         result = create_subscription_checkout(db, current_user, data.plan)
         return CheckoutResponse(**result)
@@ -113,7 +179,7 @@ def checkout_subscription(
 
 
 # ============================================================
-# CHECKOUT DE CRÉDITOS AVULSOS
+# CHECKOUT PRO — CRÉDITOS (cartão/débito)
 # ============================================================
 @router.post("/checkout-credits", response_model=CheckoutResponse)
 def checkout_credits(
@@ -121,10 +187,6 @@ def checkout_credits(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Cria uma compra avulsa de créditos no Mercado Pago.
-    Retorna a URL para o usuário pagar.
-    """
     try:
         result = create_credits_checkout(db, current_user, data.package)
         return CheckoutResponse(**result)
@@ -147,7 +209,6 @@ def cancel(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cancela a assinatura do usuário (a qualquer momento)."""
     try:
         sub = cancel_subscription(db, current_user)
         return {
@@ -172,7 +233,6 @@ def history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Histórico de compras de créditos avulsos do usuário."""
     itens = get_payment_history(db, current_user)
     return [
         PaymentHistoryItem(
@@ -196,17 +256,11 @@ async def webhook(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """
-    Recebe notificações do Mercado Pago (payment, preapproval, authorized_payment).
-    Esta rota NÃO requer autenticação (o MP chama diretamente).
-    Sempre retorna 200 para evitar reenvios.
-    """
     try:
         payload = await request.json()
     except Exception:
         payload = {}
 
-    # MP também envia parâmetros na query string em alguns casos
     query_params = dict(request.query_params)
     if query_params:
         payload.update(query_params)
@@ -217,12 +271,11 @@ async def webhook(
         return {"ok": True}
     except Exception as e:
         print(f"[Webhook MP] Erro ao processar: {e}")
-        # Retorna 200 mesmo com erro — evita flood de reenvios do MP
         return {"ok": False, "error": str(e)}
 
 
 # ============================================================
-# TROCAR PLANO (manual — mantido para o admin)
+# TROCAR PLANO (manual — admin)
 # ============================================================
 @router.post("/trocar")
 def trocar(
@@ -230,10 +283,6 @@ def trocar(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Troca o plano do usuário SEM cobrança (só para uso do super admin
-    ou testes). Usuários comuns devem usar /checkout.
-    """
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=403,
