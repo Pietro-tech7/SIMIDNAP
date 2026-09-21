@@ -16,6 +16,15 @@ const TIPOS = {
   pedagogical_case: { icon: '📊', label: 'Situações Pedagógicas', color: 'green' },
 };
 
+// ============================================================
+// RÓTULOS DE FEEDBACK
+// ============================================================
+const FEEDBACK_ROTULOS = {
+  positive: { emoji: '👍', label: 'Ótimo', cor: 'green' },
+  partial: { emoji: '🤔', label: 'Em parte', cor: 'yellow' },
+  negative: { emoji: '👎', label: 'Não era isso', cor: 'red' },
+};
+
 const AdminUserDetail = () => {
   const { userId } = useParams();
 
@@ -25,7 +34,7 @@ const AdminUserDetail = () => {
   const [error, setError] = useState('');
   const [abaAtiva, setAbaAtiva] = useState('all');
 
-  // Modal de visualização
+  // Modal
   const [detalhe, setDetalhe] = useState(null);
   const [loadingDetalhe, setLoadingDetalhe] = useState(false);
   const [pdfBaixado, setPdfBaixado] = useState(false);
@@ -240,7 +249,6 @@ const AdminUserDetail = () => {
         <div className="fixed inset-0 bg-black/80 z-50 overflow-y-auto">
           <div className="min-h-screen p-4 md:p-8">
             <div className="max-w-4xl mx-auto">
-              {/* Barra superior do modal */}
               <div className="flex items-center justify-between mb-4 sticky top-0 bg-black/80 backdrop-blur py-3 z-10">
                 <button
                   onClick={() => setDetalhe(null)}
@@ -278,19 +286,67 @@ const AdminUserDetail = () => {
 };
 
 // ============================================================
+// BLOCO DE FEEDBACK (visualização no admin)
+// ============================================================
+const FeedbackBloco = ({ feedback }) => {
+  if (!feedback || !feedback.rating) return null;
+
+  const r = FEEDBACK_ROTULOS[feedback.rating];
+  if (!r) return null;
+
+  const cores = {
+    green: 'bg-green-50 border-green-200 text-green-900',
+    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-900',
+    red: 'bg-red-50 border-red-200 text-red-900',
+  };
+
+  return (
+    <div className={`rounded-lg border ${cores[r.cor]} p-4 mb-6 print:hidden`}>
+      <div className="flex items-start gap-3">
+        <span className="text-2xl">{r.emoji}</span>
+        <div className="flex-1">
+          <p className="font-semibold text-sm">
+            Feedback do usuário: <strong>{r.label}</strong>
+          </p>
+          {feedback.created_at && (
+            <p className="text-xs opacity-70 mt-1">
+              Enviado em {new Date(feedback.created_at).toLocaleString('pt-BR')}
+            </p>
+          )}
+          {feedback.comment && (
+            <p className="text-sm mt-2 italic bg-white/50 rounded p-2">
+              "{feedback.comment}"
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
 // RENDERIZAÇÃO POR TIPO DE CONTEÚDO
 // ============================================================
 const ConteudoDetalhe = ({ detalhe }) => {
   const { content_type, title, created_at, data } = detalhe;
 
+  // Extrai o feedback, se existir, de dentro do structured_data
+  const feedback =
+    data?.structured_data?.feedback ||
+    data?.feedback ||
+    null;
+
   const cabecalhoComum = (
-    <div className="border-b border-gray-200 pb-4 mb-6">
-      <div className="text-xs text-gray-500 mb-2">
-        {TIPOS[content_type]?.icon} {TIPOS[content_type]?.label} •{' '}
-        {new Date(created_at).toLocaleString('pt-BR')}
+    <>
+      <div className="border-b border-gray-200 pb-4 mb-6">
+        <div className="text-xs text-gray-500 mb-2">
+          {TIPOS[content_type]?.icon} {TIPOS[content_type]?.label} •{' '}
+          {new Date(created_at).toLocaleString('pt-BR')}
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
       </div>
-      <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-    </div>
+      <FeedbackBloco feedback={feedback} />
+    </>
   );
 
   if (content_type === 'pratica_exitosa') {
@@ -345,7 +401,6 @@ const ConteudoDetalhe = ({ detalhe }) => {
 
   if (content_type === 'material') {
     const sd = data.structured_data || {};
-    const cab = sd.cabecalho || {};
     const isDiferenciado = data.diferenciado && sd.versao_principal;
     return (
       <>
@@ -356,12 +411,6 @@ const ConteudoDetalhe = ({ detalhe }) => {
           {data.grade && <div><strong>Série:</strong> {data.grade}</div>}
           {data.diferenciado && <div><strong>Diferenciado:</strong> Sim</div>}
         </div>
-        {isDiferenciado && (
-          <div className="bg-orange-50 border border-orange-200 rounded p-3 mb-4 text-sm text-orange-800">
-            Este material tem <strong>2 versões</strong>: principal e adaptada.
-            Abaixo mostrando apenas a <strong>versão principal</strong>.
-          </div>
-        )}
         {(() => {
           const conteudo = isDiferenciado ? sd.versao_principal : sd;
           const questoes = conteudo.questoes || conteudo.atividades || [];
@@ -412,7 +461,6 @@ const ConteudoDetalhe = ({ detalhe }) => {
 
   if (content_type === 'neuroaula' || content_type === 'aula_que_funciona') {
     const sd = data.structured_data || {};
-    const cab = sd.cabecalho || {};
     return (
       <>
         {cabecalhoComum}

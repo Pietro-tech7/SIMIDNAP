@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { gerarPDF } from '../utils/pdf';
+import FeedbackCard from '../components/FeedbackCard';
 
 // ============================================================
 // DEFINIÇÃO DAS CATEGORIAS POR ETAPA E PERFIL
@@ -1390,6 +1391,12 @@ const PraticasExitosas = () => {
             <div id="pratica-conteudo">
               <PraticaResultado data={result} />
             </div>
+      {/* Feedback (fora do PDF) */}
+    <FeedbackCard
+      content_type="pratica_exitosa"
+      content_id={result.id}
+      initialFeedback={result.structured_data?.feedback || null}
+    />
           </div>
         )}
       </div>
