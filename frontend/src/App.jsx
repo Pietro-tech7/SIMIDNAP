@@ -25,6 +25,8 @@ import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminBanners from './pages/AdminBanners';
 import AdminLanding from './pages/AdminLanding';
 import LandingPage from './pages/LandingPage';
+import Termos from './pages/Termos';
+import Privacidade from './pages/Privacidade';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -71,6 +73,10 @@ function AppRoutes() {
     <Routes>
       {/* Página inicial (landing pública) */}
       <Route path="/" element={<HomeRoute />} />
+
+      {/* Páginas públicas (legais) */}
+      <Route path="/termos" element={<Termos />} />
+      <Route path="/privacidade" element={<Privacidade />} />
 
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
