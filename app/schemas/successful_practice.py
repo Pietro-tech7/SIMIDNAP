@@ -36,17 +36,36 @@ class SuccessfulPracticeGenerate(BaseModel):
     gre: Optional[str] = None
     grade: Optional[str] = Field(None, description="Série/ano/etapa atual")
     subject: Optional[str] = Field(None, description="Área do conhecimento")
+    num_alunos: Optional[int] = None
+    class_profile: Optional[str] = Field(
+        None,
+        description="Perfil da turma (ex: 'turma agitada', 'alunos com lacunas')"
+    )
+
+    # ------------------------------------------------------------
+    # SEMINÁRIO / EVENTO
+    # ------------------------------------------------------------
+    seminar_theme: Optional[str] = Field(
+        None,
+        description="Tema do seminário ou evento em que a prática será apresentada"
+    )
+
+    # ------------------------------------------------------------
+    # BNCC
+    # ------------------------------------------------------------
+    bncc_codigo: Optional[str] = Field(None, description="Código BNCC (ex: EF05MA03)")
+    bncc_texto: Optional[str] = Field(None, description="Texto da habilidade BNCC")
 
     # ------------------------------------------------------------
     # DADOS ESPECÍFICOS DA PRÁTICA
     # ------------------------------------------------------------
     original_grade: Optional[str] = Field(
         None,
-        description="Ano original da prática (quando o professor vai reaplicar em outra turma)"
+        description="Ano original da prática (ao reaplicar em outra turma)"
     )
     target_grade: Optional[str] = Field(
         None,
-        description="Novo ano-alvo da prática (quando o professor vai reaplicar em outra turma)"
+        description="Novo ano-alvo da prática (ao reaplicar em outra turma)"
     )
     has_special_needs: bool = Field(
         False,
@@ -56,19 +75,69 @@ class SuccessfulPracticeGenerate(BaseModel):
         None,
         description="Duração desejada (ex: 'um bimestre', 'o ano todo')"
     )
-    num_alunos: Optional[int] = None
 
     # ------------------------------------------------------------
-    # RELATO PRINCIPAL
+    # RECURSOS DISPONÍVEIS
     # ------------------------------------------------------------
-    description: str = Field(
-        ...,
-        description="Relato da prática (se já existe) OU objetivo/ideia (se vai criar)"
+    resources: Optional[Dict[str, bool]] = Field(
+        default_factory=dict,
+        description="Recursos disponíveis na escola (internet, projetor, impressora...)"
+    )
+    resources_extra: Optional[str] = Field(
+        None,
+        description="Materiais de consumo ou recursos extras"
     )
 
     # ------------------------------------------------------------
-    # RESPOSTAS COMPLETAS DO WIZARD
-    # Guarda tudo em JSONB para flexibilidade futura
+    # HISTÓRICO E EVIDÊNCIAS
+    # ------------------------------------------------------------
+    already_tried: Optional[str] = Field(
+        None,
+        description="O que o professor já tentou e não funcionou (sub_flow='melhorar')"
+    )
+    evidences: Optional[str] = Field(
+        None,
+        description="Evidências disponíveis (fotos, depoimentos, produções)"
+    )
+    observed_results: Optional[str] = Field(
+        None,
+        description="Resultados já observados pelo professor"
+    )
+    culminancia: Optional[str] = Field(
+        None,
+        description="Culminância desejada (apresentação, mostra, socialização)"
+    )
+    replicability: Optional[str] = Field(
+        None,
+        description="Potencial de replicabilidade em outras escolas"
+    )
+
+    # ------------------------------------------------------------
+    # RELATO GUIADO (3-4 sub-etapas)
+    # ------------------------------------------------------------
+    description: str = Field(
+        ...,
+        description="Relato consolidado (concatenado das sub-etapas)"
+    )
+    what_was_done: Optional[str] = Field(
+        None,
+        description="Sub-etapa 1: O que você fez?"
+    )
+    how_it_went: Optional[str] = Field(
+        None,
+        description="Sub-etapa 2: Como foi?"
+    )
+    what_was_noticed: Optional[str] = Field(
+        None,
+        description="Sub-etapa 3: O que você percebeu?"
+    )
+    school_context: Optional[str] = Field(
+        None,
+        description="Sub-etapa 4: Contexto da escola (só 'documento')"
+    )
+
+    # ------------------------------------------------------------
+    # RESPOSTAS COMPLETAS DO WIZARD (rede de segurança)
     # ------------------------------------------------------------
     answers: Dict[str, Any] = Field(
         default_factory=dict,

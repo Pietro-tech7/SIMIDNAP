@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { gerarPDF } from '../utils/pdf';
@@ -16,12 +16,12 @@ const PraticasExitosas = () => {
   const [form, setForm] = useState({
     // Identificação
     title: '',
-    perfil: '',               // 'professor' | 'coordenador'
-    flow_type: '',            // 'ja_tenho' | 'criar'
-    sub_flow: '',             // 'melhorar' | 'documento'
+    perfil: '',
+    flow_type: '',
+    sub_flow: '',
 
     // Categoria
-    category: '',             // 'educacao_infantil' | 'ciclo_alfabetizacao' | 'gestao_escolar'
+    category: '',
 
     // Contexto escolar
     school: '',
@@ -29,24 +29,102 @@ const PraticasExitosas = () => {
     gre: '',
     grade: '',
     subject: '',
+    num_alunos: '',
+    class_profile: '',
+
+    // Seminário
+    seminar_theme: '',
+
+    // BNCC
+    bncc_codigo: '',
+    bncc_texto: '',
 
     // Particularidades
     original_grade: '',
     target_grade: '',
     has_special_needs: false,
     duration: '',
-    num_alunos: '',
 
-    // Relato
-    description: '',
+    // Recursos
+    resources: {
+      internet: false,
+      projetor: false,
+      impressora: false,
+      espaco_externo: false,
+      laboratorio: false,
+    },
+    resources_extra: '',
+
+    // Histórico e evidências
+    already_tried: '',
+    evidences: '',
+    observed_results: '',
+    culminancia: '',
+    replicability: '',
+
+    // Relato guiado
+    what_was_done: '',
+    how_it_went: '',
+    what_was_noticed: '',
+    school_context: '',
   });
+
+  // BNCC — reaproveitado do Gerador de Materiais
+  const [componentes, setComponentes] = useState([]);
+  const [habilidades, setHabilidades] = useState([]);
+  const [codigoComponente, setCodigoComponente] = useState('');
+  const [anoNumero, setAnoNumero] = useState('');
+  const [loadingHabilidades, setLoadingHabilidades] = useState(false);
 
   const update = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const updateResource = (key, value) => {
+    setForm(prev => ({
+      ...prev,
+      resources: { ...prev.resources, [key]: value },
+    }));
+  };
+
   // ============================================================
-  // AVANÇAR / VOLTAR ENTRE ETAPAS
+  // CARREGAR COMPONENTES BNCC (só quando chega na etapa 3)
+  // ============================================================
+  useEffect(() => {
+    if (step === 3 && componentes.length === 0) {
+      api.get('/bncc/componentes?etapa=EF')
+        .then(res => setComponentes(res.data))
+        .catch(() => setComponentes([]));
+    }
+  }, [step]);
+
+  // ============================================================
+  // CARREGAR HABILIDADES (quando componente e ano mudam)
+  // ============================================================
+  useEffect(() => {
+    if (!codigoComponente || !anoNumero) {
+      setHabilidades([]);
+      return;
+    }
+    setLoadingHabilidades(true);
+    api.get(`/bncc/habilidades?etapa=EF&componente=${codigoComponente}&ano=${anoNumero}`)
+      .then(res => setHabilidades(res.data || []))
+      .catch(() => setHabilidades([]))
+      .finally(() => setLoadingHabilidades(false));
+  }, [codigoComponente, anoNumero]);
+
+  const handleSelecionarHabilidade = (e) => {
+    const codigo = e.target.value;
+    const habilidade = habilidades.find(h => h.codigo === codigo);
+    setForm(prev => ({
+      ...prev,
+      bncc_codigo: codigo,
+      bncc_texto: habilidade ? habilidade.texto : '',
+    }));
+  };
+
+  // ============================================================
+  // NAVEGAÇÃO ENTRE ETAPAS
   // ============================================================
   const podeAvancar = () => {
     if (step === 1) return form.perfil !== '';
@@ -57,35 +135,57 @@ const PraticasExitosas = () => {
     }
     if (step === 3) return form.category !== '';
     if (step === 4) return true;
-    if (step === 5) return form.title.trim() !== '' && form.description.trim().length >= 50;
+    if (step === 5) {
+      // Relato guiado: exige as 3 primeiras sub-etapas (com tamanho mínimo)
+      const ok1 = form.what_was_done.trim().length >= 30;
+      const ok2 = form.how_it_went.trim().length >= 30;
+      const ok3 = form.what_was_noticed.trim().length >= 30;
+      const titulo = form.title.trim() !== '';
+      return titulo && ok1 && ok2 && ok3;
+    }
     return true;
   };
 
   const avancar = () => {
     if (!podeAvancar()) return;
     setStep(s => s + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const voltar = () => setStep(s => Math.max(1, s - 1));
+  const voltar = () => {
+    setStep(s => Math.max(1, s - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // ============================================================
   // SUBMIT
   // ============================================================
   const handleSubmit = async () => {
+    if (!podeAvancar()) return;
     setLoading(true);
     setError('');
     setResult(null);
+
+    // Consolida o relato (description) a partir das sub-etapas
+    const partes = [
+      form.what_was_done && `O QUE FOI FEITO:\n${form.what_was_done}`,
+      form.how_it_went && `COMO FOI:\n${form.how_it_went}`,
+      form.what_was_noticed && `O QUE FOI PERCEBIDO:\n${form.what_was_noticed}`,
+      form.school_context && `CONTEXTO DA ESCOLA:\n${form.school_context}`,
+    ].filter(Boolean);
+    const descriptionConsolidada = partes.join('\n\n');
 
     try {
       const payload = {
         ...form,
         num_alunos: form.num_alunos ? parseInt(form.num_alunos) : null,
-        answers: form, // rede de segurança
+        description: descriptionConsolidada,
+        answers: form,
       };
       const response = await api.post('/successful-practices/generate', payload);
       setResult(response.data);
       setPdfBaixado(false);
-      setStep(6); // tela de resultado
+      setStep(6);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       if (err?.response?.status === 402) {
@@ -123,10 +223,24 @@ const PraticasExitosas = () => {
     setForm({
       title: '', perfil: '', flow_type: '', sub_flow: '',
       category: '', school: '', city: '', gre: '',
-      grade: '', subject: '', original_grade: '', target_grade: '',
-      has_special_needs: false, duration: '', num_alunos: '',
-      description: '',
+      grade: '', subject: '', num_alunos: '', class_profile: '',
+      seminar_theme: '', bncc_codigo: '', bncc_texto: '',
+      original_grade: '', target_grade: '',
+      has_special_needs: false, duration: '',
+      resources: {
+        internet: false, projetor: false, impressora: false,
+        espaco_externo: false, laboratorio: false,
+      },
+      resources_extra: '',
+      already_tried: '', evidences: '', observed_results: '',
+      culminancia: '', replicability: '',
+      what_was_done: '', how_it_went: '', what_was_noticed: '', school_context: '',
     });
+    setComponentes([]);
+    setHabilidades([]);
+    setCodigoComponente('');
+    setAnoNumero('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // ============================================================
@@ -249,7 +363,6 @@ const PraticasExitosas = () => {
               </button>
             </div>
 
-            {/* Sub-fluxo (só quando já tem prática) */}
             {form.flow_type === 'ja_tenho' && (
               <div className="border-t border-gray-100 pt-6">
                 <h3 className="font-semibold text-gray-800 mb-3">O que você quer fazer com essa prática?</h3>
@@ -288,13 +401,14 @@ const PraticasExitosas = () => {
         )}
 
         {/* ============================================================ */}
-        {/* ETAPA 3 — CATEGORIA + CONTEXTO */}
+        {/* ETAPA 3 — CATEGORIA + CONTEXTO + BNCC */}
         {/* ============================================================ */}
         {step === 3 && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Sobre a prática e o contexto</h2>
             <p className="text-gray-600 mb-6">Essas informações adaptam a prática à sua realidade.</p>
 
+            {/* Categoria */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">Categoria *</label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -337,7 +451,25 @@ const PraticasExitosas = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Tema do Seminário */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tema do Seminário ou Evento (opcional)
+              </label>
+              <input
+                type="text"
+                value={form.seminar_theme}
+                onChange={(e) => update('seminar_theme', e.target.value)}
+                placeholder="Ex: 'Alfabetizar com equidade: boas práticas para ensinar a todos'"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Se você vai apresentar em um seminário, cole o tema para a IA alinhar a narrativa.
+              </p>
+            </div>
+
+            {/* Contexto escolar */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Escola</label>
                 <input
@@ -399,6 +531,108 @@ const PraticasExitosas = () => {
                 />
               </div>
             </div>
+
+            {/* Perfil da turma */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Perfil da turma (opcional)
+              </label>
+              <textarea
+                value={form.class_profile}
+                onChange={(e) => update('class_profile', e.target.value)}
+                rows="2"
+                placeholder="Ex: 'Turma agitada', 'alunos com lacunas de anos anteriores', 'boa participação oral'"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+
+            {/* BNCC (reaproveitado do Gerador de Materiais) */}
+            <div className="border-t border-gray-100 pt-6">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">📖 Habilidade BNCC (opcional, mas recomendada)</h3>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Código BNCC (digite se souber)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={form.bncc_codigo}
+                    onChange={(e) => setForm({ ...form, bncc_codigo: e.target.value.toUpperCase(), bncc_texto: '' })}
+                    placeholder="EF05MA03"
+                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!form.bncc_codigo) return;
+                      try {
+                        const res = await api.get(`/bncc/habilidades/${form.bncc_codigo}`);
+                        if (res.data?.texto) {
+                          setForm(f => ({ ...f, bncc_texto: res.data.texto }));
+                        } else {
+                          setForm(f => ({ ...f, bncc_texto: 'Código não encontrado.' }));
+                        }
+                      } catch {
+                        setForm(f => ({ ...f, bncc_texto: 'Código não encontrado.' }));
+                      }
+                    }}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium px-4 py-2 rounded-lg border border-gray-300"
+                  >
+                    Buscar
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Componente</label>
+                  <select
+                    value={codigoComponente}
+                    onChange={(e) => setCodigoComponente(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  >
+                    <option value="">Selecione...</option>
+                    {componentes.map(c => (
+                      <option key={c.codigo} value={c.codigo}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ano (1 a 9)</label>
+                  <input
+                    type="number" min="1" max="9"
+                    value={anoNumero}
+                    onChange={(e) => setAnoNumero(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Habilidade</label>
+                  <select
+                    value={form.bncc_codigo}
+                    onChange={handleSelecionarHabilidade}
+                    disabled={!habilidades.length}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 disabled:bg-gray-100"
+                  >
+                    <option value="">
+                      {loadingHabilidades ? 'Carregando...' : habilidades.length === 0 ? 'Selecione componente e ano' : 'Selecione...'}
+                    </option>
+                    {habilidades.map(h => (
+                      <option key={h.codigo} value={h.codigo}>
+                        {h.codigo} — {h.texto?.substring(0, 60)}...
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {form.bncc_texto && (
+                <p className="mt-3 text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded p-2">
+                  <strong>{form.bncc_codigo}:</strong> {form.bncc_texto}
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -412,7 +646,7 @@ const PraticasExitosas = () => {
               Detalhes que fazem toda a diferença na qualidade da prática.
             </p>
 
-            {/* Mudança de turma (só quando já tem prática) */}
+            {/* Mudança de turma */}
             {form.flow_type === 'ja_tenho' && (
               <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 mb-6">
                 <label className="flex items-start gap-3 cursor-pointer">
@@ -442,9 +676,7 @@ const PraticasExitosas = () => {
                 {(form.original_grade !== '' || form.target_grade !== '') && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                     <div>
-                      <label className="block text-xs font-medium text-amber-900 mb-1">
-                        Ano original
-                      </label>
+                      <label className="block text-xs font-medium text-amber-900 mb-1">Ano original</label>
                       <input
                         type="text"
                         value={form.original_grade}
@@ -454,9 +686,7 @@ const PraticasExitosas = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-amber-900 mb-1">
-                        Novo ano-alvo
-                      </label>
+                      <label className="block text-xs font-medium text-amber-900 mb-1">Novo ano-alvo</label>
                       <input
                         type="text"
                         value={form.target_grade}
@@ -470,7 +700,7 @@ const PraticasExitosas = () => {
               </div>
             )}
 
-            {/* Duração (só quando criar) */}
+            {/* Duração */}
             {form.flow_type === 'criar' && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Duração desejada</label>
@@ -489,7 +719,157 @@ const PraticasExitosas = () => {
               </div>
             )}
 
-            {/* Alunos com necessidades específicas */}
+            {/* O que já foi tentado (só no sub_flow melhorar) */}
+            {form.sub_flow === 'melhorar' && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  O que você já tentou e não funcionou?
+                </label>
+                <textarea
+                  value={form.already_tried}
+                  onChange={(e) => update('already_tried', e.target.value)}
+                  rows="3"
+                  placeholder="Ex: 'Tentei dividir em grupos, mas os alunos ficaram dispersos', 'Tentei usar jogos, mas o tempo foi curto'..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Isso evita que a IA sugira o que já falhou.
+                </p>
+              </div>
+            )}
+
+            {/* Recursos disponíveis */}
+            <div className="border-t border-gray-100 pt-6 mb-6">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">🛠️ Recursos disponíveis na escola</h3>
+              <p className="text-xs text-gray-600 mb-3">
+                A IA só vai sugerir atividades que usem o que você tem.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={form.resources.internet}
+                    onChange={(e) => updateResource('internet', e.target.checked)}
+                    className="w-5 h-5 text-teal-600 rounded"
+                  />
+                  <span className="text-sm">🌐 Internet</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={form.resources.projetor}
+                    onChange={(e) => updateResource('projetor', e.target.checked)}
+                    className="w-5 h-5 text-teal-600 rounded"
+                  />
+                  <span className="text-sm">📽️ Projetor / TV</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={form.resources.impressora}
+                    onChange={(e) => updateResource('impressora', e.target.checked)}
+                    className="w-5 h-5 text-teal-600 rounded"
+                  />
+                  <span className="text-sm">🖨️ Impressora</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={form.resources.espaco_externo}
+                    onChange={(e) => updateResource('espaco_externo', e.target.checked)}
+                    className="w-5 h-5 text-teal-600 rounded"
+                  />
+                  <span className="text-sm">🌳 Espaço externo (pátio, quadra)</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={form.resources.laboratorio}
+                    onChange={(e) => updateResource('laboratorio', e.target.checked)}
+                    className="w-5 h-5 text-teal-600 rounded"
+                  />
+                  <span className="text-sm">🔬 Laboratório (informática, ciências)</span>
+                </label>
+              </div>
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Outros materiais de consumo (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={form.resources_extra}
+                  onChange={(e) => update('resources_extra', e.target.value)}
+                  placeholder="Ex: papel, cartolina, cola, tintas, sucata..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+            </div>
+
+            {/* Evidências e resultados */}
+            <div className="border-t border-gray-100 pt-6 mb-6">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">📋 Evidências e resultados</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Resultados já observados (opcional)
+                  </label>
+                  <textarea
+                    value={form.observed_results}
+                    onChange={(e) => update('observed_results', e.target.value)}
+                    rows="2"
+                    placeholder="Ex: 'Os alunos melhoraram a participação oral', 'Ainda não medi formalmente'..."
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Evidências disponíveis (opcional)
+                  </label>
+                  <textarea
+                    value={form.evidences}
+                    onChange={(e) => update('evidences', e.target.value)}
+                    rows="2"
+                    placeholder="Ex: 'Tenho fotos', 'Tenho produções dos alunos', 'Tenho depoimentos das famílias'..."
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Culminância (só documento) */}
+            {form.sub_flow === 'documento' && (
+              <div className="border-t border-gray-100 pt-6 mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Culminância desejada (opcional)
+                </label>
+                <textarea
+                  value={form.culminancia}
+                  onChange={(e) => update('culminancia', e.target.value)}
+                  rows="2"
+                  placeholder="Ex: 'Mostra cultural para as famílias', 'Apresentação no pátio', 'Exposição dos trabalhos'..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+            )}
+
+            {/* Replicabilidade */}
+            <div className="border-t border-gray-100 pt-6 mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Potencial de Replicabilidade (opcional)
+              </label>
+              <textarea
+                value={form.replicability}
+                onChange={(e) => update('replicability', e.target.value)}
+                rows="2"
+                placeholder="Ex: 'Pode ser adaptada para outras escolas', 'Funciona com qualquer realidade'..."
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Critério valorizado pelos seminários do PPAIC.
+              </p>
+            </div>
+
+            {/* Alunos com necessidades */}
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -513,7 +893,7 @@ const PraticasExitosas = () => {
         )}
 
         {/* ============================================================ */}
-        {/* ETAPA 5 — RELATO */}
+        {/* ETAPA 5 — RELATO GUIADO (3-4 sub-etapas) */}
         {/* ============================================================ */}
         {step === 5 && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
@@ -521,15 +901,12 @@ const PraticasExitosas = () => {
               {form.flow_type === 'ja_tenho' ? 'Conte a sua prática' : 'Descreva sua ideia'}
             </h2>
             <p className="text-gray-600 mb-6">
-              {form.flow_type === 'ja_tenho'
-                ? 'Descreva a prática com o máximo de detalhes: o que fez, como, desafios, o que funcionou.'
-                : 'Diga o que você quer alcançar, com qual turma e em quanto tempo.'}
+              Responda as perguntas abaixo com o máximo de detalhes.
             </p>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Título provisório *
-              </label>
+            {/* Título */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Título provisório *</label>
               <input
                 type="text"
                 value={form.title}
@@ -539,25 +916,70 @@ const PraticasExitosas = () => {
               />
             </div>
 
-            <div>
+            {/* Sub-etapa 1 */}
+            <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Relato / Ideia * <span className="text-xs text-gray-500">(mínimo 50 caracteres)</span>
+                1. O que você fez? * <span className="text-xs text-gray-500">(mín. 30 caracteres)</span>
               </label>
               <textarea
-                value={form.description}
-                onChange={(e) => update('description', e.target.value)}
-                rows="10"
+                value={form.what_was_done}
+                onChange={(e) => update('what_was_done', e.target.value)}
+                rows="4"
                 placeholder={
                   form.flow_type === 'ja_tenho'
-                    ? 'Conte como foi: contexto, o que você fez, como os alunos reagiram, o que funcionou, o que não funcionou...'
-                    : 'Ex: Quero uma prática de matemática para trabalhar o ano todo no 3º ano, com foco em resolução de problemas e jogos...'
+                    ? 'Descreva a prática: o que fez, como fez, quais atividades realizou, com quais recursos...'
+                    : 'Descreva a ideia: o que quer fazer, como pretende executar, quais atividades planeja...'
                 }
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                {form.description.length} caracteres
-              </p>
+              <p className="text-xs text-gray-500 mt-1">{form.what_was_done.length} caracteres</p>
             </div>
+
+            {/* Sub-etapa 2 */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                2. Como foi? * <span className="text-xs text-gray-500">(mín. 30 caracteres)</span>
+              </label>
+              <textarea
+                value={form.how_it_went}
+                onChange={(e) => update('how_it_went', e.target.value)}
+                rows="4"
+                placeholder="Como os alunos reagiram? O que funcionou bem? O que não funcionou? Como foi a participação?"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">{form.how_it_went.length} caracteres</p>
+            </div>
+
+            {/* Sub-etapa 3 */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                3. O que você percebeu? * <span className="text-xs text-gray-500">(mín. 30 caracteres)</span>
+              </label>
+              <textarea
+                value={form.what_was_noticed}
+                onChange={(e) => update('what_was_noticed', e.target.value)}
+                rows="4"
+                placeholder="Quais resultados você já observou? O que mudou na aprendizagem dos alunos? O que te surpreendeu?"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">{form.what_was_noticed.length} caracteres</p>
+            </div>
+
+            {/* Sub-etapa 4 (só documento) */}
+            {form.sub_flow === 'documento' && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  4. Contexto da escola (opcional)
+                </label>
+                <textarea
+                  value={form.school_context}
+                  onChange={(e) => update('school_context', e.target.value)}
+                  rows="3"
+                  placeholder="Conte sobre a escola e a comunidade: realidade socioeconômica, desafios, potencialidades..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+            )}
 
             {error && (
               <div className="mt-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
@@ -602,7 +1024,7 @@ const PraticasExitosas = () => {
         )}
       </div>
 
-      {/* Botões de navegação entre etapas */}
+      {/* Botões de navegação */}
       {step >= 1 && step <= 5 && (
         <div className="print:hidden mt-6 flex justify-between">
           <button
@@ -660,23 +1082,32 @@ const PraticaResultado = ({ data }) => {
           {cab.duracao && <span>⏱️ {cab.duracao}</span>}
           {cab.num_alunos ? <span>👥 {cab.num_alunos} alunos</span> : null}
         </div>
+        {cab.bncc?.codigo && (
+          <div className="mt-3 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm">
+            <strong className="text-blue-900">📖 BNCC {cab.bncc.codigo}:</strong>{' '}
+            <span className="text-blue-800">{cab.bncc.texto}</span>
+          </div>
+        )}
+        {cab.tema_seminario && (
+          <div className="mt-3 text-sm text-gray-700">
+            <strong>Tema do seminário:</strong> {cab.tema_seminario}
+          </div>
+        )}
       </div>
 
-      {/* Resumo Executivo */}
+      {/* Seções */}
       {sd.resumo_executivo && (
         <Section title="📌 Resumo Executivo">
           <p className="text-gray-700 leading-relaxed whitespace-pre-line">{sd.resumo_executivo}</p>
         </Section>
       )}
 
-      {/* Justificativa */}
       {sd.justificativa && (
         <Section title="💡 Justificativa">
           <p className="text-gray-700 leading-relaxed whitespace-pre-line">{sd.justificativa}</p>
         </Section>
       )}
 
-      {/* Objetivos */}
       {sd.objetivos && (
         <Section title="🎯 Objetivos">
           {sd.objetivos.geral && (
@@ -700,7 +1131,6 @@ const PraticaResultado = ({ data }) => {
         </Section>
       )}
 
-      {/* Metodologia */}
       {sd.metodologia && (
         <Section title="⚙️ Metodologia">
           {sd.metodologia.descricao_geral && (
@@ -752,7 +1182,6 @@ const PraticaResultado = ({ data }) => {
         </Section>
       )}
 
-      {/* Cronograma */}
       {sd.cronograma?.length > 0 && (
         <Section title="📅 Cronograma">
           <div className="space-y-3">
@@ -778,7 +1207,6 @@ const PraticaResultado = ({ data }) => {
         </Section>
       )}
 
-      {/* Adaptações Inclusivas */}
       {sd.adaptacoes_inclusivas?.length > 0 && (
         <Section title="🧩 Adaptações Inclusivas">
           <div className="space-y-3">
@@ -801,7 +1229,6 @@ const PraticaResultado = ({ data }) => {
         </Section>
       )}
 
-      {/* Avaliação */}
       {sd.avaliacao && (
         <Section title="📊 Avaliação">
           {sd.avaliacao.instrumentos?.length > 0 && (
@@ -846,7 +1273,30 @@ const PraticaResultado = ({ data }) => {
         </Section>
       )}
 
-      {/* Resultados Esperados */}
+      {/* Culminância */}
+      {sd.culminancia && (sd.culminancia.descricao || sd.culminancia.sugestoes?.length > 0) && (
+        <Section title="🎉 Culminância">
+          {sd.culminancia.descricao && (
+            <p className="text-gray-700 mb-3 whitespace-pre-line">{sd.culminancia.descricao}</p>
+          )}
+          {sd.culminancia.sugestoes?.length > 0 && (
+            <ul className="space-y-1.5 ml-4 mb-3">
+              {sd.culminancia.sugestoes.map((s, i) => (
+                <li key={i} className="text-sm text-gray-700 flex gap-2">
+                  <span className="text-teal-600">•</span>
+                  <span>{s}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {sd.culminancia.publico_esperado && (
+            <p className="text-sm text-gray-600">
+              <strong>Público esperado:</strong> {sd.culminancia.publico_esperado}
+            </p>
+          )}
+        </Section>
+      )}
+
       {sd.resultados_esperados?.length > 0 && (
         <Section title="🌟 Resultados Esperados">
           <ul className="space-y-1.5 ml-4">
@@ -860,7 +1310,62 @@ const PraticaResultado = ({ data }) => {
         </Section>
       )}
 
-      {/* Dicas de Aprimoramento */}
+      {/* Replicabilidade */}
+      {sd.replicabilidade && (sd.replicabilidade.descricao || sd.replicabilidade.adaptacoes_para_outras_escolas?.length > 0) && (
+        <Section title="🔄 Replicabilidade">
+          {sd.replicabilidade.descricao && (
+            <p className="text-gray-700 mb-3 whitespace-pre-line">{sd.replicabilidade.descricao}</p>
+          )}
+          {sd.replicabilidade.adaptacoes_para_outras_escolas?.length > 0 && (
+            <div className="mb-3">
+              <p className="font-medium text-gray-800 mb-1">Adaptações para outras escolas:</p>
+              <ul className="space-y-1 ml-4">
+                {sd.replicabilidade.adaptacoes_para_outras_escolas.map((a, i) => (
+                  <li key={i} className="text-sm text-gray-700 flex gap-2">
+                    <span className="text-teal-600">•</span>
+                    <span>{a}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {sd.replicabilidade.condicoes_minimas?.length > 0 && (
+            <div>
+              <p className="font-medium text-gray-800 mb-1">Condições mínimas:</p>
+              <ul className="space-y-1 ml-4">
+                {sd.replicabilidade.condicoes_minimas.map((c, i) => (
+                  <li key={i} className="text-sm text-gray-700 flex gap-2">
+                    <span className="text-teal-600">•</span>
+                    <span>{c}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Section>
+      )}
+
+      {/* Evidências sugeridas */}
+      {sd.evidencias_sugeridas?.length > 0 && (
+        <Section title="📸 Evidências Sugeridas">
+          <div className="space-y-3">
+            {sd.evidencias_sugeridas.map((ev, i) => (
+              <div key={i} className="border border-amber-100 rounded-lg p-4 bg-amber-50">
+                <div className="flex justify-between items-baseline mb-1">
+                  <strong className="text-amber-900 text-sm">{ev.tipo}</strong>
+                  {ev.quando_registrar && (
+                    <span className="text-xs text-amber-700">{ev.quando_registrar}</span>
+                  )}
+                </div>
+                {ev.descricao && (
+                  <p className="text-sm text-amber-900">{ev.descricao}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
       {sd.dicas_de_aprimoramento?.length > 0 && (
         <Section title="💬 Dicas de Aprimoramento">
           <div className="bg-amber-50 border border-amber-100 rounded-lg p-4">
@@ -876,7 +1381,6 @@ const PraticaResultado = ({ data }) => {
         </Section>
       )}
 
-      {/* Referências Regionais */}
       {sd.referencias_regionais?.length > 0 && (
         <Section title="🗺️ Referências Regionais">
           <ul className="space-y-1.5 ml-4">
@@ -893,9 +1397,6 @@ const PraticaResultado = ({ data }) => {
   );
 };
 
-// ============================================================
-// COMPONENTE DE SEÇÃO
-// ============================================================
 const Section = ({ title, children }) => (
   <div className="mb-8">
     <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>

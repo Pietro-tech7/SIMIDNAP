@@ -26,6 +26,22 @@ def generate_practice(
     has_special_needs: bool = False,
     duration: Optional[str] = None,
     num_alunos: Optional[int] = None,
+    # ---- Novos campos ----
+    class_profile: Optional[str] = None,
+    seminar_theme: Optional[str] = None,
+    bncc_codigo: Optional[str] = None,
+    bncc_texto: Optional[str] = None,
+    resources: Optional[Dict[str, bool]] = None,
+    resources_extra: Optional[str] = None,
+    already_tried: Optional[str] = None,
+    evidences: Optional[str] = None,
+    observed_results: Optional[str] = None,
+    culminancia: Optional[str] = None,
+    replicability: Optional[str] = None,
+    what_was_done: Optional[str] = None,
+    how_it_went: Optional[str] = None,
+    what_was_noticed: Optional[str] = None,
+    school_context: Optional[str] = None,
     answers: Optional[Dict[str, Any]] = None,
 ) -> SuccessfulPractice:
     """
@@ -37,6 +53,7 @@ def generate_practice(
     ai = get_ai_service()
 
     answers = answers or {}
+    resources = resources or {}
 
     # ============================================================
     # MONTA O PAYLOAD COMPLETO PARA A IA
@@ -57,15 +74,40 @@ def generate_practice(
         "gre": gre,
         "grade": grade,
         "subject": subject,
+        "num_alunos": num_alunos,
+        "class_profile": class_profile,
+
+        # Seminário / evento
+        "seminar_theme": seminar_theme,
+
+        # BNCC
+        "bncc_codigo": bncc_codigo,
+        "bncc_texto": bncc_texto,
 
         # Particularidades da prática
         "original_grade": original_grade,
         "target_grade": target_grade,
         "has_special_needs": has_special_needs,
         "duration": duration,
-        "num_alunos": num_alunos,
 
-        # Relato principal
+        # Recursos disponíveis
+        "resources": resources,
+        "resources_extra": resources_extra,
+
+        # Histórico e evidências
+        "already_tried": already_tried,
+        "evidences": evidences,
+        "observed_results": observed_results,
+        "culminancia": culminancia,
+        "replicability": replicability,
+
+        # Relato guiado
+        "what_was_done": what_was_done,
+        "how_it_went": how_it_went,
+        "what_was_noticed": what_was_noticed,
+        "school_context": school_context,
+
+        # Relato consolidado (compatibilidade)
         "description": description,
 
         # Todas as respostas do wizard (rede de segurança)
