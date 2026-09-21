@@ -44,6 +44,7 @@ CUSTOS = {
     "meu_aluno_analyze": 5,        # 0.5 crédito
     "image_generation": 15,        # 1.5 crédito por imagem gerada
     "pratica_exitosa": 30,         # 3.0 créditos (Práticas Exitosas)
+    "simulado_banco": 10,          # 1.0 crédito (Gerar simulado do banco ENEM)
 }
 
 # Tipos de tarefa que têm versão diferenciada

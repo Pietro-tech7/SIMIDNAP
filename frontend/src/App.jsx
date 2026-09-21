@@ -13,6 +13,7 @@ import TerapiaPedagogica from './pages/TerapiaPedagogica';
 import GeradorMateriais from './pages/GeradorMateriais';
 import MeuAluno from './pages/MeuAluno';
 import PraticasExitosas from './pages/PraticasExitosas';
+import BancoQuestoes from './pages/BancoQuestoes';
 import Perfil from './pages/Perfil';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
@@ -90,6 +91,7 @@ function AppRoutes() {
         <Route path="/terapia-pedagogica" element={<TerapiaPedagogica />} />
         <Route path="/gerador-materiais" element={<GeradorMateriais />} />
         <Route path="/praticas-exitosas" element={<PraticasExitosas />} />
+        <Route path="/banco-questoes" element={<BancoQuestoes />} />
         <Route path="/meu-aluno" element={<MeuAluno />} />
         <Route path="/perfil" element={<Perfil />} />
       </Route>

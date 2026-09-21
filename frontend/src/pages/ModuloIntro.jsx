@@ -89,7 +89,7 @@ const conteudoModulos = {
     ],
     aviso: 'A IA é um copiloto. A decisão final é sempre do professor.',
   },
-  praticas_exitosas: {
+    praticas_exitosas: {
     icon: '🏆',
     nome: 'Práticas Exitosas',
     cor: 'from-teal-500 to-cyan-600',
@@ -106,6 +106,25 @@ const conteudoModulos = {
       'Integrar adaptações inclusivas para alunos com laudo ou atenção especial',
       'Gerar um documento profissional pronto para apresentar',
     ],
+  },
+  banco_questoes: {
+    icon: '📚',
+    nome: 'Banco de Questões',
+    cor: 'from-blue-600 to-indigo-700',
+    resumo: 'Busque questões oficiais do ENEM e monte simulados em minutos.',
+    explicacao:
+      'Um banco com milhares de questões REAIS do ENEM (2009 a 2023). Você pode filtrar por ano, disciplina, área do conhecimento e até buscar por palavra-chave. Selecione as questões que quiser e gere um simulado profissional em PDF — com a logo SIMIDNAPE PRO, cabeçalho para o aluno e gabarito opcional. Perfeito para preparar alunos para o ENEM, olimpíadas e avaliações externas.',
+    exemplo:
+      'Exemplo: filtrar "ENEM 2023 | Matemática", selecionar 10 questões sobre funções e gerar um simulado com gabarito em PDF.',
+    acoes: [
+      'Buscar questões oficiais do ENEM por ano, disciplina e área',
+      'Filtrar por busca textual (ex: "fotossíntese", "revolução francesa")',
+      'Ver questão completa com alternativas, imagens e gabarito',
+      'Selecionar questões e gerar simulado em PDF',
+      'Incluir cabeçalho com logo SIMIDNAPE PRO e campos para nome/turma',
+      'Baixar com ou sem gabarito (para prova do aluno ou correção)',
+    ],
+    aviso: 'Questões oficiais do ENEM (INEP). Uso pedagógico permitido. Custo: 1 crédito por simulado gerado.',
   },
 };
 
@@ -203,12 +222,20 @@ const ModuloIntro = () => {
               Começar a usar
             </Link>
           )}
-          {modulo === 'praticas_exitosas' && (
+                    {modulo === 'praticas_exitosas' && (
             <Link
               to="/praticas-exitosas"
               className="inline-block bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-2.5 rounded-lg transition"
             >
               Começar a usar
+            </Link>
+          )}
+          {modulo === 'banco_questoes' && (
+            <Link
+              to="/banco-questoes"
+              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg transition"
+            >
+              Buscar questões
             </Link>
           )}
         </div>
