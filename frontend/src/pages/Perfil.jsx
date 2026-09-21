@@ -5,6 +5,7 @@ import AvatarUpload from '../components/AvatarUpload';
 
 const Perfil = () => {
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [assinatura, setAssinatura] = useState(null);
   const [planos, setPlanos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,19 +46,8 @@ const Perfil = () => {
     }
   }, [user]);
 
-  const handleTrocarPlano = async (codigo, nome) => {
-    if (!window.confirm(`Deseja assinar o plano ${nome}?`)) return;
-    setTrocando(true);
-    try {
-      await api.post('/subscriptions/trocar', { plano: codigo });
-      await carregarDados();
-      window.dispatchEvent(new CustomEvent('subscription-updated'));
-      alert(`Plano ${nome} ativado com sucesso!`);
-    } catch {
-      alert('Erro ao trocar de plano. Tente novamente.');
-    } finally {
-      setTrocando(false);
-    }
+  const handleTrocarPlano = (codigo, nome) => {
+    navigate('/minha-assinatura');
   };
 
   const handleSalvarPerfil = async (e) => {

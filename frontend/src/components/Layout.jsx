@@ -131,7 +131,7 @@ const Layout = () => {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/perfil"
+            to="/minha-assinatura"
             className="md:hidden bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full"
           >
             🚀 {ehTrial ? 'Upgrade' : 'Planos'}
@@ -230,7 +230,7 @@ const Layout = () => {
                   <p className="text-sm font-semibold text-gray-800 truncate">{user?.full_name}</p>
                   <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                 </div>
-                <div className="py-1">
+                  <div className="py-1">
                   <Link
                     to="/perfil"
                     onClick={() => setAvatarAberto(false)}
@@ -239,7 +239,14 @@ const Layout = () => {
                     👤 Meu Perfil
                   </Link>
                   <Link
-                    to="/perfil"
+                    to="/minha-assinatura"
+                    onClick={() => setAvatarAberto(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    💳 Minha Assinatura
+                  </Link>
+                  <Link
+                    to="/minha-assinatura"
                     onClick={() => setAvatarAberto(false)}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
                   >
@@ -296,7 +303,7 @@ const Layout = () => {
         {creditos && (
           <div className="px-4 pb-4 space-y-2">
             <Link
-              to="/perfil"
+              to="/minha-assinatura"
               className={`block rounded-lg p-3 transition border ${
                 mostrarAlertaBaixo
                   ? 'bg-gradient-to-br from-orange-50 to-red-50 border-orange-200'
@@ -322,7 +329,7 @@ const Layout = () => {
             </Link>
 
             <Link
-              to="/perfil"
+              to="/minha-assinatura"
               className="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold text-sm py-2.5 rounded-lg transition"
             >
               🚀 {ehTrial ? 'Fazer Upgrade' : 'Ver Planos'}

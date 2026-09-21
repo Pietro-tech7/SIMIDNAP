@@ -14,6 +14,7 @@ import GeradorMateriais from './pages/GeradorMateriais';
 import MeuAluno from './pages/MeuAluno';
 import PraticasExitosas from './pages/PraticasExitosas';
 import BancoQuestoes from './pages/BancoQuestoes';
+import MinhaAssinatura from './pages/MinhaAssinatura';
 import Perfil from './pages/Perfil';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
@@ -92,6 +93,7 @@ function AppRoutes() {
         <Route path="/gerador-materiais" element={<GeradorMateriais />} />
         <Route path="/praticas-exitosas" element={<PraticasExitosas />} />
         <Route path="/banco-questoes" element={<BancoQuestoes />} />
+        <Route path="/minha-assinatura" element={<MinhaAssinatura />} />
         <Route path="/meu-aluno" element={<MeuAluno />} />
         <Route path="/perfil" element={<Perfil />} />
       </Route>
