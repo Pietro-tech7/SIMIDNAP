@@ -22,7 +22,7 @@ router = APIRouter(prefix="/successful-practices", tags=["successful-practices"]
 
 
 # ============================================================
-# AUTENTICAÇÃO (mesmo padrão do materials.py)
+# AUTENTICAÇÃO
 # ============================================================
 def get_current_user(authorization: str = Header(...), db: Session = Depends(get_db)):
     if not authorization.startswith("Bearer "):
@@ -66,9 +66,24 @@ def generate(
                 detail="Sub-fluxo obrigatório ('melhorar' ou 'documento') quando flow_type='ja_tenho'."
             )
 
-    categorias_validas = ("educacao_infantil", "ciclo_alfabetizacao", "gestao_escolar")
+    # ---- Validação de categoria (aceita TODAS as combinações de perfil + etapa) ----
+    categorias_validas = (
+        # Professor
+        "educacao_infantil",       # EI
+        "ciclo_alfabetizacao",     # EF (1º e 2º)
+        "ensino_fundamental",      # EF (3º a 9º)
+        "linguagens",              # EM
+        "matematica",              # EM
+        "ciencias_natureza",       # EM
+        "ciencias_humanas",        # EM
+        # Coordenador
+        "gestao_escolar",
+    )
     if data.category not in categorias_validas:
-        raise HTTPException(status_code=400, detail="Categoria inválida.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Categoria inválida. Use uma de: {list(categorias_validas)}"
+        )
 
     etapas_validas = ("EI", "EF", "EM")
     if data.education_stage and data.education_stage not in etapas_validas:
@@ -77,7 +92,7 @@ def generate(
             detail="Etapa de ensino inválida (use 'EI', 'EF' ou 'EM')."
         )
 
-    # ---- Verifica créditos ANTES de gerar ----
+    # ---- Verifica créditos ----
     pode, custo = verificar_creditos(
         db,
         str(current_user.id),
@@ -90,7 +105,7 @@ def generate(
             detail="Créditos insuficientes. Faça upgrade do seu plano para continuar."
         )
 
-    # ---- Gera via IA (todos os campos novos são passados) ----
+    # ---- Gera via IA ----
     practice = generate_practice(
         db=db,
         user_id=str(current_user.id),
@@ -109,6 +124,7 @@ def generate(
         subject=data.subject,
         num_alunos=data.num_alunos,
         class_profile=data.class_profile,
+        itinerario=data.itinerario,
         # Contexto de gestão (coordenador)
         eixo_atuacao=data.eixo_atuacao,
         num_professores=data.num_professores,
@@ -149,13 +165,13 @@ def generate(
         answers=data.answers,
     )
 
-    # ---- Só consome créditos se gerou com sucesso ----
+    # ---- Consome créditos ----
     consumir_creditos(db, str(current_user.id), "pratica_exitosa", custo)
     return practice
 
 
 # ============================================================
-# LISTAR PRÁTICAS
+# LISTAR
 # ============================================================
 @router.get("", response_model=List[SuccessfulPracticeListItem])
 def list_all(
@@ -168,7 +184,7 @@ def list_all(
 
 
 # ============================================================
-# BUSCAR UMA PRÁTICA
+# BUSCAR UMA
 # ============================================================
 @router.get("/{practice_id}", response_model=SuccessfulPracticeOut)
 def get_one(
@@ -183,7 +199,7 @@ def get_one(
 
 
 # ============================================================
-# DELETAR PRÁTICA
+# DELETAR
 # ============================================================
 @router.delete("/{practice_id}", status_code=204)
 def remove(

@@ -25,6 +25,7 @@ def generate_practice(
     subject: Optional[str] = None,
     num_alunos: Optional[int] = None,
     class_profile: Optional[str] = None,
+    itinerario: Optional[str] = None,
     # Contexto de gestão (coordenador)
     eixo_atuacao: Optional[str] = None,
     num_professores: Optional[int] = None,
@@ -66,7 +67,8 @@ def generate_practice(
     Gera uma prática exitosa via IA e salva no banco.
 
     task_type usado na IA: 'pratica_exitosa'
-    O prompt é montado dinamicamente com base em perfil, fluxo, etapa de ensino.
+    O payload carrega TODOS os dados (professor e coordenador),
+    e a IA decide o que usar com base em perfil, fluxo e etapa de ensino.
     """
     ai = get_ai_service()
 
@@ -78,12 +80,12 @@ def generate_practice(
     # MONTA O PAYLOAD COMPLETO PARA A IA
     # ============================================================
     payload = {
-        # Identificação
+        # Identificação e fluxo
         "title": title,
         "perfil": perfil,                      # 'professor' | 'coordenador'
         "flow_type": flow_type,                # 'ja_tenho' | 'criar'
         "sub_flow": sub_flow,                  # 'melhorar' | 'documento' | None
-        "category": category,                  # 'educacao_infantil' | 'ciclo_alfabetizacao' | 'gestao_escolar'
+        "category": category,                  # 'educacao_infantil' | 'ciclo_alfabetizacao' | 'ensino_fundamental' | 'linguagens' | 'matematica' | 'ciencias_natureza' | 'ciencias_humanas' | 'gestao_escolar'
         "education_stage": education_stage,    # 'EI' | 'EF' | 'EM'
 
         # Contexto escolar (professor)
@@ -94,6 +96,7 @@ def generate_practice(
         "subject": subject,
         "num_alunos": num_alunos,
         "class_profile": class_profile,
+        "itinerario": itinerario,              # EM apenas
 
         # Contexto de gestão (coordenador)
         "eixo_atuacao": eixo_atuacao,
@@ -101,7 +104,7 @@ def generate_practice(
         "series_impactadas": series_impactadas,
         "perfil_equipe": perfil_equipe,
 
-        # Dados de avaliações externas (SAEPI, IDEB, etc.)
+        # Dados de avaliações externas
         "dados_avaliacoes": dados_avaliacoes,
 
         # Seminário / evento
@@ -111,7 +114,7 @@ def generate_practice(
         "bncc_codigo": bncc_codigo,
         "bncc_texto": bncc_texto,
 
-        # Particularidades da prática
+        # Particularidades
         "original_grade": original_grade,
         "target_grade": target_grade,
         "has_special_needs": has_special_needs,
@@ -128,13 +131,13 @@ def generate_practice(
         "culminancia": culminancia,
         "replicability": replicability,
 
-        # Relato guiado — fluxos A e B (já tenho)
+        # Relato guiado — fluxos A e B
         "what_was_done": what_was_done,
         "how_it_went": how_it_went,
         "what_was_noticed": what_was_noticed,
         "school_context": school_context,
 
-        # Relato guiado — fluxo C (criar do zero)
+        # Relato guiado — fluxo C
         "goal": goal,
         "what_you_imagine": what_you_imagine,
         "what_you_expect": what_you_expect,
@@ -142,7 +145,7 @@ def generate_practice(
         # Relato consolidado (compatibilidade)
         "description": description,
 
-        # Todas as respostas do wizard (rede de segurança)
+        # Rede de segurança
         "answers": answers,
     }
 
@@ -177,8 +180,8 @@ def generate_practice(
         num_alunos=num_alunos,
         description=description,
         structured_data={
-            "input": payload,          # guarda tudo que foi enviado
-            "output": structured_data, # guarda a resposta da IA
+            "input": payload,
+            "output": structured_data,
         },
     )
     db.add(practice)
