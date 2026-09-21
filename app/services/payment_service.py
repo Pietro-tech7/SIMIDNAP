@@ -192,7 +192,7 @@ def create_credits_checkout(db: Session, user: User, package: str) -> Dict[str, 
         amount=int(pacote["preco"] * 100),  # centavos
         credits_added=pacote["creditos"] * 10,  # décimos
         status="pending",
-        metadata=data,
+        payment_data=data,
     )
     db.add(hist)
     db.commit()
@@ -253,9 +253,9 @@ def _handle_payment(db: Session, payment_id: str) -> Dict[str, Any]:
     hist.payment_provider_id = str(payment_id)
     hist.payment_method = data.get("payment_method_id")
 
-    meta = hist.metadata or {}
+    meta = hist.payment_data or {}
     meta["last_webhook"] = data
-    hist.metadata = meta
+    hist.payment_data = meta
 
     # Se aprovado e ainda não creditamos, adiciona créditos
     if status_mp == "approved" and not meta.get("_credits_added"):
@@ -268,7 +268,7 @@ def _handle_payment(db: Session, payment_id: str) -> Dict[str, Any]:
                 credits_consumed=-hist.credits_added,  # negativo = crédito adicionado
             ))
         meta["_credits_added"] = True
-        hist.metadata = meta
+        hist.payment_data = meta
 
     db.commit()
     return {"ok": True, "status": status_mp}

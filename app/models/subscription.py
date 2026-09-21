@@ -56,6 +56,6 @@ class PaymentHistory(Base):
     credits_added = Column(Integer, nullable=False)       # em décimos (ex: 50 = 5.0 créditos)
     status = Column(String, nullable=False, default="pending")  # 'pending', 'approved', 'rejected'
     payment_method = Column(String, nullable=True)        # 'pix', 'credit_card', 'debit_card'
-    metadata = Column(JSONB, nullable=True)
+    payment_data = Column(JSONB, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
