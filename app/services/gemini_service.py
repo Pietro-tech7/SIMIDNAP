@@ -788,6 +788,35 @@ def _system_para_task(task_type: str, diferenciado: bool = False) -> str:
         "Siga EXATAMENTE a estrutura abaixo:\n\n"
     )
 
+    # ============================================================
+    # REGRAS DE FORMATAÇÃO DE FÓRMULAS (para tarefas de Materiais)
+    # ============================================================
+    if task_type in ("simulado", "atividade_imprimivel", "jogo_dinamica"):
+        instrucoes_gerais += (
+            "═══════════════════════════════════════════════════════════════\n"
+            "REGRAS DE FORMATAÇÃO DE FÓRMULAS (OBRIGATÓRIO PARA EXATAS)\n"
+            "═══════════════════════════════════════════════════════════════\n"
+            "Quando a disciplina for Matemática, Física, Química, Biologia ou quando "
+            "o conteúdo envolver cálculos, equações, reações ou fórmulas:\n\n"
+            "- Use LaTeX para formatar TODAS as fórmulas:\n"
+            "  * Inline (no meio do texto): $...$   → Ex: 'A água é $H_2O$'\n"
+            "  * Bloco (destacada): $$...$$   → Ex: 'A equação é $$x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$'\n\n"
+            "- SEMPRE inclua questões com APLICAÇÃO DE FÓRMULAS e CÁLCULOS reais, "
+            "não apenas questões teóricas ou conceituais.\n\n"
+            "- Exemplos de comandos LaTeX úteis:\n"
+            "  * Potências: $x^2$, $10^{-3}$, $a^n$\n"
+            "  * Frações: $\\frac{a}{b}$, $\\frac{x+1}{x-2}$\n"
+            "  * Raízes: $\\sqrt{x}$, $\\sqrt[3]{x}$\n"
+            "  * Somatório: $\\sum_{i=1}^{n} i$\n"
+            "  * Integral: $\\int_a^b f(x) \\, dx$\n"
+            "  * Química: $H_2SO_4$, $CO_2$, $Fe^{3+}$, $2H_2 + O_2 \\rightarrow 2H_2O$\n"
+            "  * Física: $F = m \\cdot a$, $E = mc^2$, $v = \\frac{d}{t}$\n"
+            "  * Matemática: $\\Delta = b^2 - 4ac$, $\\sen(x)$, $\\cos(x)$, $\\log(x)$\n\n"
+            "- IMPORTANTE: use barras duplas \\\\ ao invés de uma barra \\ dentro das strings JSON, "
+            "para que o LaTeX seja corretamente interpretado pelo frontend.\n"
+            "  Ex: escreva '\\frac{a}{b}' como '\\\\frac{a}{b}' no JSON.\n\n"
+        )
+
     contexto = CONTEXTOS.get(task_type, CONTEXTOS["neuroaula"])
 
     if diferenciado and task_type in SCHEMA_DIFERENCIADO:

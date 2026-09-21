@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { gerarPDF } from '../utils/pdf';
+import LatexText from '../components/LatexText';
 
 const GeradorMateriais = () => {
   const [tipo, setTipo] = useState('atividade_imprimivel');
@@ -443,7 +444,6 @@ const SimuladoDiferenciado = ({ cab, sd, data }) => {
         </div>
       </div>
 
-      {/* Abas - não imprimem */}
       <div className="flex gap-2 mb-6 print:hidden">
         <button
           onClick={() => setAba('principal')}
@@ -463,7 +463,6 @@ const SimuladoDiferenciado = ({ cab, sd, data }) => {
         </button>
       </div>
 
-      {/* Indicação de qual versão imprimir */}
       <div className="hidden print:block mb-4">
         <p className="text-lg font-bold">
           {aba === 'principal' ? 'VERSÃO PRINCIPAL' : 'VERSÃO ADAPTADA'}
@@ -483,7 +482,9 @@ const SimuladoDiferenciado = ({ cab, sd, data }) => {
               <span className="font-semibold text-gray-800">Questão {q.numero}</span>
               <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{q.tipo}</span>
             </div>
-            <p className="text-gray-800 whitespace-pre-line mb-3">{q.enunciado}</p>
+            <div className="text-gray-800 mb-3">
+              <LatexText text={q.enunciado} />
+            </div>
             {q.apoio_visual && (
               <p className="text-xs text-blue-700 bg-blue-50 p-2 rounded mb-2">
                 🖼️ <strong>Apoio visual:</strong> {q.apoio_visual}
@@ -492,7 +493,9 @@ const SimuladoDiferenciado = ({ cab, sd, data }) => {
             {q.alternativas?.length > 0 && (
               <ul className="space-y-1 ml-4">
                 {q.alternativas.map((alt, i) => (
-                  <li key={i} className="text-sm text-gray-700">{alt}</li>
+                  <li key={i} className="text-sm text-gray-700">
+                    <LatexText text={alt} />
+                  </li>
                 ))}
               </ul>
             )}
@@ -504,7 +507,7 @@ const SimuladoDiferenciado = ({ cab, sd, data }) => {
         <details className="mt-8 bg-green-50 border border-green-100 rounded-lg p-4">
           <summary className="cursor-pointer font-semibold text-green-900 text-sm">✅ Gabarito</summary>
           <ul className="mt-3 space-y-1 text-sm text-green-800">
-            {versao.gabarito.map((g, i) => <li key={i}>{g}</li>)}
+            {versao.gabarito.map((g, i) => <li key={i}><LatexText text={g} /></li>)}
           </ul>
         </details>
       )}
@@ -573,7 +576,7 @@ const JogoDiferenciado = ({ cab, sd }) => {
                 {vp.como_jogar.map((p, i) => (
                   <li key={i} className="flex gap-3 text-sm text-gray-700">
                     <span className="font-bold text-orange-600">{p.passo || i + 1}.</span>
-                    <span>{p.descricao || p}</span>
+                    <span><LatexText text={p.descricao || p} /></span>
                   </li>
                 ))}
               </ol>
@@ -583,7 +586,7 @@ const JogoDiferenciado = ({ cab, sd }) => {
             <div className="mb-6">
               <h3 className="font-semibold text-gray-800 mb-2">📋 Regras</h3>
               <ul className="space-y-1">
-                {vp.regras.map((r, i) => <li key={i} className="text-sm text-gray-700">• {r}</li>)}
+                {vp.regras.map((r, i) => <li key={i} className="text-sm text-gray-700">• <LatexText text={r} /></li>)}
               </ul>
             </div>
           )}
@@ -591,7 +594,7 @@ const JogoDiferenciado = ({ cab, sd }) => {
             <div className="mb-6">
               <h3 className="font-semibold text-gray-800 mb-2">🔄 Variações</h3>
               <ul className="space-y-1">
-                {vp.variacoes.map((v, i) => <li key={i} className="text-sm text-gray-700">• {v}</li>)}
+                {vp.variacoes.map((v, i) => <li key={i} className="text-sm text-gray-700">• <LatexText text={v} /></li>)}
               </ul>
             </div>
           )}
@@ -602,7 +605,7 @@ const JogoDiferenciado = ({ cab, sd }) => {
             <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
               <h3 className="font-semibold text-blue-900 text-sm mb-1">🧩 Adaptações</h3>
               <ul className="space-y-1">
-                {va.adaptacoes.map((a, i) => <li key={i} className="text-sm text-blue-800">• {a}</li>)}
+                {va.adaptacoes.map((a, i) => <li key={i} className="text-sm text-blue-800">• <LatexText text={a} /></li>)}
               </ul>
             </div>
           )}
@@ -613,7 +616,7 @@ const JogoDiferenciado = ({ cab, sd }) => {
                 {va.como_jogar_adaptado.map((p, i) => (
                   <li key={i} className="flex gap-3 text-sm text-gray-700">
                     <span className="font-bold text-orange-600">{p.passo || i + 1}.</span>
-                    <span>{p.descricao || p}</span>
+                    <span><LatexText text={p.descricao || p} /></span>
                   </li>
                 ))}
               </ol>
@@ -623,14 +626,14 @@ const JogoDiferenciado = ({ cab, sd }) => {
             <div className="mb-6">
               <h3 className="font-semibold text-gray-800 mb-2">📋 Regras adaptadas</h3>
               <ul className="space-y-1">
-                {va.regras_adaptadas.map((r, i) => <li key={i} className="text-sm text-gray-700">• {r}</li>)}
+                {va.regras_adaptadas.map((r, i) => <li key={i} className="text-sm text-gray-700">• <LatexText text={r} /></li>)}
               </ul>
             </div>
           )}
           {va.papel_do_colega_apoio && (
             <div className="mb-6 bg-green-50 border border-green-100 rounded-lg p-4">
               <h3 className="font-semibold text-green-900 text-sm mb-1">🤝 Papel do colega de apoio</h3>
-              <p className="text-sm text-green-800">{va.papel_do_colega_apoio}</p>
+              <p className="text-sm text-green-800"><LatexText text={va.papel_do_colega_apoio} /></p>
             </div>
           )}
         </>
@@ -640,7 +643,7 @@ const JogoDiferenciado = ({ cab, sd }) => {
         <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4 mb-6">
           <h3 className="font-semibold text-yellow-900 text-sm mb-1">💡 Dicas para o professor</h3>
           <ul className="space-y-1">
-            {sd.dicas_professor.map((d, i) => <li key={i} className="text-sm text-yellow-800">• {d}</li>)}
+            {sd.dicas_professor.map((d, i) => <li key={i} className="text-sm text-yellow-800">• <LatexText text={d} /></li>)}
           </ul>
         </div>
       )}
@@ -704,7 +707,9 @@ const AtividadeDiferenciada = ({ cab, sd }) => {
               <span className="font-semibold text-gray-800">Questão {a.numero}</span>
               <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{a.tipo}</span>
             </div>
-            <p className="text-gray-800 mb-2">{a.enunciado}</p>
+            <div className="text-gray-800 mb-2">
+              <LatexText text={a.enunciado} />
+            </div>
             {a.apoio_visual && (
               <p className="text-xs text-blue-700 bg-blue-50 p-2 rounded mb-2">
                 🖼️ <strong>Apoio visual:</strong> {a.apoio_visual}
@@ -712,7 +717,9 @@ const AtividadeDiferenciada = ({ cab, sd }) => {
             )}
             {a.alternativas?.length > 0 && (
               <ul className="space-y-1 ml-4">
-                {a.alternativas.map((alt, i) => <li key={i} className="text-sm text-gray-700">{alt}</li>)}
+                {a.alternativas.map((alt, i) => (
+                  <li key={i} className="text-sm text-gray-700"><LatexText text={alt} /></li>
+                ))}
               </ul>
             )}
             {a.espaco_resposta && (
@@ -726,7 +733,7 @@ const AtividadeDiferenciada = ({ cab, sd }) => {
         <details className="mt-8 bg-green-50 border border-green-100 rounded-lg p-4">
           <summary className="cursor-pointer font-semibold text-green-900 text-sm">✅ Gabarito do professor</summary>
           <ul className="mt-3 space-y-1 text-sm text-green-800">
-            {versao.gabarito_professor.map((g, i) => <li key={i}>{g}</li>)}
+            {versao.gabarito_professor.map((g, i) => <li key={i}><LatexText text={g} /></li>)}
           </ul>
         </details>
       )}
@@ -760,10 +767,14 @@ const SimuladoView = ({ cab, sd, data }) => (
             <span className="font-semibold text-gray-800">Questão {q.numero}</span>
             <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{q.tipo}</span>
           </div>
-          <p className="text-gray-800 whitespace-pre-line mb-3">{q.enunciado}</p>
+          <div className="text-gray-800 mb-3">
+            <LatexText text={q.enunciado} />
+          </div>
           {q.alternativas?.length > 0 && (
             <ul className="space-y-1 ml-4">
-              {q.alternativas.map((alt, i) => <li key={i} className="text-sm text-gray-700">{alt}</li>)}
+              {q.alternativas.map((alt, i) => (
+                <li key={i} className="text-sm text-gray-700"><LatexText text={alt} /></li>
+              ))}
             </ul>
           )}
         </div>
@@ -774,7 +785,7 @@ const SimuladoView = ({ cab, sd, data }) => (
       <details className="mt-8 bg-green-50 border border-green-100 rounded-lg p-4">
         <summary className="cursor-pointer font-semibold text-green-900 text-sm">✅ Gabarito</summary>
         <ul className="mt-3 space-y-1 text-sm text-green-800">
-          {sd.gabarito.map((g, i) => <li key={i}>{g}</li>)}
+          {sd.gabarito.map((g, i) => <li key={i}><LatexText text={g} /></li>)}
         </ul>
       </details>
     )}
@@ -815,7 +826,7 @@ const JogoView = ({ cab, sd }) => (
           {sd.como_jogar.map((p, i) => (
             <li key={i} className="flex gap-3 text-sm text-gray-700">
               <span className="font-bold text-orange-600">{p.passo || i + 1}.</span>
-              <span>{p.descricao || p}</span>
+              <span><LatexText text={p.descricao || p} /></span>
             </li>
           ))}
         </ol>
@@ -826,7 +837,7 @@ const JogoView = ({ cab, sd }) => (
       <div className="mb-6">
         <h3 className="font-semibold text-gray-800 mb-2">📋 Regras</h3>
         <ul className="space-y-1">
-          {sd.regras.map((r, i) => <li key={i} className="text-sm text-gray-700">• {r}</li>)}
+          {sd.regras.map((r, i) => <li key={i} className="text-sm text-gray-700">• <LatexText text={r} /></li>)}
         </ul>
       </div>
     )}
@@ -835,7 +846,7 @@ const JogoView = ({ cab, sd }) => (
       <div className="mb-6">
         <h3 className="font-semibold text-gray-800 mb-2">🔄 Variações</h3>
         <ul className="space-y-1">
-          {sd.variacoes.map((v, i) => <li key={i} className="text-sm text-gray-700">• {v}</li>)}
+          {sd.variacoes.map((v, i) => <li key={i} className="text-sm text-gray-700">• <LatexText text={v} /></li>)}
         </ul>
       </div>
     )}
@@ -844,7 +855,7 @@ const JogoView = ({ cab, sd }) => (
       <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4 mb-6">
         <h3 className="font-semibold text-yellow-900 text-sm mb-1">💡 Dicas para o professor</h3>
         <ul className="space-y-1">
-          {sd.dicas_professor.map((d, i) => <li key={i} className="text-sm text-yellow-800">• {d}</li>)}
+          {sd.dicas_professor.map((d, i) => <li key={i} className="text-sm text-yellow-800">• <LatexText text={d} /></li>)}
         </ul>
       </div>
     )}
@@ -878,10 +889,14 @@ const AtividadeView = ({ cab, sd }) => (
             <span className="font-semibold text-gray-800">Questão {a.numero}</span>
             <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{a.tipo}</span>
           </div>
-          <p className="text-gray-800 mb-2">{a.enunciado}</p>
+          <div className="text-gray-800 mb-2">
+            <LatexText text={a.enunciado} />
+          </div>
           {a.alternativas?.length > 0 && (
             <ul className="space-y-1 ml-4">
-              {a.alternativas.map((alt, i) => <li key={i} className="text-sm text-gray-700">{alt}</li>)}
+              {a.alternativas.map((alt, i) => (
+                <li key={i} className="text-sm text-gray-700"><LatexText text={alt} /></li>
+              ))}
             </ul>
           )}
           {a.espaco_resposta && (
@@ -895,7 +910,7 @@ const AtividadeView = ({ cab, sd }) => (
       <details className="mt-8 bg-green-50 border border-green-100 rounded-lg p-4">
         <summary className="cursor-pointer font-semibold text-green-900 text-sm">✅ Gabarito do professor</summary>
         <ul className="mt-3 space-y-1 text-sm text-green-800">
-          {sd.gabarito_professor.map((g, i) => <li key={i}>{g}</li>)}
+          {sd.gabarito_professor.map((g, i) => <li key={i}><LatexText text={g} /></li>)}
         </ul>
       </details>
     )}
@@ -919,7 +934,8 @@ const InclusaoBloco = ({ inc }) => (
         <ul className="p-4 space-y-1.5">
           {c.estrategias.map((e, j) => (
             <li key={j} className="flex items-start gap-2 text-sm text-gray-700">
-              <span className="text-blue-500 mt-0.5">✓</span><span>{e}</span>
+              <span className="text-blue-500 mt-0.5">✓</span>
+              <span><LatexText text={e} /></span>
             </li>
           ))}
         </ul>
