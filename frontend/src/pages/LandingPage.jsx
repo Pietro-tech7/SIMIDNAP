@@ -18,6 +18,7 @@ import {
   MetricsSection,
   TestimonialsSection,
   ComparisonSection,
+  FounderOfferSection,
   PlansSection,
   GuaranteeSection,
   FAQSection,
@@ -81,6 +82,7 @@ const LandingPage = () => {
       case 'metrics':       return <MetricsSection key={nome} data={data} />;
       case 'testimonials':  return <TestimonialsSection key={nome} data={data} />;
       case 'comparison':    return <ComparisonSection key={nome} data={data} />;
+      case 'founder_offer': return <FounderOfferSection key={nome} data={data} />;
       case 'plans':         return <PlansSection key={nome} data={data} />;
       case 'guarantee':     return <GuaranteeSection key={nome} data={data} />;
       case 'faq':           return <FAQSection key={nome} data={data} />;
