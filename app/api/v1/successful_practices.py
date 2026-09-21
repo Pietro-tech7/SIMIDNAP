@@ -70,6 +70,13 @@ def generate(
     if data.category not in categorias_validas:
         raise HTTPException(status_code=400, detail="Categoria inválida.")
 
+    etapas_validas = ("EI", "EF", "EM")
+    if data.education_stage and data.education_stage not in etapas_validas:
+        raise HTTPException(
+            status_code=400,
+            detail="Etapa de ensino inválida (use 'EI', 'EF' ou 'EM')."
+        )
+
     # ---- Verifica créditos ANTES de gerar ----
     pode, custo = verificar_creditos(
         db,
@@ -91,9 +98,10 @@ def generate(
         title=data.title,
         perfil=data.perfil,
         flow_type=data.flow_type,
-        category=data.category,
         sub_flow=data.sub_flow,
-        # Contexto escolar
+        category=data.category,
+        education_stage=data.education_stage,
+        # Contexto escolar (professor)
         school=data.school,
         city=data.city,
         gre=data.gre,
@@ -101,6 +109,12 @@ def generate(
         subject=data.subject,
         num_alunos=data.num_alunos,
         class_profile=data.class_profile,
+        # Contexto de gestão (coordenador)
+        eixo_atuacao=data.eixo_atuacao,
+        num_professores=data.num_professores,
+        series_impactadas=data.series_impactadas,
+        perfil_equipe=data.perfil_equipe,
+        dados_avaliacoes=data.dados_avaliacoes,
         # Seminário
         seminar_theme=data.seminar_theme,
         # BNCC
@@ -120,11 +134,16 @@ def generate(
         observed_results=data.observed_results,
         culminancia=data.culminancia,
         replicability=data.replicability,
-        # Relato guiado
+        # Relato guiado — fluxos A e B
         what_was_done=data.what_was_done,
         how_it_went=data.how_it_went,
         what_was_noticed=data.what_was_noticed,
         school_context=data.school_context,
+        # Relato guiado — fluxo C
+        goal=data.goal,
+        what_you_imagine=data.what_you_imagine,
+        what_you_expect=data.what_you_expect,
+        # Relato consolidado
         description=data.description,
         # Rede de segurança
         answers=data.answers,

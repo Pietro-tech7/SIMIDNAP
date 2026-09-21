@@ -16,59 +16,77 @@ def generate_practice(
     category: str,
     description: str,
     sub_flow: Optional[str] = None,
+    education_stage: Optional[str] = None,
+    # Contexto escolar (professor)
     school: Optional[str] = None,
     city: Optional[str] = None,
     gre: Optional[str] = None,
     grade: Optional[str] = None,
     subject: Optional[str] = None,
+    num_alunos: Optional[int] = None,
+    class_profile: Optional[str] = None,
+    # Contexto de gestão (coordenador)
+    eixo_atuacao: Optional[str] = None,
+    num_professores: Optional[int] = None,
+    series_impactadas: Optional[str] = None,
+    perfil_equipe: Optional[str] = None,
+    dados_avaliacoes: Optional[Dict[str, Any]] = None,
+    # Seminário
+    seminar_theme: Optional[str] = None,
+    # BNCC
+    bncc_codigo: Optional[str] = None,
+    bncc_texto: Optional[str] = None,
+    # Particularidades da prática
     original_grade: Optional[str] = None,
     target_grade: Optional[str] = None,
     has_special_needs: bool = False,
     duration: Optional[str] = None,
-    num_alunos: Optional[int] = None,
-    # ---- Novos campos ----
-    class_profile: Optional[str] = None,
-    seminar_theme: Optional[str] = None,
-    bncc_codigo: Optional[str] = None,
-    bncc_texto: Optional[str] = None,
+    # Recursos
     resources: Optional[Dict[str, bool]] = None,
     resources_extra: Optional[str] = None,
+    # Histórico e evidências
     already_tried: Optional[str] = None,
     evidences: Optional[str] = None,
     observed_results: Optional[str] = None,
     culminancia: Optional[str] = None,
     replicability: Optional[str] = None,
+    # Relato guiado — fluxos A e B
     what_was_done: Optional[str] = None,
     how_it_went: Optional[str] = None,
     what_was_noticed: Optional[str] = None,
     school_context: Optional[str] = None,
+    # Relato guiado — fluxo C
+    goal: Optional[str] = None,
+    what_you_imagine: Optional[str] = None,
+    what_you_expect: Optional[str] = None,
+    # Rede de segurança
     answers: Optional[Dict[str, Any]] = None,
 ) -> SuccessfulPractice:
     """
     Gera uma prática exitosa via IA e salva no banco.
 
     task_type usado na IA: 'pratica_exitosa'
-    O prompt é montado dinamicamente com base em perfil, fluxo e sub_flow.
+    O prompt é montado dinamicamente com base em perfil, fluxo, etapa de ensino.
     """
     ai = get_ai_service()
 
     answers = answers or {}
     resources = resources or {}
+    dados_avaliacoes = dados_avaliacoes or {}
 
     # ============================================================
     # MONTA O PAYLOAD COMPLETO PARA A IA
-    # Aqui é onde a "mágica" acontece: o payload carrega TODO o
-    # contexto necessário para o Gemini adaptar a resposta.
     # ============================================================
     payload = {
         # Identificação
         "title": title,
-        "perfil": perfil,              # 'professor' | 'coordenador'
-        "flow_type": flow_type,        # 'ja_tenho' | 'criar'
-        "sub_flow": sub_flow,          # 'melhorar' | 'documento' | None
-        "category": category,          # 'educacao_infantil' | 'ciclo_alfabetizacao' | 'gestao_escolar'
+        "perfil": perfil,                      # 'professor' | 'coordenador'
+        "flow_type": flow_type,                # 'ja_tenho' | 'criar'
+        "sub_flow": sub_flow,                  # 'melhorar' | 'documento' | None
+        "category": category,                  # 'educacao_infantil' | 'ciclo_alfabetizacao' | 'gestao_escolar'
+        "education_stage": education_stage,    # 'EI' | 'EF' | 'EM'
 
-        # Contexto escolar
+        # Contexto escolar (professor)
         "school": school,
         "city": city,
         "gre": gre,
@@ -76,6 +94,15 @@ def generate_practice(
         "subject": subject,
         "num_alunos": num_alunos,
         "class_profile": class_profile,
+
+        # Contexto de gestão (coordenador)
+        "eixo_atuacao": eixo_atuacao,
+        "num_professores": num_professores,
+        "series_impactadas": series_impactadas,
+        "perfil_equipe": perfil_equipe,
+
+        # Dados de avaliações externas (SAEPI, IDEB, etc.)
+        "dados_avaliacoes": dados_avaliacoes,
 
         # Seminário / evento
         "seminar_theme": seminar_theme,
@@ -101,11 +128,16 @@ def generate_practice(
         "culminancia": culminancia,
         "replicability": replicability,
 
-        # Relato guiado
+        # Relato guiado — fluxos A e B (já tenho)
         "what_was_done": what_was_done,
         "how_it_went": how_it_went,
         "what_was_noticed": what_was_noticed,
         "school_context": school_context,
+
+        # Relato guiado — fluxo C (criar do zero)
+        "goal": goal,
+        "what_you_imagine": what_you_imagine,
+        "what_you_expect": what_you_expect,
 
         # Relato consolidado (compatibilidade)
         "description": description,
@@ -120,7 +152,7 @@ def generate_practice(
     structured_data = ai.generate_structured(
         task_type="pratica_exitosa",
         payload=payload,
-        diferenciado=False,   # Práticas Exitosas não usam "diferenciado"
+        diferenciado=False,
     )
 
     # ============================================================
