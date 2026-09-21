@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
 
 from ...core.database import get_db
@@ -10,6 +10,7 @@ from ...models.lesson_plan import LessonPlan
 from ...models.reflection import Reflection
 from ...models.material import Material
 from ...models.pedagogical_case import PedagogicalCase
+from ...models.successful_practice import SuccessfulPractice
 from ...schemas.admin import (
     AdminUserOut,
     AdminUserUpdate,
@@ -18,6 +19,9 @@ from ...schemas.admin import (
     AdminTrocarPlano,
     AdminMetricsOut,
     AdminUsageLogOut,
+    AdminContentItem,
+    AdminContentList,
+    AdminContentDetail,
 )
 from ...services.subscription_service import PLANOS
 from ...core.security import decode_token
@@ -211,6 +215,7 @@ def delete_user(
     db.query(Reflection).filter(Reflection.user_id == user.id).delete()
     db.query(Material).filter(Material.user_id == user.id).delete()
     db.query(PedagogicalCase).filter(PedagogicalCase.user_id == user.id).delete()
+    db.query(SuccessfulPractice).filter(SuccessfulPractice.user_id == user.id).delete()
     db.delete(user)
     db.commit()
     return None
@@ -232,7 +237,6 @@ def add_credits(
 
     sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
 
-    # Se não existir assinatura, cria uma trial
     if not sub:
         sub = Subscription(
             user_id=user.id,
@@ -301,7 +305,6 @@ def change_plan(
 
     plano_info = PLANOS[data.plano]
 
-    # Valor em décimos
     if data.creditos_total is not None:
         creditos_decimos = int(data.creditos_total * 10)
     else:
@@ -310,7 +313,6 @@ def change_plan(
     sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
 
     if sub:
-        # Atualiza a assinatura existente
         sub.plan = data.plano
         sub.status = "active"
         sub.credits_total = creditos_decimos
@@ -318,7 +320,6 @@ def change_plan(
         sub.period_start = datetime.utcnow()
         sub.period_end = datetime.utcnow() + timedelta(days=30)
     else:
-        # Cria nova assinatura
         sub = Subscription(
             user_id=user.id,
             plan=data.plano,
@@ -360,3 +361,242 @@ def list_usage(
             created_at=log.created_at,
         ))
     return resultado
+
+
+# ============================================================
+# CONTEÚDOS GERADOS POR USUÁRIO (visor do super admin)
+# ============================================================
+@router.get("/users/{user_id}/content", response_model=AdminContentList)
+def list_user_content(
+    user_id: str,
+    content_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """
+    Lista todos os conteúdos gerados por um usuário.
+    Opcionalmente filtra por content_type:
+    'pratica_exitosa' | 'material' | 'neuroaula' | 'aula_que_funciona' | 'reflection' | 'pedagogical_case'
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    items: List[AdminContentItem] = []
+
+    # ---- Práticas Exitosas ----
+    if not content_type or content_type == "pratica_exitosa":
+        for p in db.query(SuccessfulPractice).filter(
+            SuccessfulPractice.user_id == user_id
+        ).order_by(SuccessfulPractice.created_at.desc()).all():
+            subtitulo_partes = [p.flow_type, p.category]
+            if p.grade:
+                subtitulo_partes.append(p.grade)
+            items.append(AdminContentItem(
+                id=p.id,
+                content_type="pratica_exitosa",
+                title=p.title,
+                subtitle=" • ".join([str(x) for x in subtitulo_partes if x]),
+                created_at=p.created_at,
+            ))
+
+    # ---- Materiais ----
+    if not content_type or content_type == "material":
+        for m in db.query(Material).filter(
+            Material.user_id == user_id
+        ).order_by(Material.created_at.desc()).all():
+            subtitulo_partes = [m.material_type]
+            if m.grade:
+                subtitulo_partes.append(m.grade)
+            if m.subject:
+                subtitulo_partes.append(m.subject)
+            items.append(AdminContentItem(
+                id=m.id,
+                content_type="material",
+                title=m.title,
+                subtitle=" • ".join([str(x) for x in subtitulo_partes if x]),
+                created_at=m.created_at,
+            ))
+
+    # ---- Lesson Plans (neuroaula / aula_que_funciona) ----
+    if not content_type or content_type in ("neuroaula", "aula_que_funciona"):
+        q = db.query(LessonPlan).filter(LessonPlan.user_id == user_id)
+        if content_type:
+            q = q.filter(LessonPlan.plan_type == content_type)
+        for lp in q.order_by(LessonPlan.created_at.desc()).all():
+            subtitulo_partes = [lp.plan_type]
+            if lp.grade:
+                subtitulo_partes.append(lp.grade)
+            if lp.subject:
+                subtitulo_partes.append(lp.subject)
+            items.append(AdminContentItem(
+                id=lp.id,
+                content_type=lp.plan_type,  # 'neuroaula' ou 'aula_que_funciona'
+                title=lp.title,
+                subtitle=" • ".join([str(x) for x in subtitulo_partes if x]),
+                created_at=lp.created_at,
+            ))
+
+    # ---- Reflections (Terapia Pedagógica) ----
+    if not content_type or content_type == "reflection":
+        for r in db.query(Reflection).filter(
+            Reflection.user_id == user_id
+        ).order_by(Reflection.created_at.desc()).all():
+            n_msgs = len(r.messages or [])
+            items.append(AdminContentItem(
+                id=r.id,
+                content_type="reflection",
+                title=r.title,
+                subtitle=f"{r.theme or 'sem tema'} • {n_msgs} mensagens",
+                created_at=r.created_at,
+            ))
+
+    # ---- Pedagogical Cases (Meu Aluno / Situação Pedagógica) ----
+    if not content_type or content_type == "pedagogical_case":
+        for pc in db.query(PedagogicalCase).filter(
+            PedagogicalCase.user_id == user_id
+        ).order_by(PedagogicalCase.created_at.desc()).all():
+            subtitulo_partes = []
+            if pc.grade:
+                subtitulo_partes.append(pc.grade)
+            if pc.subject:
+                subtitulo_partes.append(pc.subject)
+            items.append(AdminContentItem(
+                id=pc.id,
+                content_type="pedagogical_case",
+                title=pc.title,
+                subtitle=" • ".join([str(x) for x in subtitulo_partes if x]) or "situação pedagógica",
+                created_at=pc.created_at,
+            ))
+
+    # Ordena por data (mais recente primeiro)
+    items.sort(key=lambda x: x.created_at, reverse=True)
+
+    # Contagem por tipo
+    counts: dict = {}
+    for it in items:
+        counts[it.content_type] = counts.get(it.content_type, 0) + 1
+
+    return AdminContentList(items=items, total=len(items), counts=counts)
+
+
+@router.get("/content/{content_type}/{content_id}", response_model=AdminContentDetail)
+def get_content_detail(
+    content_type: str,
+    content_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Retorna o conteúdo completo de um item específico."""
+    tipos_validos = ("pratica_exitosa", "material", "neuroaula", "aula_que_funciona", "reflection", "pedagogical_case")
+    if content_type not in tipos_validos:
+        raise HTTPException(status_code=400, detail=f"Tipo inválido. Use: {tipos_validos}")
+
+    # ---- Práticas Exitosas ----
+    if content_type == "pratica_exitosa":
+        item = db.query(SuccessfulPractice).filter(SuccessfulPractice.id == content_id).first()
+        if not item:
+            raise HTTPException(status_code=404, detail="Conteúdo não encontrado.")
+        return AdminContentDetail(
+            id=item.id,
+            content_type=content_type,
+            title=item.title,
+            created_at=item.created_at,
+            data={
+                "perfil": item.perfil,
+                "flow_type": item.flow_type,
+                "sub_flow": item.sub_flow,
+                "category": item.category,
+                "school": item.school,
+                "city": item.city,
+                "gre": item.gre,
+                "grade": item.grade,
+                "subject": item.subject,
+                "num_alunos": item.num_alunos,
+                "has_special_needs": item.has_special_needs,
+                "duration": item.duration,
+                "description": item.description,
+                "structured_data": item.structured_data,
+            },
+        )
+
+    # ---- Materiais ----
+    if content_type == "material":
+        item = db.query(Material).filter(Material.id == content_id).first()
+        if not item:
+            raise HTTPException(status_code=404, detail="Conteúdo não encontrado.")
+        return AdminContentDetail(
+            id=item.id,
+            content_type=content_type,
+            title=item.title,
+            created_at=item.created_at,
+            data={
+                "material_type": item.material_type,
+                "subject": item.subject,
+                "grade": item.grade,
+                "content": item.content,
+                "diferenciado": item.diferenciado,
+                "structured_data": item.structured_data,
+            },
+        )
+
+    # ---- Lesson Plans ----
+    if content_type in ("neuroaula", "aula_que_funciona"):
+        item = db.query(LessonPlan).filter(LessonPlan.id == content_id).first()
+        if not item:
+            raise HTTPException(status_code=404, detail="Conteúdo não encontrado.")
+        return AdminContentDetail(
+            id=item.id,
+            content_type=content_type,
+            title=item.title,
+            created_at=item.created_at,
+            data={
+                "plan_type": item.plan_type,
+                "subject": item.subject,
+                "grade": item.grade,
+                "content": item.content,
+                "objective": item.objective,
+                "structured_data": item.structured_data,
+            },
+        )
+
+    # ---- Reflections ----
+    if content_type == "reflection":
+        item = db.query(Reflection).filter(Reflection.id == content_id).first()
+        if not item:
+            raise HTTPException(status_code=404, detail="Conteúdo não encontrado.")
+        return AdminContentDetail(
+            id=item.id,
+            content_type=content_type,
+            title=item.title,
+            created_at=item.created_at,
+            data={
+                "theme": item.theme,
+                "messages": item.messages,
+                "summary": item.summary,
+            },
+        )
+
+    # ---- Pedagogical Cases ----
+    if content_type == "pedagogical_case":
+        item = db.query(PedagogicalCase).filter(PedagogicalCase.id == content_id).first()
+        if not item:
+            raise HTTPException(status_code=404, detail="Conteúdo não encontrado.")
+        return AdminContentDetail(
+            id=item.id,
+            content_type=content_type,
+            title=item.title,
+            created_at=item.created_at,
+            data={
+                "grade": item.grade,
+                "subject": item.subject,
+                "description": item.description,
+                "frequencia": item.frequencia,
+                "situacoes": item.situacoes,
+                "reacao_aluno": item.reacao_aluno,
+                "ja_tentou": item.ja_tentou,
+                "contexto_adicional": item.contexto_adicional,
+                "analysis": item.analysis,
+                "notes": item.notes,
+            },
+        )

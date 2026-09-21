@@ -16,6 +16,7 @@ import PraticasExitosas from './pages/PraticasExitosas';
 import Perfil from './pages/Perfil';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
+import AdminUserDetail from './pages/AdminUserDetail';
 import AdminPerfil from './pages/AdminPerfil';
 import AdminLogin from './pages/AdminLogin';
 import AdminAnnouncements from './pages/AdminAnnouncements';
@@ -103,6 +104,7 @@ function AppRoutes() {
       >
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />
         <Route path="/admin/banners" element={<AdminBanners />} />
         <Route path="/admin/perfil" element={<AdminPerfil />} />

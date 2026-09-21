@@ -75,3 +75,34 @@ class AdminUsageLogOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ============================================================
+# CONTEÚDO GERADO PELO USUÁRIO (visor do super admin)
+# ============================================================
+class AdminContentItem(BaseModel):
+    """Resumo de um conteúdo gerado por um usuário."""
+    id: UUID
+    content_type: str       # 'pratica_exitosa' | 'material' | 'lesson_plan' | 'reflection' | 'pedagogical_case'
+    title: str
+    subtitle: Optional[str] = None  # resumo curto (ex: 'criar | professor' ou 'simulado | 9º ano')
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AdminContentList(BaseModel):
+    """Lista de todos os conteúdos de um usuário."""
+    items: List[AdminContentItem]
+    total: int
+    counts: Dict[str, int] = {}  # ex: {'pratica_exitosa': 5, 'material': 12, ...}
+
+
+class AdminContentDetail(BaseModel):
+    """Conteúdo completo de um item específico."""
+    id: UUID
+    content_type: str
+    title: str
+    created_at: datetime
+    data: Dict[str, Any]  # payload completo (structured_data, messages, analysis, etc.)

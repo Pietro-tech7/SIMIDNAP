@@ -51,6 +51,10 @@ const AdminUsers = () => {
     setModalAberto(false);
   };
 
+  const verConteudo = (u) => {
+    navigate(`/admin/users/${u.id}`);
+  };
+
   const executarAcao = async (acao) => {
     setAcaoEmAndamento(true);
     try {
@@ -229,12 +233,21 @@ const AdminUsers = () => {
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <button
-                        onClick={() => abrirModal(u)}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        Gerenciar →
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => verConteudo(u)}
+                          className="text-teal-600 hover:text-teal-800 font-medium whitespace-nowrap"
+                          title="Ver tudo que este usuário criou"
+                        >
+                          👁️ Ver conteúdo
+                        </button>
+                        <button
+                          onClick={() => abrirModal(u)}
+                          className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                        >
+                          Gerenciar →
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -294,6 +307,15 @@ const AdminUsers = () => {
                 <h3 className="text-sm font-semibold text-gray-800 mb-3">Ações</h3>
 
                 <div className="space-y-2">
+                  <ActionButton
+                    onClick={() => verConteudo(usuarioSelecionado)}
+                    disabled={acaoEmAndamento}
+                    icone="👁️"
+                    titulo="Ver conteúdo gerado"
+                    descricao="Ver tudo que este usuário criou no sistema"
+                    cor="teal"
+                  />
+
                   <ActionButton
                     onClick={handleAdicionarCreditos}
                     disabled={acaoEmAndamento}
@@ -373,6 +395,7 @@ const ActionButton = ({ onClick, disabled, icone, titulo, descricao, cor }) => {
     purple: 'bg-purple-50 hover:bg-purple-100 border-purple-100 text-purple-900',
     yellow: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-100 text-yellow-900',
     red: 'bg-red-50 hover:bg-red-100 border-red-100 text-red-900',
+    teal: 'bg-teal-50 hover:bg-teal-100 border-teal-100 text-teal-900',
   };
 
   return (
