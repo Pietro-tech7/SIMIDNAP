@@ -69,6 +69,8 @@ const Layout = () => {
     { path: '/modulo/aula_que_funciona', label: 'Aula que Funciona', icon: '🎯' },
     { path: '/modulo/meu_aluno', label: 'Meu Aluno', icon: '📊' },
     { path: '/modulo/ia_para_professor', label: 'Gerador de Materiais', icon: '📄' },
+    { path: '/modulo/praticas_exitosas', label: 'Práticas Exitosas', icon: '🏆' },
+    { path: '/modulo/banco_questoes', label: 'Banco de Questões', icon: '📚' },
   ];
 
   const handleLogout = () => {
@@ -85,6 +87,12 @@ const Layout = () => {
     }
     if (path === '/modulo/meu_aluno') {
       return location.pathname === path || location.pathname.startsWith('/meu-aluno');
+    }
+    if (path === '/modulo/praticas_exitosas') {
+      return location.pathname === path || location.pathname.startsWith('/praticas-exitosas');
+    }
+    if (path === '/modulo/banco_questoes') {
+      return location.pathname === path || location.pathname.startsWith('/banco-questoes');
     }
     return location.pathname === path;
   };
