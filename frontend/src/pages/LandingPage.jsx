@@ -8,6 +8,7 @@ import {
   CredibilitySection,
   ProblemSection,
   SolutionSection,
+  FounderSection,
   VideoSection,
   HowItWorksSection,
 } from '../components/landing/LandingSectionsPart1';
@@ -74,6 +75,7 @@ const LandingPage = () => {
       case 'credibility':   return <CredibilitySection key={nome} data={data} />;
       case 'problem':       return <ProblemSection key={nome} data={data} />;
       case 'solution':      return <SolutionSection key={nome} data={data} />;
+      case 'founder':       return <FounderSection key={nome} data={data} />;
       case 'video':         return <VideoSection key={nome} data={data} />;
       case 'how_it_works':  return <HowItWorksSection key={nome} data={data} />;
       case 'metrics':       return <MetricsSection key={nome} data={data} />;

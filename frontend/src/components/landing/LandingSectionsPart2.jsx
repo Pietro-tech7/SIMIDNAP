@@ -1,27 +1,38 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { VideoEmbed } from './LandingSectionsPart1';
 
 // ============================================================
-// METRICS
+// METRICS — Cards brancos sobre fundo azul (estilo Isaac)
 // ============================================================
 export const MetricsSection = ({ data }) => {
   if (!data.metrics?.length) return null;
 
   return (
-    <section className="py-20 md:py-24 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
+    <section id="metrics" className="py-20 md:py-28 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
       <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
       <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl" />
 
       <div className="relative max-w-6xl mx-auto px-4 md:px-6">
         <div className="text-center mb-14">
+          <span className="inline-block bg-white/20 text-white text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
+            Nossos números
+          </span>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{data.title}</h2>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
           {data.metrics.map((m, i) => (
-            <div key={i} className="text-center">
-              <p className="text-4xl md:text-5xl font-bold text-white mb-2">{m.value}</p>
-              <p className="text-sm text-blue-100 leading-snug">{m.label}</p>
+            <div
+              key={i}
+              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition transform hover:-translate-y-1"
+            >
+              <p className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 text-center">
+                {m.value}
+              </p>
+              <p className="text-sm text-gray-600 text-center leading-snug">
+                {m.label}
+              </p>
             </div>
           ))}
         </div>
@@ -32,16 +43,23 @@ export const MetricsSection = ({ data }) => {
 
 
 // ============================================================
-// TESTIMONIALS
+// TESTIMONIALS — Foto grande + quote (estilo Isaac)
 // ============================================================
 export const TestimonialsSection = ({ data }) => {
-  // Se não houver depoimentos cadastrados, esconde a seção
-  if (!data.testimonials?.length) {
+  const [testemunhalAtivo, setTestemunhalAtivo] = useState(0);
+
+  // Se não há depoimentos, mostra apenas o destaque (foto + vídeo) ou placeholder
+  const temDestaque = data.image || data.video_url;
+  const temTestemunhos = data.testimonials?.length > 0;
+
+  // Caso 1: Sem foto de destaque e sem depoimentos → placeholder
+  if (!temDestaque && !temTestemunhos) {
     return (
-      <section className="py-20 md:py-28 bg-white">
+      <section id="testimonials" className="py-20 md:py-28 bg-white">
         <div className="max-w-6xl mx-auto px-4 md:px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
+            {data.subtitle && <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>}
           </div>
           <div className="text-center bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-12 max-w-2xl mx-auto">
             <p className="text-5xl mb-3">💬</p>
@@ -54,39 +72,147 @@ export const TestimonialsSection = ({ data }) => {
     );
   }
 
+  // Caso 2: Tem foto de destaque (estilo Isaac) — foto grande + quote ao lado
+  if (temDestaque) {
+    return (
+      <section id="testimonials" className="py-20 md:py-28 bg-white">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
+          <div className="text-center mb-14">
+            <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
+              Depoimentos
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
+            {data.subtitle && <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
+            {/* Foto grande à esquerda */}
+            <div className="lg:col-span-2">
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl aspect-[3/4] bg-gradient-to-br from-blue-100 to-purple-100">
+                {data.image ? (
+                  <>
+                    <img
+                      src={data.image}
+                      alt="Professor(a) destaque"
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Play button overlay */}
+                    {data.video_url && (
+                      <a
+                        href={data.video_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition"
+                      >
+                        <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center shadow-2xl">
+                          <svg className="w-10 h-10 text-blue-600 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </div>
+                      </a>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-blue-700">
+                    <span className="text-8xl mb-3">🎤</span>
+                    <span className="text-sm font-medium opacity-70">Foto do depoimento</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quote à direita */}
+            <div className="lg:col-span-3 bg-blue-50 rounded-3xl p-8 md:p-10">
+              {data.testimonials?.[0] && (
+                <>
+                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-4">
+                    {data.testimonials[0].school || 'Depoimento'}
+                  </p>
+                  <blockquote className="text-xl md:text-2xl text-gray-800 leading-relaxed mb-6">
+                    "{data.testimonials[0].text}"
+                  </blockquote>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
+                      {data.testimonials[0].name?.charAt(0) || '?'}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">{data.testimonials[0].name}</p>
+                      <p className="text-sm text-gray-600">{data.testimonials[0].school}</p>
+                    </div>
+                  </div>
+                  {data.video_url && (
+                    <a
+                      href={data.video_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                      Assistir ao depoimento
+                    </a>
+                  )}
+                </>
+              )}
+
+              {/* Se tem imagem mas não tem depoimento textual */}
+              {!data.testimonials?.[0] && (
+                <div className="text-center py-8">
+                  <p className="text-5xl mb-3">💬</p>
+                  <p className="text-gray-500">Depoimento em breve.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Outros depoimentos em cards abaixo */}
+          {data.testimonials?.length > 1 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-12">
+              {data.testimonials.slice(1).map((t, i) => (
+                <div key={i} className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm">
+                      {t.name?.charAt(0) || '?'}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
+                      <p className="text-xs text-gray-500">{t.school}</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 text-sm leading-relaxed italic">"{t.text}"</p>
+                  <div className="text-yellow-500 text-sm mt-3">★★★★★</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  // Caso 3: Só tem depoimentos em cards (sem foto destaque)
   return (
-    <section className="py-20 md:py-28 bg-white">
+    <section id="testimonials" className="py-20 md:py-28 bg-white">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
+          {data.subtitle && <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {data.testimonials.map((t, i) => (
-            <div
-              key={i}
-              className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-md transition"
-            >
+            <div key={i} className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-md transition">
               <div className="flex items-center gap-3 mb-4">
-                {t.photo ? (
-                  <img
-                    src={t.photo}
-                    alt={t.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
-                    {t.name?.charAt(0) || '?'}
-                  </div>
-                )}
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
+                  {t.name?.charAt(0) || '?'}
+                </div>
                 <div>
                   <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
-                  <p className="text-xs text-gray-500">{t.school || t.info || ''}</p>
+                  <p className="text-xs text-gray-500">{t.school}</p>
                 </div>
               </div>
-              <p className="text-gray-700 text-sm leading-relaxed italic">
-                "{t.text}"
-              </p>
+              <p className="text-gray-700 text-sm leading-relaxed italic">"{t.text}"</p>
               <div className="text-yellow-500 text-sm mt-3">★★★★★</div>
             </div>
           ))}
@@ -102,7 +228,7 @@ export const TestimonialsSection = ({ data }) => {
 // ============================================================
 export const ComparisonSection = ({ data }) => {
   return (
-    <section className="py-20 md:py-28 bg-gray-50">
+    <section id="comparison" className="py-20 md:py-28 bg-gray-50">
       <div className="max-w-5xl mx-auto px-4 md:px-6">
         <div className="text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
@@ -194,7 +320,7 @@ const PLANOS_FIXOS = [
 
 export const PlansSection = ({ data }) => {
   return (
-    <section className="py-20 md:py-28 bg-gradient-to-b from-gray-50 to-white">
+    <section id="plans" className="py-20 md:py-28 bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
@@ -202,7 +328,7 @@ export const PlansSection = ({ data }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {PLANOS_FIXOS.map((p, i) => (
+          {PLANOS_FIXOS.map((p) => (
             <div
               key={p.codigo}
               className={`relative rounded-2xl p-6 border-2 transition flex flex-col ${
@@ -241,7 +367,7 @@ export const PlansSection = ({ data }) => {
               </ul>
 
               <Link
-                to={p.trial ? '/register' : '/register'}
+                to="/register"
                 className={`block text-center font-semibold py-2.5 rounded-lg transition ${
                   p.destaque
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -270,7 +396,7 @@ export const PlansSection = ({ data }) => {
 // ============================================================
 export const GuaranteeSection = ({ data }) => {
   return (
-    <section className="py-16 md:py-20 bg-white">
+    <section id="guarantee" className="py-16 md:py-20 bg-white">
       <div className="max-w-4xl mx-auto px-4 md:px-6">
         <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-8 md:p-12 text-center">
           <div className="text-5xl mb-4">🛡️</div>
@@ -293,40 +419,82 @@ export const GuaranteeSection = ({ data }) => {
 
 
 // ============================================================
-// FAQ
+// FAQ — 2 colunas (estilo Isaac)
 // ============================================================
 export const FAQSection = ({ data }) => {
   const [aberto, setAberto] = useState(null);
 
   return (
-    <section className="py-20 md:py-28 bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 md:px-6">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
-        </div>
+    <section id="faq" className="py-20 md:py-28 bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-16 items-start">
+          {/* Coluna esquerda — Título + Foto */}
+          <div className="lg:col-span-2">
+            <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
+              Perguntas frequentes
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+              {data.title}
+            </h2>
+            {data.subtitle && (
+              <p className="text-lg text-gray-600 mb-6">
+                {data.subtitle}{' '}
+                <a href="mailto:contato@simidnape.com.br" className="text-blue-600 hover:underline font-medium">
+                  Entre em contato conosco.
+                </a>
+              </p>
+            )}
 
-        <div className="space-y-3">
-          {data.items?.map((f, i) => (
-            <div
-              key={i}
-              className="border border-gray-200 rounded-xl overflow-hidden bg-white hover:border-gray-300 transition"
-            >
-              <button
-                onClick={() => setAberto(aberto === i ? null : i)}
-                className="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-              >
-                <span className="font-semibold text-gray-900 pr-4">{f.question}</span>
-                <span className={`text-2xl text-gray-400 flex-shrink-0 transition-transform ${aberto === i ? 'rotate-45' : ''}`}>
-                  +
-                </span>
-              </button>
-              {aberto === i && (
-                <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
-                  <p className="text-gray-700 leading-relaxed">{f.answer}</p>
-                </div>
-              )}
+            {/* Foto */}
+            <div className="hidden lg:block mt-8">
+              <div className="rounded-3xl overflow-hidden shadow-xl aspect-square max-w-sm bg-gradient-to-br from-blue-100 to-purple-100">
+                {data.image ? (
+                  <img
+                    src={data.image}
+                    alt="Professora"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-blue-700">
+                    <span className="text-8xl mb-3">👩‍🏫</span>
+                    <span className="text-sm font-medium opacity-70">Foto da professora</span>
+                  </div>
+                )}
+              </div>
             </div>
-          ))}
+          </div>
+
+          {/* Coluna direita — Accordion */}
+          <div className="lg:col-span-3">
+            <div className="space-y-3">
+              {data.items?.map((f, i) => (
+                <div
+                  key={i}
+                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-gray-300 transition"
+                >
+                  <button
+                    onClick={() => setAberto(aberto === i ? null : i)}
+                    className="w-full text-left px-5 py-4 flex items-center gap-4 hover:bg-gray-50 transition"
+                  >
+                    <span className="text-2xl font-bold text-blue-600 flex-shrink-0">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="font-semibold text-gray-900 flex-1">
+                      {f.question}
+                    </span>
+                    <span className={`text-2xl text-gray-400 flex-shrink-0 transition-transform ${aberto === i ? 'rotate-45' : ''}`}>
+                      +
+                    </span>
+                  </button>
+                  {aberto === i && (
+                    <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
+                      <p className="text-gray-700 leading-relaxed pl-10">{f.answer}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -339,7 +507,7 @@ export const FAQSection = ({ data }) => {
 // ============================================================
 export const FinalCTASection = ({ data }) => {
   return (
-    <section className="py-20 md:py-28 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
+    <section id="final_cta" className="py-20 md:py-28 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
       <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
       <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl" />
 
@@ -374,7 +542,15 @@ export const FooterSection = ({ data }) => {
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div className="md:col-span-2">
-            <h3 className="text-2xl font-bold text-white mb-2">SIMIDNAPE PRO</h3>
+            <h3 className="text-2xl font-bold text-white mb-1">SIMIDNAPE PRO</h3>
+            <p className="text-sm bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent font-semibold mb-3">
+              O Professor Inesquecível
+            </p>
+            {data.brand_explanation && (
+              <p className="text-xs text-gray-500 leading-relaxed mb-4">
+                {data.brand_explanation}
+              </p>
+            )}
             <p className="text-sm text-gray-400 leading-relaxed max-w-md">
               O assistente pedagógico diário do professor brasileiro.
               Construído com base em neuroeducação, ciência da aprendizagem e respeito à autonomia docente.
@@ -411,7 +587,7 @@ export const FooterSection = ({ data }) => {
         </div>
 
         <div className="border-t border-gray-800 pt-6 text-center text-xs">
-          <p>{data.copyright_text || '© 2025 SIMIDNAPE PRO. Todos os direitos reservados.'}</p>
+          <p>{data.copyright_text || '© 2025 SIMIDNAPE PRO — O Professor Inesquecível. Todos os direitos reservados.'}</p>
         </div>
       </div>
     </footer>
@@ -420,41 +596,23 @@ export const FooterSection = ({ data }) => {
 
 
 // ============================================================
-// POPUP (opcional)
+// POPUP
 // ============================================================
 export const PopupSection = ({ data }) => {
+  const [visivel, setVisivel] = useState(false);
   const [fechado, setFechado] = useState(false);
 
   React.useEffect(() => {
     if (!data.enabled || fechado) return;
-
-    // Verifica se já foi mostrado nesta sessão
-    if (data.show_once_per_user) {
-      const jaMostrado = sessionStorage.getItem('popup_landing_shown');
-      if (jaMostrado) return;
-    }
+    if (data.show_once_per_user && sessionStorage.getItem('popup_landing_shown')) return;
 
     const timer = setTimeout(() => {
-      setFechado(false); // garante que vai abrir
+      setVisivel(true);
       sessionStorage.setItem('popup_landing_shown', '1');
     }, (data.delay_seconds || 5) * 1000);
 
     return () => clearTimeout(timer);
   }, [data.enabled, data.delay_seconds, data.show_once_per_user, fechado]);
-
-  const [visivel, setVisivel] = useState(false);
-
-  React.useEffect(() => {
-    if (!data.enabled) return;
-    if (data.show_once_per_user && sessionStorage.getItem('popup_landing_shown_visible')) return;
-
-    const timer = setTimeout(() => {
-      setVisivel(true);
-      sessionStorage.setItem('popup_landing_shown_visible', '1');
-    }, (data.delay_seconds || 5) * 1000);
-
-    return () => clearTimeout(timer);
-  }, [data.enabled, data.delay_seconds, data.show_once_per_user]);
 
   if (!data.enabled || !visivel || fechado) return null;
 
