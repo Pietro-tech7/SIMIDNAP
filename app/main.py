@@ -20,6 +20,7 @@ from .models import (  # noqa: F401
     successful_practice,
     question_bank,
     landing_config,
+    landing_asset,
 )
 
 

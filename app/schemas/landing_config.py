@@ -10,22 +10,20 @@ from datetime import datetime
 
 class HeroSection(BaseModel):
     enabled: bool = True
-    badge: str = "🇧🇷 Feito por professor, para professor"
-    brand_line: str = "SIMIDNAPE PRO — O Professor Inesquecível"
+    badge: str = "🇧🇷 Feito por quem conhece sala de aula"
+    brand_line: str = "SIMIDNAPE PRO · O Professor Inesquecível"
     headline: str = "Torne-se O Professor Inesquecível que seus alunos vão lembrar para sempre."
     subheadline: str = (
-        "O SIMIDNAPE PRO é o copiloto pedagógico com IA que transforma sua prática diária "
-        "em aulas que engajam, materiais que funcionam e resultados que aparecem no SAEPI, IDEB e ENEM."
+        "O SIMIDNAPE PRO é o único assistente pedagógico criado por quem conhece sala de aula. "
+        "Sete motores de IA que transformam planejamento, materiais e simulados em minutos — "
+        "alinhados à BNCC e focados em SAEPI, IDEB e ENEM."
     )
     cta_primary_text: str = "Quero ser O Professor Inesquecível"
     cta_primary_link: str = "/register"
-    cta_secondary_text: str = "Ver demonstração"
+    cta_secondary_text: str = "Ver como funciona"
     cta_secondary_video_url: str = ""
-    video_enabled: bool = True
-    video_url: str = ""
-    hero_image: str = ""  # URL da foto principal (lado direito do hero)
-    bg_image: str = ""    # URL da imagem de fundo (opcional)
-    # 3 badges flutuantes sobre a foto (estilo Isaac)
+    hero_image: str = ""
+    bg_image: str = ""
     float_badges: List[Dict[str, str]] = Field(default_factory=lambda: [
         {"icon": "⚡", "title": "Planos em minutos", "subtitle": "Não em horas"},
         {"icon": "🎯", "title": "Alinhado à BNCC", "subtitle": "SAEPI, IDEB e ENEM"},
@@ -33,50 +31,68 @@ class HeroSection(BaseModel):
     ])
     metrics: List[Dict[str, str]] = Field(default_factory=lambda: [
         {"value": "7", "label": "motores de IA"},
-        {"value": "3.000+", "label": "questões ENEM"},
+        {"value": "3.000+", "label": "questões oficiais"},
         {"value": "5", "label": "créditos grátis"},
     ])
+    video_enabled: bool = True
+    video_url: str = ""
 
 
 class CredibilityBarSection(BaseModel):
     enabled: bool = True
-    items: List[str] = Field(default_factory=lambda: [
-        "Alinhado à BNCC",
-        "Foco em SAEPI, IDEB e ENEM",
-        "Banco com 3.000+ questões oficiais",
-        "Pagamento via Pix e cartão",
+    items: List[Dict[str, str]] = Field(default_factory=lambda: [
+        {
+            "icon": "🎯",
+            "title": "Alinhado à BNCC",
+            "description": "Toda geração segue habilidades reais do currículo.",
+        },
+        {
+            "icon": "🇧🇷",
+            "title": "Foco em SAEPI, IDEB e ENEM",
+            "description": "Prepara o aluno para as provas que importam.",
+        },
+        {
+            "icon": "📚",
+            "title": "Banco com 3.000+ questões",
+            "description": "Simulados oficiais do ENEM em 2 cliques.",
+        },
+        {
+            "icon": "💳",
+            "title": "Pix e cartão, cancele quando quiser",
+            "description": "Pagamento instantâneo, sem burocracia.",
+        },
     ])
 
 
 class ProblemSection(BaseModel):
     enabled: bool = True
-    title: str = "Você reconhece essa rotina?"
-    subtitle: str = "Você não entrou na educação para passar domingos inteiros planejando aula."
+    title: str = "Todo domingo é a mesma história?"
+    subtitle: str = "Você não escolheu a educação para virar noite planejando aula."
     image: str = ""
     cards: List[Dict[str, str]] = Field(default_factory=lambda: [
         {
             "icon": "😩",
-            "title": "Domingo inteiro planejando aula",
-            "description": "Você deveria estar descansando, mas está criando plano de aula para a segunda-feira.",
+            "title": "O domingo que você perde planejando",
+            "description": "Enquanto a família almoça, você está na frente do computador escrevendo plano de aula.",
         },
         {
-            "icon": "⏰",
-            "title": "Sem tempo para material diferenciado",
-            "description": "A inclusão é lei, mas criar duas versões do mesmo material consome horas que você não tem.",
+            "icon": "👁️",
+            "title": "O aluno que você não consegue alcançar",
+            "description": "Você percebe que ele travou, mas não sabe o que fazer diferente.",
         },
         {
             "icon": "📝",
-            "title": "Simulado do ENEM dá trabalho demais",
-            "description": "Procurar questão por questão, montar prova, gabarito... horas de trabalho braçal.",
+            "title": "O simulado que ninguém quer montar",
+            "description": "Procurar questão por questão consome a energia que deveria ir para ensinar.",
         },
     ])
-    transition_text: str = "O SIMIDNAPE PRO foi feito para mudar isso."
+    transition_text: str = "O SIMIDNAPE PRO nasceu para devolver ao professor o que ele mais precisa: tempo."
 
 
 class SolutionSection(BaseModel):
     enabled: bool = True
-    title: str = "7 motores de IA em um só lugar"
-    subtitle: str = "Cada motor resolve uma dor específica do professor. Todos alinhados à BNCC e focados em resultados."
+    title: str = "Sete motores. Um copiloto pedagógico."
+    subtitle: str = "Cada motor resolve uma dor real. Juntos, cobrem todo o ciclo: pensar → planejar → agir → observar → melhorar."
     image: str = ""
     motors: List[Dict[str, Any]] = Field(default_factory=lambda: [
         {
@@ -163,18 +179,32 @@ class FounderSection(BaseModel):
     enabled: bool = True
     title: str = "Uma palavra do criador"
     name: str = "Darilson Cornélio"
-    subtitle: str = "Psicanalista, Educador e Criador do SIMIDNAPE"
+    subtitle: str = "Educador há 18+ anos · Psicanalista · Criador da palestra 'O Professor Inesquecível'"
     photo: str = ""
     quote: str = "Ensinar não é transferir conhecimento — é criar marcas que ficam para a vida."
     bio: str = (
-        "Criei o SIMIDNAPE porque vi professores brilhantes sendo consumidos por um sistema "
-        "que não os apoia. Este não é um gerador de textos genérico. É um copiloto pedagógico "
-        "que respeita a sua autonomia e fortalece a sua prática."
+        "Darilson Cornélio é educador há mais de 18 anos, com uma trajetória que une "
+        "tecnologia, neurociência e desenvolvimento humano.\n\n"
+        "Formado em Ciência da Computação pela Universidade Federal do Piauí, decidiu se "
+        "aprofundar na educação — pós-graduou-se em Neuropsicopedagogia Clínica, Neuroeducação "
+        "e Coaching Educacional, além de atuar como Psicanalista.\n\n"
+        "Há mais de 6 anos, percorre o Brasil ministrando a palestra 'O Professor Inesquecível', "
+        "onde já impactou mais de 3.500 profissionais da educação em 23 municípios. Na palestra, "
+        "trabalha temas como missão de vida, burnout docente, dificuldades emocionais e a tristeza "
+        "profunda que muitos professores carregam calados.\n\n"
+        "O SIMIDNAPE PRO nasceu dessa escuta: anos ouvindo professores contarem sobre suas dores, "
+        "suas dificuldades e, principalmente, sobre o que os faz continuar. É um sistema feito "
+        "por quem está no chão da escola, não por quem vê a educação de longe."
     )
+    highlight_stats: List[Dict[str, str]] = Field(default_factory=lambda: [
+        {"value": "18+", "label": "anos em educação"},
+        {"value": "3.500+", "label": "profissionais impactados"},
+        {"value": "23", "label": "municípios visitados"},
+    ])
     brand_explanation: str = (
         "SIMIDNAPE significa Sistema Municipal Integral de Desenvolvimento da Neuroaprendizagem "
-        "e Performance Educacional. Nasceu como um projeto de rede pública e evoluiu para o "
-        "assistente pedagógico do professor brasileiro — O Professor Inesquecível."
+        "e Performance Educacional. Nasceu como projeto de rede pública. Virou assistente pedagógico "
+        "do professor brasileiro. Hoje é O Professor Inesquecível."
     )
     video_url: str = ""
 
@@ -188,30 +218,30 @@ class VideoSection(BaseModel):
 
 class HowItWorksSection(BaseModel):
     enabled: bool = True
-    title: str = "Como funciona"
-    subtitle: str = "Do zero ao material pronto em minutos."
+    title: str = "Comece em 3 passos"
+    subtitle: str = "Do cadastro ao primeiro material pronto em menos de 5 minutos."
     steps: List[Dict[str, str]] = Field(default_factory=lambda: [
         {
             "number": "1",
-            "title": "Crie sua conta",
-            "description": "Grátis, com 5 créditos para testar. Sem cartão de crédito.",
+            "title": "Crie sua conta grátis",
+            "description": "Cinco créditos na hora, sem cartão. Você já pode testar todos os motores.",
         },
         {
             "number": "2",
-            "title": "Escolha seu motor",
-            "description": "NeuroAula, Materiais, Banco de Questões — você escolhe por onde começar.",
+            "title": "Escolha o motor certo",
+            "description": "Planejar aula? Gerar simulado? Documentar prática? Você escolhe por onde começar.",
         },
         {
             "number": "3",
             "title": "Gere, adapte e baixe",
-            "description": "Documentos prontos, alinhados à BNCC e formatados profissionalmente em PDF.",
+            "description": "Documentos prontos, alinhados à BNCC, formatados em PDF profissional para imprimir.",
         },
     ])
 
 
 class MetricsSection(BaseModel):
     enabled: bool = True
-    title: str = "Resultados que falam por si"
+    title: str = "Números que reforçam a missão"
     metrics: List[Dict[str, str]] = Field(default_factory=lambda: [
         {"value": "2 min", "label": "para gerar um plano de aula"},
         {"value": "3.000+", "label": "questões oficiais do ENEM"},
@@ -223,7 +253,7 @@ class MetricsSection(BaseModel):
 class TestimonialsSection(BaseModel):
     enabled: bool = True
     title: str = "Histórias reais, resultados concretos"
-    subtitle: str = "Professores reais contam como o SIMIDNAPE PRO mudou a rotina deles."
+    subtitle: str = "Professores que usam o SIMIDNAPE PRO contam como ele mudou a rotina."
     image: str = ""
     video_url: str = ""
     testimonials: List[Dict[str, str]] = Field(default_factory=list)
@@ -231,20 +261,38 @@ class TestimonialsSection(BaseModel):
 
 class ComparisonSection(BaseModel):
     enabled: bool = True
-    title: str = "Por que o SIMIDNAPE PRO não é um ChatGPT"
+    title: str = "Por que o SIMIDNAPE PRO não é só mais um ChatGPT"
     columns: List[str] = Field(default_factory=lambda: [
         "SIMIDNAPE PRO",
         "ChatGPT",
-        "Planejar manualmente",
+        "Planejar no braço",
     ])
     rows: List[Dict[str, Any]] = Field(default_factory=lambda: [
         {"feature": "Alinhado à BNCC", "values": ["✅", "⚠️", "✅"]},
-        {"feature": "Banco de Questões ENEM", "values": ["✅", "❌", "❌"]},
-        {"feature": "Material Diferenciado (inclusivo)", "values": ["✅", "⚠️", "❌"]},
+        {"feature": "Banco com 3.000+ questões ENEM", "values": ["✅", "❌", "❌"]},
+        {"feature": "Material diferenciado inclusivo", "values": ["✅", "⚠️", "❌"]},
         {"feature": "Práticas Exitosas para seminários", "values": ["✅", "❌", "⚠️"]},
-        {"feature": "Específico para professores brasileiros", "values": ["✅", "❌", "⚠️"]},
+        {"feature": "Feito para o professor brasileiro", "values": ["✅", "❌", "⚠️"]},
         {"feature": "Pagamento em reais via Pix", "values": ["✅", "❌", "—"]},
+        {"feature": "Sem precisar criar prompt", "values": ["✅", "❌", "—"]},
     ])
+
+
+class FounderOfferSection(BaseModel):
+    """Oferta de Fundador — urgência real e preço travado."""
+    enabled: bool = True
+    badge: str = "🎁 Oferta de Fundador"
+    title: str = "Os primeiros 100 assinantes travam o preço para sempre."
+    description: str = (
+        "Os 100 primeiros que assinarem o plano Padrão pagam R$ 14,90/mês (em vez de R$ 19,90) "
+        "para sempre. Sem reajuste, sem pegadinha. É nosso obrigado por confiar antes de todos."
+    )
+    price_normal: str = "R$ 19,90"
+    price_founder: str = "R$ 14,90"
+    spots_total: int = 100
+    spots_remaining: int = 87
+    cta_text: str = "Quero garantir minha vaga"
+    cta_link: str = "/register"
 
 
 class PlansSection(BaseModel):
@@ -255,52 +303,56 @@ class PlansSection(BaseModel):
 
 class GuaranteeSection(BaseModel):
     enabled: bool = True
-    title: str = "Garantia total"
+    title: str = "Risco zero para você"
     items: List[str] = Field(default_factory=lambda: [
-        "Comece grátis — sem cartão de crédito",
-        "Cancele a qualquer momento, sem multa",
-        "Pagamento seguro via Mercado Pago",
-        "Suporte por e-mail e WhatsApp",
+        "Comece grátis — 5 créditos, sem cartão de crédito",
+        "Cancele a qualquer momento, sem multa e sem burocracia",
+        "Pagamento seguro processado pelo Mercado Pago",
+        "Suporte humano por e-mail e WhatsApp",
     ])
 
 
 class FAQSection(BaseModel):
     enabled: bool = True
-    title: str = "Ficou com alguma dúvida?"
+    title: str = "Ainda tem dúvida?"
     subtitle: str = "Entre em contato conosco."
     image: str = ""
     items: List[Dict[str, str]] = Field(default_factory=lambda: [
         {
             "question": "O que é o SIMIDNAPE PRO?",
-            "answer": "É um assistente pedagógico com 7 motores de inteligência artificial para professores e coordenadores da educação básica brasileira. Alinhado à BNCC e focado em resultados (SAEPI, IDEB, ENEM). O nome vem de Sistema Municipal Integral de Desenvolvimento da Neuroaprendizagem e Performance Educacional.",
+            "answer": "É o assistente pedagógico com 7 motores de IA criado por quem conhece sala de aula. Alinhado à BNCC e focado em resultados (SAEPI, IDEB, ENEM). O nome vem de Sistema Municipal Integral de Desenvolvimento da Neuroaprendizagem e Performance Educacional.",
         },
         {
-            "question": "Preciso saber usar IA?",
-            "answer": "Não. O sistema é guiado por perguntas simples. Você responde e a IA gera o conteúdo.",
+            "question": "Preciso saber usar IA ou criar prompts?",
+            "answer": "Não. Você responde perguntas guiadas em português e a IA gera o conteúdo. Não precisa saber nada de tecnologia.",
         },
         {
-            "question": "Funciona para Ensino Médio?",
-            "answer": "Sim. O SIMIDNAPE PRO atende Educação Infantil, Ensino Fundamental e Ensino Médio, com categorias e competências específicas para cada etapa.",
+            "question": "Funciona para Ensino Médio, Fundamental e Infantil?",
+            "answer": "Sim. O SIMIDNAPE PRO atende as três etapas, com categorias, competências e linguagem específicas para cada uma. Tudo alinhado à BNCC.",
         },
         {
             "question": "Como funciona o pagamento?",
-            "answer": "Você pode assinar via Pix (instantâneo) ou cartão de crédito/débito. Começa com 5 créditos grátis. Depois escolhe o plano mensal (Básico, Padrão ou Avançado) ou compra créditos avulsos.",
+            "answer": "Assinatura via Pix (instantâneo) ou cartão de crédito/débito. Você começa com 5 créditos grátis. Depois escolhe o plano mensal (Básico, Padrão ou Avançado) ou compra créditos avulsos — que não expiram.",
         },
         {
             "question": "Posso cancelar quando quiser?",
-            "answer": "Sim, sem burocracia. Basta clicar em 'Cancelar' na página Minha Assinatura.",
+            "answer": "Sim, sem burocracia. Basta clicar em 'Cancelar' na página Minha Assinatura. Você mantém o acesso até o fim do ciclo já pago.",
         },
         {
-            "question": "Os materiais são alinhados à BNCC?",
-            "answer": "Sim. Todas as gerações consideram habilidades BNCC específicas. E o Banco de Questões é 100% baseado em provas oficiais do ENEM.",
+            "question": "Os materiais saem prontos para imprimir?",
+            "answer": "Sim. Tudo é entregue em PDF profissional, com cabeçalho da sua escola e formatação pronta para imprimir ou compartilhar.",
+        },
+        {
+            "question": "O sistema é seguro para os meus dados?",
+            "answer": "Sim. Seguimos a LGPD. Senhas criptografadas, comunicação HTTPS e nenhum dado de aluno é armazenado. Você pode excluir sua conta a qualquer momento.",
         },
     ])
 
 
 class FinalCTASection(BaseModel):
     enabled: bool = True
-    headline: str = "Torne-se O Professor Inesquecível na vida dos seus alunos."
-    subheadline: str = "Comece agora com 5 créditos grátis. Sem cartão de crédito. Sem compromisso."
+    headline: str = "Você pode continuar ensinando como sempre. Ou se tornar O Professor Inesquecível."
+    subheadline: str = "Comece agora com 5 créditos grátis. Sem cartão. Sem compromisso. Cancele quando quiser."
     cta_text: str = "Criar minha conta grátis"
     cta_link: str = "/register"
 
@@ -322,11 +374,11 @@ class FooterSection(BaseModel):
 
 class PopupSection(BaseModel):
     enabled: bool = False
-    title: str = "Oferta especial"
-    message: str = "Ganhe 10 créditos bônus na primeira assinatura!"
+    title: str = "Oferta de Fundador"
+    message: str = "Os 100 primeiros travam o preço para sempre. Restam poucas vagas."
     cta_text: str = "Ver planos"
     cta_link: str = "/register"
-    delay_seconds: int = 5
+    delay_seconds: int = 8
     show_once_per_user: bool = True
 
 
@@ -345,6 +397,7 @@ class LandingConfigSchema(BaseModel):
         "metrics",
         "testimonials",
         "comparison",
+        "founder_offer",
         "plans",
         "guarantee",
         "faq",
@@ -359,7 +412,7 @@ class LandingConfigSchema(BaseModel):
     )
 
     primary_color: str = "#2563eb"
-    accent_color: str = "#7c3aed"
+    accent_color: str = "#0f172a"
 
     hero: HeroSection = Field(default_factory=HeroSection)
     credibility: CredibilityBarSection = Field(default_factory=CredibilityBarSection)
@@ -371,6 +424,7 @@ class LandingConfigSchema(BaseModel):
     metrics: MetricsSection = Field(default_factory=MetricsSection)
     testimonials: TestimonialsSection = Field(default_factory=TestimonialsSection)
     comparison: ComparisonSection = Field(default_factory=ComparisonSection)
+    founder_offer: FounderOfferSection = Field(default_factory=FounderOfferSection)
     plans: PlansSection = Field(default_factory=PlansSection)
     guarantee: GuaranteeSection = Field(default_factory=GuaranteeSection)
     faq: FAQSection = Field(default_factory=FAQSection)
