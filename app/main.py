@@ -18,6 +18,7 @@ from .models import (  # noqa: F401
     announcement,
     banner,
     successful_practice,
+    question_bank,
 )
 
 
