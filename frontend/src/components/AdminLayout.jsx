@@ -7,11 +7,12 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-    const menuItems = [
+  const menuItems = [
     { path: '/admin', label: 'Dashboard', icon: '📊' },
     { path: '/admin/users', label: 'Usuários', icon: '👥' },
     { path: '/admin/announcements', label: 'Recados', icon: '📢' },
     { path: '/admin/banners', label: 'Banners', icon: '🎨' },
+    { path: '/admin/landing', label: 'Landing Page', icon: '🖼️' },
     { path: '/admin/perfil', label: 'Meu Perfil', icon: '👤' },
   ];
 
@@ -20,7 +21,12 @@ const AdminLayout = () => {
     navigate('/login');
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    // Para o Dashboard, só ativa se for exatamente /admin
+    if (path === '/admin') return location.pathname === '/admin';
+    // Para os outros, ativa em qualquer sub-rota
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -91,17 +97,17 @@ const AdminLayout = () => {
       </div>
 
       {/* Mobile nav bottom */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-20 flex">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-20 flex overflow-x-auto">
         {menuItems.map(item => (
           <Link
             key={item.path}
             to={item.path}
-            className={`flex-1 text-center py-3 text-xs font-medium ${
+            className={`flex-1 min-w-[70px] text-center py-3 text-xs font-medium ${
               isActive(item.path) ? 'text-red-400' : 'text-gray-400'
             }`}
           >
             <div className="text-lg">{item.icon}</div>
-            <div>{item.label}</div>
+            <div className="truncate px-1">{item.label}</div>
           </Link>
         ))}
       </div>
