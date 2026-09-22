@@ -13,6 +13,7 @@ Credenciais (env):
 
 import os
 import time
+import uuid
 import requests
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
@@ -50,6 +51,7 @@ PACOTES_CREDITOS = {
 # HELPERS
 # ============================================================
 def _headers() -> Dict[str, str]:
+    """Headers padrão (GET, consultas)."""
     token = os.getenv("MERCADOPAGO_ACCESS_TOKEN")
     if not token:
         raise Exception("MERCADOPAGO_ACCESS_TOKEN não configurado.")
@@ -57,6 +59,16 @@ def _headers() -> Dict[str, str]:
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
+
+
+def _headers_post() -> Dict[str, str]:
+    """
+    Headers para POST (criação de pagamento/preferência/assinatura).
+    Inclui o X-Idempotency-Key obrigatório para evitar duplicidade.
+    """
+    headers = _headers()
+    headers["X-Idempotency-Key"] = str(uuid.uuid4())
+    return headers
 
 
 def _montar_external_reference(user_id: str, tipo: str, item: str) -> str:
@@ -96,7 +108,7 @@ def create_pix_subscription(db: Session, user: User, plan: str) -> Dict[str, Any
         "statement_descriptor": "SIMIDNAPE",
     }
 
-    resp = requests.post(f"{MP_BASE}/v1/payments", json=body, headers=_headers(), timeout=30)
+    resp = requests.post(f"{MP_BASE}/v1/payments", json=body, headers=_headers_post(), timeout=30)
     if resp.status_code not in (200, 201):
         raise Exception(f"Erro Mercado Pago ({resp.status_code}): {resp.text}")
 
@@ -152,7 +164,7 @@ def create_pix_credits(db: Session, user: User, package: str) -> Dict[str, Any]:
         "statement_descriptor": "SIMIDNAPE",
     }
 
-    resp = requests.post(f"{MP_BASE}/v1/payments", json=body, headers=_headers(), timeout=30)
+    resp = requests.post(f"{MP_BASE}/v1/payments", json=body, headers=_headers_post(), timeout=30)
     if resp.status_code not in (200, 201):
         raise Exception(f"Erro Mercado Pago ({resp.status_code}): {resp.text}")
 
@@ -273,7 +285,7 @@ def create_subscription_checkout(db: Session, user: User, plan: str) -> Dict[str
         "status": "pending",
     }
 
-    resp = requests.post(f"{MP_BASE}/preapproval", json=body, headers=_headers(), timeout=30)
+    resp = requests.post(f"{MP_BASE}/preapproval", json=body, headers=_headers_post(), timeout=30)
     if resp.status_code not in (200, 201):
         raise Exception(f"Erro Mercado Pago ({resp.status_code}): {resp.text}")
 
@@ -330,7 +342,7 @@ def create_credits_checkout(db: Session, user: User, package: str) -> Dict[str, 
         "statement_descriptor": "SIMIDNAPE",
     }
 
-    resp = requests.post(f"{MP_BASE}/checkout/preferences", json=body, headers=_headers(), timeout=30)
+    resp = requests.post(f"{MP_BASE}/checkout/preferences", json=body, headers=_headers_post(), timeout=30)
     if resp.status_code not in (200, 201):
         raise Exception(f"Erro Mercado Pago ({resp.status_code}): {resp.text}")
 
