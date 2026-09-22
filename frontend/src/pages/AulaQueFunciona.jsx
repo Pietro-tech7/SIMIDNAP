@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
+import FeedbackCard from '../components/FeedbackCard';
 
 const AulaQueFunciona = () => {
   const [form, setForm] = useState({
@@ -86,248 +87,262 @@ const AulaQueFunciona = () => {
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto">
-      <Link to="/modulo/aula_que_funciona" className="text-blue-600 text-sm hover:underline">
-        ← Voltar
-      </Link>
+      <div className="print:hidden">
+        <Link to="/modulo/aula_que_funciona" className="text-blue-600 text-sm hover:underline">
+          ← Voltar
+        </Link>
 
-      <div className="mt-6 mb-8 flex items-center gap-3">
-        <span className="text-4xl">🎯</span>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Aula que Funciona</h1>
-          <p className="text-gray-600">
-            Script prático de execução. Roteiro minuto a minuto, pronto para aplicar em sala.
-          </p>
+        <div className="mt-6 mb-8 flex items-center gap-3">
+          <span className="text-4xl">🎯</span>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Aula que Funciona</h1>
+            <p className="text-gray-600">
+              Script prático de execução. Roteiro minuto a minuto, pronto para aplicar em sala.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="bg-cyan-50 border border-cyan-100 rounded-xl p-5 mb-8">
-        <h2 className="text-sm font-semibold text-cyan-900 mb-2">
-          ⚡ O que este módulo entrega
-        </h2>
-        <ul className="text-sm text-cyan-800 space-y-1">
-          <li>• Um <strong>roteiro cronometrado</strong> com falas, ações e perguntas exatas.</li>
-          <li>• Um <strong>checklist de materiais</strong> antes de começar.</li>
-          <li>• Adaptações inclusivas automáticas para alunos com necessidades específicas.</li>
-          <li>• Opção de gerar <strong>aula diferenciada</strong> (versão principal + versão adaptada).</li>
-          <li>• Foco total em <strong>execução</strong> — você pega e aplica.</li>
-        </ul>
-      </div>
+        <div className="bg-cyan-50 border border-cyan-100 rounded-xl p-5 mb-8">
+          <h2 className="text-sm font-semibold text-cyan-900 mb-2">
+            ⚡ O que este módulo entrega
+          </h2>
+          <ul className="text-sm text-cyan-800 space-y-1">
+            <li>• Um <strong>roteiro cronometrado</strong> com falas, ações e perguntas exatas.</li>
+            <li>• Um <strong>checklist de materiais</strong> antes de começar.</li>
+            <li>• Adaptações inclusivas automáticas para alunos com necessidades específicas.</li>
+            <li>• Opção de gerar <strong>aula diferenciada</strong> (versão principal + versão adaptada).</li>
+            <li>• Foco total em <strong>execução</strong> — você pega e aplica.</li>
+          </ul>
+        </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Título da aula *</label>
-            <input
-              type="text" name="title" value={form.title} onChange={handleChange} required
-              placeholder="Ex: Ciclo da água"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Disciplina</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Título da aula *</label>
               <input
-                type="text" name="subject" value={form.subject} onChange={handleChange}
-                placeholder="Ex: Ciências"
+                type="text" name="title" value={form.title} onChange={handleChange} required
+                placeholder="Ex: Ciclo da água"
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Série/Ano</label>
-              <input
-                type="text" name="grade" value={form.grade} onChange={handleChange}
-                placeholder="Ex: 4º ano"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duração (min)</label>
-              <input
-                type="number" name="duracao_minutos" value={form.duracao_minutos} onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Conteúdo *</label>
-            <input
-              type="text" name="content" value={form.content} onChange={handleChange} required
-              placeholder="Ex: Ciclo da água"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Objetivo (opcional)</label>
-            <textarea
-              name="objective" value={form.objective} onChange={handleChange} rows="2"
-              placeholder="Ex: Reconhecer as etapas do ciclo da água"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-
-          <div className="border-t border-gray-100 pt-4">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">📖 Habilidade BNCC</h3>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Código BNCC (digite se souber — ex: EF04CI04)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={form.bncc_codigo}
-                  onChange={(e) => setForm({ ...form, bncc_codigo: e.target.value.toUpperCase(), bncc_texto: '' })}
-                  placeholder="EF04CI04"
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                />
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!form.bncc_codigo) return;
-                    try {
-                      const res = await api.get(`/bncc/habilidades/${form.bncc_codigo}`);
-                      if (res.data?.texto) {
-                        setForm(f => ({ ...f, bncc_texto: res.data.texto }));
-                      } else {
-                        setForm(f => ({ ...f, bncc_texto: 'Código não encontrado na BNCC.' }));
-                      }
-                    } catch {
-                      setForm(f => ({ ...f, bncc_texto: 'Código não encontrado na BNCC.' }));
-                    }
-                  }}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium px-4 py-2 rounded-lg border border-gray-300 transition"
-                >
-                  Buscar
-                </button>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Componente</label>
-                <select
-                  value={codigoComponente}
-                  onChange={(e) => setCodigoComponente(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                >
-                  <option value="">Selecione...</option>
-                  {componentes.map(c => (
-                    <option key={c.codigo} value={c.codigo}>{c.nome}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ano (1 a 9)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Disciplina</label>
                 <input
-                  type="number" min="1" max="9"
-                  value={anoNumero}
-                  onChange={(e) => setAnoNumero(e.target.value)}
-                  placeholder="Ex: 4"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  type="text" name="subject" value={form.subject} onChange={handleChange}
+                  placeholder="Ex: Ciências"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Habilidade</label>
-                <select
-                  value={form.bncc_codigo}
-                  onChange={handleSelecionarHabilidade}
-                  disabled={!habilidades.length}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 disabled:bg-gray-100"
-                >
-                  <option value="">
-                    {loadingHabilidades ? 'Carregando...' : habilidades.length === 0 ? 'Nenhuma habilidade disponível' : 'Selecione...'}
-                  </option>
-                  {habilidades.map(h => (
-                    <option key={h.codigo} value={h.codigo}>
-                      {h.codigo} — {h.texto?.substring(0, 80)}...
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {form.bncc_texto && (
-              <p className="mt-3 text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded p-2">
-                <strong>{form.bncc_codigo}:</strong> {form.bncc_texto}
-              </p>
-            )}
-          </div>
-
-          <div className="border-t border-gray-100 pt-4">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">👥 Perfil da Turma</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nº de alunos</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Série/Ano</label>
                 <input
-                  type="number" name="num_alunos" value={form.num_alunos} onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  type="text" name="grade" value={form.grade} onChange={handleChange}
+                  placeholder="Ex: 4º ano"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Conhecimentos prévios da turma</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Duração (min)</label>
                 <input
-                  type="text" name="conhecimentos_previos" value={form.conhecimentos_previos} onChange={handleChange}
-                  placeholder="Ex: Já conhecem os estados físicos da água"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  type="number" name="duracao_minutos" value={form.duracao_minutos} onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
             </div>
 
-            <div className="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-4">
-              <label className="block text-sm font-semibold text-blue-900 mb-1">
-                🧩 Alunos com necessidades específicas (opcional)
-              </label>
-              <p className="text-xs text-blue-700 mb-2">
-                Informe apenas necessidades <strong>pedagógicas</strong>. Exemplos:
-                "2 alunos autistas", "1 aluno com TDAH", "1 aluno com dislexia".
-                O sistema <strong>não realiza diagnósticos</strong> — apenas adapta a aula pedagogicamente.
-              </p>
-              <textarea
-                name="dificuldades" value={form.dificuldades} onChange={handleChange} rows="2"
-                placeholder="Ex: 2 alunos autistas, 1 aluno com TDAH"
-                className="w-full border border-blue-200 rounded-lg px-4 py-2 bg-white"
-              />
-            </div>
-          </div>
-
-          {/* Aula Diferenciada */}
-          <div className="border-t border-gray-100 pt-4">
-            <label className="flex items-start gap-3 bg-cyan-50 border border-cyan-100 rounded-lg p-4 cursor-pointer">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Conteúdo *</label>
               <input
-                type="checkbox"
-                checked={diferenciado}
-                onChange={(e) => setDiferenciado(e.target.checked)}
-                className="mt-0.5 w-5 h-5 text-cyan-600 rounded focus:ring-cyan-500"
+                type="text" name="content" value={form.content} onChange={handleChange} required
+                placeholder="Ex: Ciclo da água"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
-              <div>
-                <div className="text-sm font-semibold text-cyan-900">
-                  📑 Aula diferenciada
-                </div>
-                <div className="text-xs text-cyan-700 mt-1">
-                  Gera <strong>dois scripts</strong>: um principal (para a turma toda) e um adaptado
-                  (com blocos mais curtos, instruções simples, apoio visual).
-                  <strong> Consome 2 créditos</strong> em vez de 1.
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Objetivo (opcional)</label>
+              <textarea
+                name="objective" value={form.objective} onChange={handleChange} rows="2"
+                placeholder="Ex: Reconhecer as etapas do ciclo da água"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+            </div>
+
+            <div className="border-t border-gray-100 pt-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">📖 Habilidade BNCC</h3>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Código BNCC (digite se souber — ex: EF04CI04)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={form.bncc_codigo}
+                    onChange={(e) => setForm({ ...form, bncc_codigo: e.target.value.toUpperCase(), bncc_texto: '' })}
+                    placeholder="EF04CI04"
+                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!form.bncc_codigo) return;
+                      try {
+                        const res = await api.get(`/bncc/habilidades/${form.bncc_codigo}`);
+                        if (res.data?.texto) {
+                          setForm(f => ({ ...f, bncc_texto: res.data.texto }));
+                        } else {
+                          setForm(f => ({ ...f, bncc_texto: 'Código não encontrado na BNCC.' }));
+                        }
+                      } catch {
+                        setForm(f => ({ ...f, bncc_texto: 'Código não encontrado na BNCC.' }));
+                      }
+                    }}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium px-4 py-2 rounded-lg border border-gray-300 transition"
+                  >
+                    Buscar
+                  </button>
                 </div>
               </div>
-            </label>
-          </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Componente</label>
+                  <select
+                    value={codigoComponente}
+                    onChange={(e) => setCodigoComponente(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  >
+                    <option value="">Selecione...</option>
+                    {componentes.map(c => (
+                      <option key={c.codigo} value={c.codigo}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ano (1 a 9)</label>
+                  <input
+                    type="number" min="1" max="9"
+                    value={anoNumero}
+                    onChange={(e) => setAnoNumero(e.target.value)}
+                    placeholder="Ex: 4"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Habilidade</label>
+                  <select
+                    value={form.bncc_codigo}
+                    onChange={handleSelecionarHabilidade}
+                    disabled={!habilidades.length}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 disabled:bg-gray-100"
+                  >
+                    <option value="">
+                      {loadingHabilidades ? 'Carregando...' : habilidades.length === 0 ? 'Nenhuma habilidade disponível' : 'Selecione...'}
+                    </option>
+                    {habilidades.map(h => (
+                      <option key={h.codigo} value={h.codigo}>
+                        {h.codigo} — {h.texto?.substring(0, 80)}...
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-300 text-white font-semibold px-6 py-2.5 rounded-lg transition"
-          >
-            {loading ? 'Preparando script...' : 'Gerar script de execução'}
-          </button>
-        </form>
+              {form.bncc_texto && (
+                <p className="mt-3 text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded p-2">
+                  <strong>{form.bncc_codigo}:</strong> {form.bncc_texto}
+                </p>
+              )}
+            </div>
+
+            <div className="border-t border-gray-100 pt-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">👥 Perfil da Turma</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nº de alunos</label>
+                  <input
+                    type="number" name="num_alunos" value={form.num_alunos} onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Conhecimentos prévios da turma</label>
+                  <input
+                    type="text" name="conhecimentos_previos" value={form.conhecimentos_previos} onChange={handleChange}
+                    placeholder="Ex: Já conhecem os estados físicos da água"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-4">
+                <label className="block text-sm font-semibold text-blue-900 mb-1">
+                  🧩 Alunos com necessidades específicas (opcional)
+                </label>
+                <p className="text-xs text-blue-700 mb-2">
+                  Informe apenas necessidades <strong>pedagógicas</strong>. Exemplos:
+                  "2 alunos autistas", "1 aluno com TDAH", "1 aluno com dislexia".
+                  O sistema <strong>não realiza diagnósticos</strong> — apenas adapta a aula pedagogicamente.
+                </p>
+                <textarea
+                  name="dificuldades" value={form.dificuldades} onChange={handleChange} rows="2"
+                  placeholder="Ex: 2 alunos autistas, 1 aluno com TDAH"
+                  className="w-full border border-blue-200 rounded-lg px-4 py-2 bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 pt-4">
+              <label className="flex items-start gap-3 bg-cyan-50 border border-cyan-100 rounded-lg p-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={diferenciado}
+                  onChange={(e) => setDiferenciado(e.target.checked)}
+                  className="mt-0.5 w-5 h-5 text-cyan-600 rounded focus:ring-cyan-500"
+                />
+                <div>
+                  <div className="text-sm font-semibold text-cyan-900">
+                    📑 Aula diferenciada
+                  </div>
+                  <div className="text-xs text-cyan-700 mt-1">
+                    Gera <strong>dois scripts</strong>: um principal (para a turma toda) e um adaptado
+                    (com blocos mais curtos, instruções simples, apoio visual).
+                    <strong> Consome 2 créditos</strong> em vez de 1.
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-300 text-white font-semibold px-6 py-2.5 rounded-lg transition"
+            >
+              {loading ? 'Preparando script...' : 'Gerar script de execução'}
+            </button>
+          </form>
+        </div>
       </div>
 
-      {result && <ScriptExecucao data={result} />}
+      {result && (
+        <div id="aula-conteudo">
+          <ScriptExecucao data={result} />
+        </div>
+      )}
+
+      {/* Feedback (fora do PDF) */}
+      {result && (
+        <FeedbackCard
+          content_type="aula_que_funciona"
+          content_id={result.id}
+          initialFeedback={result.structured_data?.feedback || null}
+        />
+      )}
     </div>
   );
 };
@@ -413,7 +428,7 @@ const ScriptDiferenciado = ({ cab, sd }) => {
     <div className="space-y-6">
       <CabecalhoAula cab={cab} />
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 print:hidden">
         <button
           onClick={() => setAba('principal')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition ${

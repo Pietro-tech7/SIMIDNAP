@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { gerarPDF } from '../utils/pdf';
 import LatexText from '../components/LatexText';
+import FeedbackCard from '../components/FeedbackCard';
 
 const GeradorMateriais = () => {
   const [tipo, setTipo] = useState('atividade_imprimivel');
@@ -393,6 +394,15 @@ const GeradorMateriais = () => {
         <div id="material-conteudo" className="print:max-w-full">
           <MaterialResultado data={result} />
         </div>
+      )}
+
+      {/* Feedback (fora do PDF) */}
+      {result && (
+        <FeedbackCard
+          content_type="material"
+          content_id={result.id}
+          initialFeedback={result.structured_data?.feedback || null}
+        />
       )}
     </div>
   );

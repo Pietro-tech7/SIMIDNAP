@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
+import FeedbackCard from '../components/FeedbackCard';
 
 const MeuAluno = () => {
   const [view, setView] = useState('lista'); // 'lista', 'form', 'resultado'
@@ -39,7 +40,8 @@ const MeuAluno = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      const url = `http://localhost:8000/api/v1/pedagogical-cases/${id}/analyze/stream`;
+      const baseUrl = api.defaults.baseURL || 'http://localhost:8000/api/v1';
+      const url = `${baseUrl}/pedagogical-cases/${id}/analyze/stream`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -301,14 +303,21 @@ const MeuAluno = () => {
   // ========================================================
   if (view === 'resultado' && casoAtual) {
     return (
-      <ResultadoAnalise
-        caso={casoAtual}
-        onVoltar={() => { setView('lista'); carregar(); }}
-      />
+      <>
+        <ResultadoAnalise
+          caso={casoAtual}
+          onVoltar={() => { setView('lista'); carregar(); }}
+        />
+        <div className="max-w-4xl mx-auto px-6 md:px-8 pb-8">
+          <FeedbackCard
+            content_type="pedagogical_case"
+            content_id={casoAtual.id}
+            initialFeedback={casoAtual.analysis?.feedback || null}
+          />
+        </div>
+      </>
     );
   }
-
-  return null;
 };
 
 // ============================================================
