@@ -48,22 +48,25 @@ const Register = () => {
   };
 
   const benefits = [
-    '5 motores de IA pedagógica em um só lugar',
+    '7 motores de IA pedagógica em um só lugar',
     '5 créditos grátis para testar (sem cartão)',
+    'Banco com 3.000+ questões oficiais do ENEM',
+    'Alinhado à BNCC, SAEPI, IDEB e ENEM',
     'Planos a partir de R$ 9,90/mês',
     'Cancele quando quiser, sem multa',
-    'Feito para professores brasileiros (BNCC)',
   ];
 
   return (
     <div className="min-h-screen flex bg-white">
       {/* Coluna esquerda — marca + benefícios */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-12 flex-col justify-between text-white relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-700 via-indigo-700 to-purple-700 p-12 flex-col justify-between text-white relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-32 -left-16 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl" />
 
         <div className="relative z-10">
-          <h1 className="text-3xl font-bold tracking-tight">SIMIDNAPE</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            SIMIDNAPE <span className="text-blue-200">PRO</span>
+          </h1>
           <p className="text-sm text-blue-100 mt-1">O Professor Inesquecível</p>
         </div>
 
@@ -72,7 +75,7 @@ const Register = () => {
             Transforme suas aulas com inteligência pedagógica.
           </h2>
           <p className="text-blue-100 text-lg mb-10">
-            Crie sua conta em 1 minuto e comece a usar os 5 motores de IA feitos para professores.
+            Crie sua conta em 1 minuto e comece a usar os 7 motores de IA feitos para professores.
           </p>
 
           <ul className="space-y-4">
@@ -90,7 +93,7 @@ const Register = () => {
         </div>
 
         <p className="relative z-10 text-xs text-blue-200">
-          © {new Date().getFullYear()} SIMIDNAPE — Sistema Municipal Integral de Desenvolvimento da Neuroaprendizagem e Performance Educacional
+          © {new Date().getFullYear()} SIMIDNAPE PRO — Sistema Municipal Integral de Desenvolvimento da Neuroaprendizagem e Performance Educacional
         </p>
       </div>
 
@@ -98,7 +101,7 @@ const Register = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-gray-50">
         <div className="w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
-            <h1 className="text-3xl font-bold text-blue-600">SIMIDNAPE</h1>
+            <h1 className="text-3xl font-bold text-blue-600">SIMIDNAPE <span className="text-purple-600">PRO</span></h1>
             <p className="text-xs text-gray-500 mt-1 italic">O Professor Inesquecível</p>
           </div>
 
