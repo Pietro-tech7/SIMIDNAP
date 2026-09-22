@@ -7,6 +7,7 @@ import {
   HeroSection,
   CredibilitySection,
   ProblemSection,
+  BeforeAfterSection,
   SolutionSection,
   FounderSection,
   VideoSection,
@@ -75,6 +76,7 @@ const LandingPage = () => {
       case 'hero':          return <HeroSection key={nome} data={data} />;
       case 'credibility':   return <CredibilitySection key={nome} data={data} />;
       case 'problem':       return <ProblemSection key={nome} data={data} />;
+      case 'before_after':  return <BeforeAfterSection key={nome} data={data} />;
       case 'solution':      return <SolutionSection key={nome} data={data} />;
       case 'founder':       return <FounderSection key={nome} data={data} />;
       case 'video':         return <VideoSection key={nome} data={data} />;

@@ -158,20 +158,31 @@ export const HeroSection = ({ data }) => {
 
 
 // ============================================================
-// CREDIBILITY — 4 cards com ícone + título + descrição
+// CREDIBILITY — 4 mini-cards com números (prova social)
 // ============================================================
 export const CredibilitySection = ({ data }) => {
   if (!data.items?.length) return null;
 
   return (
-    <section id="credibility" className="bg-gray-900 py-14">
+    <section id="credibility" className="bg-gray-900 py-12 md:py-16">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {data.items.map((item, i) => (
-            <div key={i} className="text-center sm:text-left">
-              <div className="text-3xl mb-3">{item.icon}</div>
-              <h3 className="text-base font-bold text-white mb-1.5">{item.title}</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">{item.description}</p>
+            <div key={i} className="text-center lg:text-left">
+              {/* Número grande */}
+              <p className="text-4xl md:text-5xl font-bold text-white mb-2 leading-none">
+                {item.title}
+              </p>
+              {/* Rótulo curto */}
+              <p className="text-xs md:text-sm text-blue-300 font-semibold uppercase tracking-wider mb-2">
+                {item.description}
+              </p>
+              {/* Detalhe extra */}
+              {item.icon && (
+                <p className="text-xs text-gray-500 leading-snug">
+                  {item.icon}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -222,6 +233,91 @@ export const ProblemSection = ({ data }) => {
   );
 };
 
+// ============================================================
+// BEFORE / AFTER — Antes vs Depois da transformação
+// ============================================================
+export const BeforeAfterSection = ({ data }) => {
+  if (!data.items?.length) return null;
+
+  return (
+    <section id="before_after" className="py-20 md:py-28 bg-white">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
+        {/* Cabeçalho */}
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-5 leading-tight">
+            {data.title}
+          </h2>
+          {data.subtitle && (
+            <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
+              {data.subtitle}
+            </p>
+          )}
+        </div>
+
+        {/* Header das 2 colunas */}
+        <div className="hidden md:grid grid-cols-2 gap-6 mb-4">
+          <div className="flex items-center gap-2 px-2">
+            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+              <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <span className="font-bold text-red-700 uppercase tracking-wide text-sm">
+              {data.before_label || 'Antes'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 px-2">
+            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+              <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span className="font-bold text-green-700 uppercase tracking-wide text-sm">
+              {data.after_label || 'Depois'}
+            </span>
+          </div>
+        </div>
+
+        {/* Linhas */}
+        <div className="space-y-3">
+          {data.items.map((item, i) => (
+            <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
+              {/* Antes */}
+              <div className="bg-red-50 border border-red-100 rounded-xl p-5 flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <p className="text-gray-800 leading-relaxed md:hidden text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">
+                  {data.before_label || 'Antes'}:
+                </p>
+                <p className="text-gray-800 leading-relaxed">
+                  {item.before}
+                </p>
+              </div>
+
+              {/* Depois */}
+              <div className="bg-green-50 border border-green-100 rounded-xl p-5 flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-gray-800 leading-relaxed md:hidden text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">
+                  {data.after_label || 'Depois'}:
+                </p>
+                <p className="text-gray-800 leading-relaxed">
+                  {item.after}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 // ============================================================
 // SOLUTION — Motores com features

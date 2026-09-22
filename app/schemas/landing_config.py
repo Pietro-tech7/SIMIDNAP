@@ -42,24 +42,24 @@ class CredibilityBarSection(BaseModel):
     enabled: bool = True
     items: List[Dict[str, str]] = Field(default_factory=lambda: [
         {
-            "icon": "🎯",
-            "title": "Alinhado à BNCC",
-            "description": "Toda geração segue habilidades reais do currículo.",
+            "title": "3.500+",
+            "description": "Professores impactados",
+            "icon": "Em 23 municípios brasileiros com a palestra O Professor Inesquecível",
         },
         {
-            "icon": "🇧🇷",
-            "title": "Foco em SAEPI, IDEB e ENEM",
-            "description": "Prepara o aluno para as provas que importam.",
+            "title": "18+",
+            "description": "Anos em educação",
+            "icon": "Trajetória em sala de aula, neurociência e desenvolvimento humano",
         },
         {
-            "icon": "📚",
-            "title": "Banco com 3.000+ questões",
-            "description": "Simulados oficiais do ENEM em 2 cliques.",
+            "title": "7",
+            "description": "Motores de IA",
+            "icon": "Cada um resolve uma dor real do professor brasileiro",
         },
         {
-            "icon": "💳",
-            "title": "Pix e cartão, cancele quando quiser",
-            "description": "Pagamento instantâneo, sem burocracia.",
+            "title": "5",
+            "description": "Créditos grátis",
+            "icon": "Comece a testar agora, sem cartão de crédito",
         },
     ])
 
@@ -174,6 +174,39 @@ class SolutionSection(BaseModel):
         },
     ])
 
+class BeforeAfterSection(BaseModel):
+    """Seção Antes vs Depois — mostra a transformação concreta."""
+    enabled: bool = True
+    title: str = "O que muda quando você usa o SIMIDNAPE PRO"
+    subtitle: str = "A diferença entre o professor sobrecarregado e O Professor Inesquecível."
+    before_label: str = "Antes"
+    after_label: str = "Depois"
+    items: List[Dict[str, str]] = Field(default_factory=lambda: [
+        {
+            "before": "Domingo inteiro planejando aula",
+            "after": "Plano pronto em 2 minutos com IA",
+        },
+        {
+            "before": "Material genérico baixado do Google",
+            "after": "Atividades alinhadas à sua turma e à BNCC",
+        },
+        {
+            "before": "Simulado do ENEM: dias de trabalho braçal",
+            "after": "Simulado oficial em 3 cliques, com gabarito",
+        },
+        {
+            "before": "Sem tempo para adaptar material inclusivo",
+            "after": "Versão diferenciada gerada automaticamente",
+        },
+        {
+            "before": "Prática exitosa que ninguém fica sabendo",
+            "after": "Documento profissional para seminários",
+        },
+        {
+            "before": "Fim de semana sem descanso, sem energia",
+            "after": "Professor com tempo para si e para a família",
+        },
+    ])
 
 class FounderSection(BaseModel):
     enabled: bool = True
@@ -390,6 +423,7 @@ class LandingConfigSchema(BaseModel):
         "hero",
         "credibility",
         "problem",
+        "before_after",
         "solution",
         "founder",
         "video",
@@ -417,6 +451,7 @@ class LandingConfigSchema(BaseModel):
     hero: HeroSection = Field(default_factory=HeroSection)
     credibility: CredibilityBarSection = Field(default_factory=CredibilityBarSection)
     problem: ProblemSection = Field(default_factory=ProblemSection)
+    before_after: BeforeAfterSection = Field(default_factory=BeforeAfterSection)
     solution: SolutionSection = Field(default_factory=SolutionSection)
     founder: FounderSection = Field(default_factory=FounderSection)
     video: VideoSection = Field(default_factory=VideoSection)
