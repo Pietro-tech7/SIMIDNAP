@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 // ============================================================
@@ -28,118 +28,244 @@ const Check = ({ className = 'text-blue-600' }) => (
 // ============================================================
 export const HeroSection = ({ data }) => {
   const [showVideo, setShowVideo] = useState(false);
+  const [slideAtivo, setSlideAtivo] = useState(0);
+  const touchStart = useRef(0);
+
+  const slides = data.slides || [];
+  const isCarousel = data.carousel_enabled && slides.length > 0;
+
+  // Auto-rotação do carrossel
+  useEffect(() => {
+    if (!isCarousel || slides.length <= 1) return;
+    const interval = setInterval(() => {
+      setSlideAtivo((prev) => (prev + 1) % slides.length);
+    }, data.carousel_interval || 6000);
+    return () => clearInterval(interval);
+  }, [isCarousel, slides.length, data.carousel_interval]);
+
+  // Swipe touch
+  const handleTouchStart = (e) => {
+    touchStart.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e) => {
+    if (!isCarousel || slides.length <= 1) return;
+    const diff = touchStart.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        setSlideAtivo((prev) => (prev + 1) % slides.length);
+      } else {
+        setSlideAtivo((prev) => (prev - 1 + slides.length) % slides.length);
+      }
+    }
+  };
+
+  const irParaSlide = (idx) => setSlideAtivo(idx);
+  const proximoSlide = () => setSlideAtivo((prev) => (prev + 1) % slides.length);
+  const slideAnterior = () => setSlideAtivo((prev) => (prev - 1 + slides.length) % slides.length);
+
+  // Se carrossel desativado ou sem slides → usa o slide único (campos legados)
+  const slidesEfetivos = isCarousel ? slides : [{
+    badge: data.badge,
+    brand_line: data.brand_line,
+    headline: data.headline,
+    subheadline: data.subheadline,
+    cta_primary_text: data.cta_primary_text,
+    cta_primary_link: data.cta_primary_link,
+    cta_secondary_text: data.cta_secondary_text,
+    cta_secondary_video_url: data.cta_secondary_video_url,
+    image: data.hero_image,
+    gradient: 'from-blue-50 via-white to-purple-50',
+  }];
+
+  const slide = slidesEfetivos[slideAtivo] || slidesEfetivos[0];
+  const isDark = slide.gradient?.includes('gray-900')
+    || slide.gradient?.includes('blue-900')
+    || slide.gradient?.includes('black');
 
   return (
-    <section id="hero" className="relative bg-white pt-12 pb-20 md:pt-20 md:pb-28">
-      <div className="relative max-w-7xl mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* ============ COLUNA ESQUERDA — Texto ============ */}
-          <div className="text-center lg:text-left">
-            {data.badge && (
-              <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 mb-6">
-                <span className="w-2 h-2 rounded-full bg-blue-600" />
-                <span className="text-xs font-semibold text-blue-700">{data.badge}</span>
-              </div>
-            )}
+    <section id="hero" className="relative overflow-hidden">
+      <div
+        className={`relative bg-gradient-to-br ${slide.gradient || 'from-blue-50 via-white to-purple-50'} transition-all duration-700`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Imagem de fundo (opcional) */}
+        {slide.image && (
+          <div className="absolute inset-0 z-0 opacity-15">
+            <img src={slide.image} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
 
-            {data.brand_line && (
-              <p className="text-sm font-bold text-blue-700 uppercase tracking-wide mb-3">
-                {data.brand_line}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-12 pb-20 md:pt-20 md:pb-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-[500px]">
+            {/* Coluna esquerda — Texto do slide */}
+            <div className="text-center lg:text-left">
+              {slide.badge && (
+                <div className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 ${
+                  isDark ? 'bg-white/10 border border-white/20' : 'bg-white/80 backdrop-blur border border-blue-200'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full animate-pulse ${isDark ? 'bg-blue-400' : 'bg-blue-600'}`} />
+                  <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-blue-700'}`}>
+                    {slide.badge}
+                  </span>
+                </div>
+              )}
+
+              {slide.brand_line && (
+                <p className={`text-sm font-bold uppercase tracking-wide mb-3 ${
+                  isDark ? 'text-blue-300' : 'text-blue-700'
+                }`}>
+                  {slide.brand_line}
+                </p>
+              )}
+
+              <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                {slide.headline}
+              </h1>
+
+              <p className={`text-lg md:text-xl leading-relaxed mb-8 ${
+                isDark ? 'text-gray-200' : 'text-gray-700'
+              }`}>
+                {slide.subheadline}
               </p>
-            )}
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-              {data.headline}
-            </h1>
-
-            <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-8">
-              {data.subheadline}
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-10">
-              <ButtonPrimary to={data.cta_primary_link || '/register'}>
-                {data.cta_primary_text || 'Criar conta grátis'}
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </ButtonPrimary>
-              {data.cta_secondary_text && (
-                <ButtonSecondary onClick={() => setShowVideo(true)}>
-                  <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                  {data.cta_secondary_text}
-                </ButtonSecondary>
-              )}
-            </div>
-
-            {/* Métricas */}
-            {data.metrics?.length > 0 && (
-              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0 pt-6 border-t border-gray-200">
-                {data.metrics.map((m, i) => (
-                  <div key={i} className="text-center lg:text-left">
-                    <p className="text-3xl font-bold text-gray-900">{m.value}</p>
-                    <p className="text-xs text-gray-600 mt-1 leading-snug">{m.label}</p>
-                  </div>
-                ))}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                {slide.cta_primary_text && (
+                  <ButtonPrimary to={slide.cta_primary_link || '/register'}>
+                    {slide.cta_primary_text}
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </ButtonPrimary>
+                )}
+                {slide.cta_secondary_text && (
+                  <ButtonSecondary onClick={() => setShowVideo(true)}>
+                    <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                    {slide.cta_secondary_text}
+                  </ButtonSecondary>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* ============ COLUNA DIREITA — Foto + Badges ============ */}
-          <div className="relative">
-            <div className="relative rounded-2xl overflow-hidden shadow-xl bg-gray-100 aspect-[4/5] max-w-md mx-auto lg:max-w-none">
-              {data.hero_image ? (
-                <img
-                  src={data.hero_image}
-                  alt="Professor(a) usando o SIMIDNAPE PRO"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-500">
-                  <span className="text-8xl mb-4">👩‍🏫</span>
-                  <span className="text-sm font-medium">Foto do professor(a)</span>
+              {/* Métricas (só no primeiro slide) */}
+              {slideAtivo === 0 && data.metrics?.length > 0 && (
+                <div className={`grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0 pt-6 mt-8 border-t ${
+                  isDark ? 'border-white/20' : 'border-gray-200'
+                }`}>
+                  {data.metrics.map((m, i) => (
+                    <div key={i} className="text-center lg:text-left">
+                      <p className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{m.value}</p>
+                      <p className={`text-xs mt-1 leading-snug ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{m.label}</p>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Badges flutuantes */}
-            {data.float_badges?.map((badge, i) => {
-              const posicoes = [
-                { top: '6%', left: '-8%' },
-                { top: '42%', left: '-12%' },
-                { top: '72%', left: '-6%' },
-              ];
-              const pos = posicoes[i % 3];
-              return (
-                <div
-                  key={i}
-                  className="hidden md:flex absolute bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 items-center gap-3 max-w-[230px] z-10"
-                  style={pos}
-                >
-                  <span className="text-2xl flex-shrink-0">{badge.icon}</span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate">{badge.title}</p>
-                    <p className="text-xs text-gray-600 truncate">{badge.subtitle}</p>
+            {/* Coluna direita — Imagem do slide */}
+            <div className="relative">
+              <div className={`relative rounded-2xl overflow-hidden shadow-xl aspect-[4/5] max-w-md mx-auto lg:max-w-none ${
+                isDark ? 'bg-white/5 backdrop-blur border border-white/10' : 'bg-white/60 backdrop-blur'
+              }`}>
+                {slide.image ? (
+                  <img src={slide.image} alt="Slide" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center">
+                    <span className="text-8xl mb-4">👩‍🏫</span>
+                    <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Foto do slide
+                    </span>
                   </div>
-                </div>
-              );
-            })}
+                )}
+              </div>
+
+              {/* Badges flutuantes — só no primeiro slide */}
+              {slideAtivo === 0 && data.float_badges?.map((badge, i) => {
+                const posicoes = [
+                  { top: '6%', left: '-8%' },
+                  { top: '42%', left: '-12%' },
+                  { top: '72%', left: '-6%' },
+                ];
+                const pos = posicoes[i % 3];
+                return (
+                  <div
+                    key={i}
+                    className="hidden md:flex absolute bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 items-center gap-3 max-w-[230px] z-10"
+                    style={pos}
+                  >
+                    <span className="text-2xl flex-shrink-0">{badge.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-gray-900 truncate">{badge.title}</p>
+                      <p className="text-xs text-gray-600 truncate">{badge.subtitle}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Dots de navegação */}
+          {slidesEfetivos.length > 1 && (
+            <div className="flex justify-center gap-2 mt-12">
+              {slidesEfetivos.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => irParaSlide(i)}
+                  aria-label={`Ir para o slide ${i + 1}`}
+                  className={`transition-all rounded-full ${
+                    i === slideAtivo
+                      ? `w-10 h-2.5 ${isDark ? 'bg-white' : 'bg-blue-600'}`
+                      : `w-2.5 h-2.5 ${isDark ? 'bg-white/40 hover:bg-white/60' : 'bg-gray-300 hover:bg-gray-400'}`
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Vídeo principal */}
-        {data.video_enabled && data.video_url && (
-          <div className="mt-16 max-w-4xl mx-auto">
-            <div className="aspect-video bg-gray-900 rounded-2xl shadow-lg overflow-hidden">
-              <VideoEmbed url={data.video_url} />
-            </div>
-          </div>
+        {/* Setas de navegação (desktop) */}
+        {slidesEfetivos.length > 1 && (
+          <>
+            <button
+              onClick={slideAnterior}
+              aria-label="Slide anterior"
+              className={`hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full shadow-lg items-center justify-center transition z-20 ${
+                isDark ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur' : 'bg-white hover:bg-gray-50 text-gray-800'
+              }`}
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={proximoSlide}
+              aria-label="Próximo slide"
+              className={`hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full shadow-lg items-center justify-center transition z-20 ${
+                isDark ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur' : 'bg-white hover:bg-gray-50 text-gray-800'
+              }`}
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
         )}
       </div>
 
+      {/* Vídeo principal (abaixo do carrossel) */}
+      {data.video_enabled && data.video_url && (
+        <div className="max-w-4xl mx-auto px-4 md:px-6 -mt-12 mb-16 relative z-20">
+          <div className="aspect-video bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
+            <VideoEmbed url={data.video_url} />
+          </div>
+        </div>
+      )}
+
       {/* Modal do vídeo secundário */}
-      {showVideo && data.cta_secondary_video_url && (
+      {showVideo && slide.cta_secondary_video_url && (
         <div
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
           onClick={() => setShowVideo(false)}
@@ -148,7 +274,7 @@ export const HeroSection = ({ data }) => {
             className="max-w-4xl w-full aspect-video bg-black rounded-xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <VideoEmbed url={data.cta_secondary_video_url} autoPlay />
+            <VideoEmbed url={slide.cta_secondary_video_url} autoPlay />
           </div>
         </div>
       )}

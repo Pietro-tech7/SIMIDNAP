@@ -10,20 +10,70 @@ from datetime import datetime
 
 class HeroSection(BaseModel):
     enabled: bool = True
+    # Modo carrossel: lista de slides
+    carousel_enabled: bool = True
+    carousel_interval: int = 6000  # ms entre slides
+    slides: List[Dict[str, str]] = Field(default_factory=lambda: [
+        {
+            "badge": "🇧🇷 Feito por quem conhece sala de aula",
+            "brand_line": "SIMIDNAPE PRO · O Professor Inesquecível",
+            "headline": "Torne-se O Professor Inesquecível que seus alunos vão lembrar para sempre.",
+            "subheadline": "O único assistente pedagógico criado por quem conhece o dia a dia da escola. Sete motores de IA que transformam planejamento, materiais e simulados em minutos.",
+            "cta_primary_text": "Quero ser O Professor Inesquecível",
+            "cta_primary_link": "/register",
+            "cta_secondary_text": "Ver como funciona",
+            "cta_secondary_video_url": "",
+            "image": "",
+            "gradient": "from-blue-50 via-white to-purple-50",
+        },
+        {
+            "badge": "🎁 Oferta de Fundador · Últimas vagas",
+            "brand_line": "PROMOÇÃO POR TEMPO LIMITADO",
+            "headline": "Os 50 primeiros assinantes travam o preço para sempre.",
+            "subheadline": "R$ 14,90/mês (era R$ 19,90) para sempre. Sem reajuste, sem pegadinha. É nosso obrigado por confiar antes de todos.",
+            "cta_primary_text": "Quero garantir minha vaga",
+            "cta_primary_link": "/register",
+            "cta_secondary_text": "",
+            "cta_secondary_video_url": "",
+            "image": "",
+            "gradient": "from-gray-900 via-blue-900 to-gray-900",
+        },
+        {
+            "badge": "👨‍🏫 Criado por quem conhece sala de aula",
+            "brand_line": "18+ ANOS DE EDUCAÇÃO",
+            "headline": "Criado por quem conhece a educação e o dia a dia da escola.",
+            "subheadline": "Darilson Cornélio já impactou mais de 3.500 professores em 23 municípios brasileiros. Este sistema nasceu da escuta real do chão da escola.",
+            "cta_primary_text": "Conheça a história",
+            "cta_primary_link": "#founder",
+            "cta_secondary_text": "",
+            "cta_secondary_video_url": "",
+            "image": "",
+            "gradient": "from-gray-50 via-white to-blue-50",
+        },
+        {
+            "badge": "⚡ 7 motores em um só lugar",
+            "brand_line": "O COPILOTO PEDAGÓGICO",
+            "headline": "Sete motores. Um copiloto pedagógico.",
+            "subheadline": "Planejar aula, gerar material, criar simulado, documentar prática — tudo em um só lugar, alinhado à BNCC e focado em SAEPI, IDEB e ENEM.",
+            "cta_primary_text": "Ver os 7 motores",
+            "cta_primary_link": "#solution",
+            "cta_secondary_text": "",
+            "cta_secondary_video_url": "",
+            "image": "",
+            "gradient": "from-white via-gray-50 to-white",
+        },
+    ])
+
+    # Campos legados (compatibilidade com versão antiga)
     badge: str = "🇧🇷 Feito por quem conhece sala de aula"
     brand_line: str = "SIMIDNAPE PRO · O Professor Inesquecível"
     headline: str = "Torne-se O Professor Inesquecível que seus alunos vão lembrar para sempre."
-    subheadline: str = (
-        "O SIMIDNAPE PRO é o único assistente pedagógico criado por quem conhece sala de aula. "
-        "Sete motores de IA que transformam planejamento, materiais e simulados em minutos — "
-        "alinhados à BNCC e focados em SAEPI, IDEB e ENEM."
-    )
+    subheadline: str = "O único assistente pedagógico criado por quem conhece sala de aula."
     cta_primary_text: str = "Quero ser O Professor Inesquecível"
     cta_primary_link: str = "/register"
     cta_secondary_text: str = "Ver como funciona"
     cta_secondary_video_url: str = ""
     hero_image: str = ""
-    bg_image: str = ""
     float_badges: List[Dict[str, str]] = Field(default_factory=lambda: [
         {"icon": "⚡", "title": "Planos em minutos", "subtitle": "Não em horas"},
         {"icon": "🎯", "title": "Alinhado à BNCC", "subtitle": "SAEPI, IDEB e ENEM"},
@@ -275,6 +325,10 @@ class HowItWorksSection(BaseModel):
 class MetricsSection(BaseModel):
     enabled: bool = True
     title: str = "Números que reforçam a missão"
+    subtitle: str = "Cinco anos construindo ferramentas para o professor brasileiro."
+    background_image: str = ""  # URL da imagem de fundo (opcional)
+    background_overlay: float = 0.85  # opacidade da sobreposição escura (0-1)
+    background_video_url: str = ""  # URL do vídeo de fundo (opcional, tem prioridade sobre imagem)
     metrics: List[Dict[str, str]] = Field(default_factory=lambda: [
         {"value": "2 min", "label": "para gerar um plano de aula"},
         {"value": "3.000+", "label": "questões oficiais do ENEM"},
@@ -312,18 +366,19 @@ class ComparisonSection(BaseModel):
 
 
 class FounderOfferSection(BaseModel):
-    """Oferta de Fundador — urgência real e preço travado."""
     enabled: bool = True
-    badge: str = "🎁 Oferta de Fundador"
-    title: str = "Os primeiros 100 assinantes travam o preço para sempre."
+    badge: str = "🎁 OFERTA DE FUNDADOR"
+    title: str = "Os 50 primeiros assinantes travam o preço para sempre."
     description: str = (
-        "Os 100 primeiros que assinarem o plano Padrão pagam R$ 14,90/mês (em vez de R$ 19,90) "
-        "para sempre. Sem reajuste, sem pegadinha. É nosso obrigado por confiar antes de todos."
+        "Os 50 primeiros que assinarem o plano Padrão pagam R$ 14,90/mês "
+        "(em vez de R$ 19,90) para sempre. Sem reajuste, sem pegadinha. "
+        "É nosso obrigado por confiar antes de todos."
     )
     price_normal: str = "R$ 19,90"
     price_founder: str = "R$ 14,90"
-    spots_total: int = 100
-    spots_remaining: int = 87
+    period_label: str = "para sempre"
+    spots_total: int = 50
+    spots_remaining: int = 32
     cta_text: str = "Quero garantir minha vaga"
     cta_link: str = "/register"
 

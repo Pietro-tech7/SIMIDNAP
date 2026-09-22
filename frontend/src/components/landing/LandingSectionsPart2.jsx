@@ -15,18 +15,67 @@ const Check = ({ className = 'text-blue-600' }) => (
 export const MetricsSection = ({ data }) => {
   if (!data.metrics?.length) return null;
 
+  const overlay = data.background_overlay ?? 0.85;
+
   return (
-    <section id="metrics" className="py-16 md:py-20 bg-gray-900">
-      <div className="max-w-6xl mx-auto px-4 md:px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">{data.title}</h2>
+    <section id="metrics" className="relative py-20 md:py-28 overflow-hidden">
+      {/* Vídeo de fundo (prioridade) */}
+      {data.background_video_url ? (
+        <div className="absolute inset-0 z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          >
+            <source src={data.background_video_url} />
+          </video>
+          <div
+            className="absolute inset-0 bg-gray-900"
+            style={{ opacity: overlay }}
+          />
+        </div>
+      ) : data.background_image ? (
+        /* Imagem de fundo */
+        <div className="absolute inset-0 z-0">
+          <img
+            src={data.background_image}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          <div
+            className="absolute inset-0 bg-gray-900"
+            style={{ opacity: overlay }}
+          />
+        </div>
+      ) : (
+        /* Fallback: fundo sólido */
+        <div className="absolute inset-0 bg-gray-900 z-0" />
+      )}
+
+      {/* Conteúdo */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-6">
+        <div className="text-center mb-14">
+          <h2 className="text-2xl md:text-4xl font-bold text-white mb-4">
+            {data.title}
+          </h2>
+          {data.subtitle && (
+            <p className="text-base md:text-lg text-gray-300 max-w-2xl mx-auto">
+              {data.subtitle}
+            </p>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
           {data.metrics.map((m, i) => (
             <div key={i} className="text-center">
-              <p className="text-4xl md:text-5xl font-bold text-white mb-2">{m.value}</p>
-              <p className="text-sm text-gray-400 leading-snug">{m.label}</p>
+              <p className="text-4xl md:text-6xl font-bold text-white mb-3 leading-none">
+                {m.value}
+              </p>
+              <p className="text-sm md:text-base text-gray-300 leading-snug">
+                {m.label}
+              </p>
             </div>
           ))}
         </div>
@@ -272,67 +321,113 @@ export const FounderOfferSection = ({ data }) => {
     ? Math.round(((data.spots_total - data.spots_remaining) / data.spots_total) * 100)
     : 0;
 
+  const vagasRestantes = data.spots_remaining;
+  const isUrgente = vagasRestantes <= 10;
+
   return (
-    <section id="founder_offer" className="py-20 md:py-24 bg-white">
-      <div className="max-w-4xl mx-auto px-4 md:px-6">
-        <div className="bg-gray-900 rounded-3xl p-8 md:p-12 text-center">
-          {data.badge && (
-            <p className="inline-block bg-blue-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full mb-6">
-              {data.badge}
-            </p>
-          )}
+    <section id="founder_offer" className="relative py-20 md:py-28 bg-white overflow-hidden">
+      {/* Elemento decorativo de fundo */}
+      <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-40 z-0" />
+      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-100 rounded-full blur-3xl opacity-40 z-0" />
 
-          <h2 className="text-2xl md:text-4xl font-bold text-white mb-5 leading-tight">
-            {data.title}
-          </h2>
+      <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-6">
+        <div className="relative bg-gradient-to-br from-gray-900 via-gray-900 to-blue-950 rounded-3xl p-8 md:p-14 text-center shadow-2xl overflow-hidden">
+          {/* Elementos decorativos internos */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
 
-          {data.description && (
-            <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-8">
-              {data.description}
-            </p>
-          )}
+          <div className="relative z-10">
+            {/* Badge */}
+            {data.badge && (
+              <div className="inline-flex items-center gap-2 bg-blue-600 text-white text-xs md:text-sm font-bold uppercase tracking-wider px-5 py-2 rounded-full mb-8 shadow-lg shadow-blue-600/30">
+                {data.badge}
+              </div>
+            )}
 
-          {/* Preços */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-8 mb-8">
-            <div className="text-center">
-              <p className="text-gray-500 line-through text-lg">{data.price_normal}</p>
-              <p className="text-xs text-gray-500 mt-1">preço normal</p>
-            </div>
-            <div className="text-center">
-              <p className="text-4xl md:text-5xl font-bold text-white">{data.price_founder}</p>
-              <p className="text-xs text-blue-400 font-semibold mt-1 uppercase tracking-wider">
-                para sempre
+            {/* Título */}
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight max-w-3xl mx-auto">
+              {data.title}
+            </h2>
+
+            {/* Descrição */}
+            {data.description && (
+              <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">
+                {data.description}
               </p>
+            )}
+
+            {/* Preço */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 md:gap-12 mb-10">
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 font-semibold">
+                  De
+                </p>
+                <p className="text-2xl md:text-3xl text-gray-500 line-through">
+                  {data.price_normal}
+                </p>
+              </div>
+
+              <div className="hidden sm:block w-px h-16 bg-gray-700" />
+
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-wider text-blue-400 mb-2 font-bold">
+                  Por
+                </p>
+                <p className="text-5xl md:text-7xl font-bold text-white leading-none">
+                  {data.price_founder}
+                </p>
+                <p className="text-xs md:text-sm text-blue-400 font-bold uppercase tracking-wider mt-3">
+                  {data.period_label || 'para sempre'}
+                </p>
+              </div>
             </div>
+
+            {/* Barra de progresso de vagas */}
+            {data.spots_total > 0 && (
+              <div className="max-w-lg mx-auto mb-10">
+                <div className="flex justify-between items-baseline text-sm mb-3">
+                  <span className="text-gray-400">
+                    <strong className="text-white">{data.spots_total - data.spots_remaining}</strong>{' '}
+                    vagas preenchidas
+                  </span>
+                  <span className={`font-bold ${isUrgente ? 'text-red-400' : 'text-white'}`}>
+                    Restam {data.spots_remaining} de {data.spots_total}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      isUrgente
+                        ? 'bg-gradient-to-r from-orange-500 to-red-500'
+                        : 'bg-gradient-to-r from-blue-500 to-blue-400'
+                    }`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                {isUrgente && (
+                  <p className="text-xs text-red-400 font-semibold mt-2 animate-pulse">
+                    🔥 Poucas vagas restantes
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* CTA */}
+            <Link
+              to={data.cta_link || '/register'}
+              className="inline-flex items-center gap-3 bg-white text-gray-900 font-bold px-8 md:px-10 py-4 md:py-5 rounded-xl hover:bg-gray-100 transition shadow-xl text-base md:text-lg transform hover:-translate-y-0.5"
+            >
+              {data.cta_text || 'Quero garantir minha vaga'}
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
+
+            {/* Aviso de segurança abaixo do CTA */}
+            <p className="text-xs text-gray-500 mt-6">
+              💳 Pagamento seguro · Cancele quando quiser · Sem multa
+            </p>
           </div>
-
-          {/* Barra de progresso */}
-          {data.spots_total > 0 && (
-            <div className="max-w-md mx-auto mb-8">
-              <div className="flex justify-between text-xs text-gray-400 mb-2">
-                <span>{data.spots_total - data.spots_remaining} vagas preenchidas</span>
-                <span className="font-bold text-white">
-                  Restam {data.spots_remaining} de {data.spots_total}
-                </span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 transition-all"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          <Link
-            to={data.cta_link || '/register'}
-            className="inline-flex items-center gap-2 bg-white text-gray-900 font-bold px-8 py-4 rounded-lg hover:bg-gray-100 transition shadow-sm text-lg"
-          >
-            {data.cta_text || 'Quero garantir minha vaga'}
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
         </div>
       </div>
     </section>
