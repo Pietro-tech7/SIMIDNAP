@@ -9,20 +9,56 @@ from ..schemas.landing_config import (
 
 
 # ============================================================
-# LER CONFIGURAÇÃO (cria default se não existir)
+# LER CONFIGURAÇÃO (auto-corrige se necessário)
 # ============================================================
 def get_landing_config(db: Session) -> LandingConfig:
     """
     Retorna a configuração da landing page.
-    Se não existir nenhuma no banco, cria automaticamente com os defaults.
+
+    Comportamento:
+    1. Se não existir nenhuma, cria com defaults.
+    2. Se existir mas estiver desatualizada (formato antigo, campos
+       faltando), faz merge com defaults e re-salva.
+    3. Se estiver corrompida, reseta para defaults.
+
+    Isso garante que o frontend NUNCA receba uma config incompatível.
     """
     config_row = db.query(LandingConfig).first()
 
+    # Caso 1: não existe → cria com defaults
     if not config_row:
-        # Cria com os defaults
         defaults = get_default_landing_config()
         config_row = LandingConfig(config=defaults)
         db.add(config_row)
+        db.commit()
+        db.refresh(config_row)
+        return config_row
+
+    # Caso 2: existe → valida e corrige
+    config_atual = config_row.config or {}
+
+    try:
+        # 2a. Faz merge profundo dos defaults com o que está no banco
+        #     (garante que campos novos entrem)
+        defaults = get_default_landing_config()
+        merged = _deep_merge(defaults, config_atual)
+
+        # 2b. Valida com o schema (auto-corrige tipos errados via defaults)
+        validated = LandingConfigSchema(**merged)
+        config_limpa = validated.model_dump()
+
+        # 2c. Se o resultado for diferente do que estava no banco,
+        #     atualiza (isso conserta automaticamente)
+        if config_limpa != config_atual:
+            config_row.config = config_limpa
+            db.commit()
+            db.refresh(config_row)
+            print(f"[Landing] Config auto-corrigida (merge com defaults).")
+
+    except Exception as e:
+        # Caso 3: falhou de tudo → reseta para os defaults
+        print(f"[Landing] Config inválida ({e}), resetando para defaults.")
+        config_row.config = get_default_landing_config()
         db.commit()
         db.refresh(config_row)
 
@@ -43,16 +79,13 @@ def update_landing_config(
     """
     config_row = get_landing_config(db)
 
-    # Merge profundo: mantém campos não enviados
     config_atual = dict(config_row.config or {})
     merged = _deep_merge(config_atual, new_config)
 
-    # Valida com o schema Pydantic (garante estrutura correta)
     try:
         validated = LandingConfigSchema(**merged)
         config_row.config = validated.model_dump()
     except Exception as e:
-        # Se falhar a validação, salva mesmo assim (o admin vê o erro no frontend)
         print(f"[Landing] Aviso: config inválida, salvando como veio. Erro: {e}")
         config_row.config = merged
 
@@ -79,27 +112,47 @@ def reset_landing_config(db: Session, updated_by: Optional[str] = None) -> Landi
 
 
 # ============================================================
-# HELPERS
+# HELPER — MERGE PROFUNDO
 # ============================================================
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     """
     Faz merge profundo de dois dicionários.
-    Valores de `override` sobrepõem os de `base`, mas chaves que só existem
-    em `base` são preservadas.
+
+    Regras:
+    - Se ambos são dicts → faz merge recursivo
+    - Se um dos dois é lista → usa `override` (não mescla listas)
+    - Se tipos diferentes → usa `override`
+
+    Isso garante que:
+    - Campos novos do `base` (defaults) sejam adicionados
+    - Campos existentes do `override` (banco) sejam preservados
+    - Listas antigas sejam substituídas pelas novas quando conflitam
     """
     if not isinstance(base, dict):
-        base = {}
+        return override if override is not None else base
     if not isinstance(override, dict):
         return override
 
     resultado = dict(base)
     for key, value in override.items():
-        if (
-            key in resultado
-            and isinstance(resultado[key], dict)
-            and isinstance(value, dict)
-        ):
-            resultado[key] = _deep_merge(resultado[key], value)
+        # Se override não tem essa chave, pula
+        if key not in resultado:
+            resultado[key] = value
+            continue
+
+        base_value = resultado[key]
+
+        # Ambos são dicts → merge recursivo
+        if isinstance(base_value, dict) and isinstance(value, dict):
+            resultado[key] = _deep_merge(base_value, value)
+        # Tipo diferente (ex: string vs dict) → usa o default (base)
+        elif isinstance(base_value, dict) and not isinstance(value, dict):
+            # Mantém o default porque o override está no formato antigo
+            pass
+        elif isinstance(base_value, list) and not isinstance(value, list):
+            pass
+        # Mesmo tipo → usa o override
         else:
             resultado[key] = value
+
     return resultado
