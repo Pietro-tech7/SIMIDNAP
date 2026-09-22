@@ -22,98 +22,131 @@ const AdminLayout = () => {
   };
 
   const isActive = (path) => {
-    // Para o Dashboard, só ativa se for exatamente /admin
     if (path === '/admin') return location.pathname === '/admin';
-    // Para os outros, ativa em qualquer sub-rota
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar Admin */}
-      <aside className="hidden md:flex md:flex-col w-64 bg-gray-900 text-white fixed h-full">
-        <div className="p-6 border-b border-gray-800">
-          <h1 className="text-xl font-bold text-white">SIMIDNAPE</h1>
-          <p className="text-xs text-red-400 mt-1 font-semibold uppercase tracking-wider">
-            🔐 Painel Administrativo
-          </p>
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* ============================================================ */}
+      {/* SIDEBAR DESKTOP */}
+      {/* ============================================================ */}
+      <aside className="hidden md:flex md:flex-col w-64 bg-slate-950 fixed h-full">
+        {/* Logo */}
+        <div className="px-6 py-6 border-b border-slate-800/60">
+          <Link to="/admin" className="block">
+            <h1 className="text-lg font-bold text-white tracking-tight">
+              SIMIDNAPE <span className="text-blue-400">PRO</span>
+            </h1>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">
+              Painel Administrativo
+            </p>
+          </Link>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          {menuItems.map(item => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
-                isActive(item.path)
-                  ? 'bg-red-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800'
-              }`}
-            >
-              <span className="text-lg">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
+        {/* Menu */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {menuItems.map(item => {
+            const ativo = isActive(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${
+                  ativo
+                    ? 'bg-blue-500/10 text-blue-400 font-semibold'
+                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                }`}
+              >
+                <span className="text-base opacity-90">{item.icon}</span>
+                <span className="truncate">{item.label}</span>
+                {ativo && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Botão "voltar ao modo professor" */}
-        <div className="p-4 border-t border-gray-800 space-y-2">
+        {/* Rodapé — usuário + ações */}
+        <div className="px-3 pb-4 pt-4 border-t border-slate-800/60 space-y-3">
           <Link
             to="/dashboard"
-            className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2 rounded-lg transition"
+            className="flex items-center justify-center gap-2 w-full bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs font-medium py-2.5 rounded-lg transition border border-slate-700/50"
           >
-            ← Voltar ao modo professor
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Modo Professor
           </Link>
+
           <div className="flex items-center gap-3 px-2 py-2">
-            <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-semibold text-sm">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
               {user?.full_name?.[0]?.toUpperCase() || 'A'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-white truncate">{user?.full_name}</p>
-              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              <p className="text-[10px] text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>
+
           <button
             onClick={handleLogout}
-            className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800 rounded-lg transition"
+            className="w-full flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-red-400 hover:bg-red-500/5 py-2 rounded-lg transition"
           >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
             Sair
           </button>
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-gray-900 border-b border-gray-800 z-20 px-4 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-white">SIMIDNAPE</h1>
-          <p className="text-xs text-red-400 font-semibold">🔐 Painel Admin</p>
-        </div>
+      {/* ============================================================ */}
+      {/* MOBILE HEADER */}
+      {/* ============================================================ */}
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-slate-950 border-b border-slate-800/60 z-20 px-4 py-3 flex items-center justify-between">
+        <Link to="/admin" className="block">
+          <h1 className="text-base font-bold text-white leading-tight">
+            SIMIDNAPE <span className="text-blue-400">PRO</span>
+          </h1>
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest">
+            Painel Administrativo
+          </p>
+        </Link>
         <Link
           to="/dashboard"
-          className="text-xs bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-full"
+          className="text-xs bg-slate-800 text-slate-200 font-medium px-3 py-1.5 rounded-lg border border-slate-700/50"
         >
           Modo Professor
         </Link>
       </div>
 
-      {/* Mobile nav bottom */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-20 flex overflow-x-auto">
-        {menuItems.map(item => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={`flex-1 min-w-[70px] text-center py-3 text-xs font-medium ${
-              isActive(item.path) ? 'text-red-400' : 'text-gray-400'
-            }`}
-          >
-            <div className="text-lg">{item.icon}</div>
-            <div className="truncate px-1">{item.label}</div>
-          </Link>
-        ))}
+      {/* ============================================================ */}
+      {/* MOBILE BOTTOM NAV */}
+      {/* ============================================================ */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800/60 z-20 flex overflow-x-auto">
+        {menuItems.map(item => {
+          const ativo = isActive(item.path);
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex-1 min-w-[70px] text-center py-2.5 text-[10px] transition ${
+                ativo ? 'text-blue-400' : 'text-slate-500'
+              }`}
+            >
+              <div className="text-lg mb-0.5">{item.icon}</div>
+              <div className="truncate px-1 font-medium">{item.label}</div>
+            </Link>
+          );
+        })}
       </div>
 
-      {/* Conteúdo principal */}
-      <main className="flex-1 md:ml-64 pt-16 md:pt-0 pb-20 md:pb-0">
+      {/* ============================================================ */}
+      {/* CONTEÚDO */}
+      {/* ============================================================ */}
+      <main className="flex-1 md:ml-64 pt-16 md:pt-0 pb-20 md:pb-0 bg-slate-50">
         <Outlet />
       </main>
     </div>

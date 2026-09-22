@@ -3,13 +3,14 @@ import api from '../api/api';
 import UploadImage from '../components/UploadImage';
 
 // ============================================================
-// METADADOS DAS SEÇÕES
+// SEÇÕES (nomes bonitos)
 // ============================================================
 const SECOES_INFO = {
-  hero:          { icon: '🎯', label: 'Hero' },
+  hero:          { icon: '🎯', label: 'Hero (Carrossel)' },
   credibility:   { icon: '✅', label: 'Barra de Credibilidade' },
   problem:       { icon: '😩', label: 'Problema (Dor)' },
-  solution:      { icon: '🧩', label: 'Solução (Motores)' },
+  before_after:  { icon: '🔄', label: 'Antes vs Depois' },
+  solution:      { icon: '🧩', label: 'Solução (7 Motores)' },
   founder:       { icon: '👤', label: 'Criador (Founder)' },
   video:         { icon: '🎥', label: 'Vídeo Explicativo' },
   how_it_works:  { icon: '🪜', label: 'Como Funciona' },
@@ -19,11 +20,25 @@ const SECOES_INFO = {
   founder_offer: { icon: '🎁', label: 'Oferta de Fundador' },
   plans:         { icon: '💰', label: 'Planos' },
   guarantee:     { icon: '🛡️', label: 'Garantia' },
-  faq:           { icon: '❓', label: 'FAQ' },
+  faq:           { icon: '❓', label: 'Perguntas Frequentes' },
   final_cta:     { icon: '🚀', label: 'CTA Final' },
-  footer:        { icon: '📄', label: 'Footer' },
+  footer:        { icon: '📄', label: 'Rodapé' },
 };
 
+// ============================================================
+// GRADIENTES DISPONÍVEIS PARA OS SLIDES
+// ============================================================
+const GRADIENTES_SLIDES = [
+  { value: 'from-blue-50 via-white to-purple-50',   label: 'Claro · Azul/Roxo',     preview: 'bg-gradient-to-br from-blue-50 via-white to-purple-50' },
+  { value: 'from-white via-gray-50 to-white',       label: 'Claro · Neutro',         preview: 'bg-gradient-to-br from-white via-gray-50 to-white' },
+  { value: 'from-gray-900 via-blue-900 to-gray-900', label: 'Escuro · Azul premium',  preview: 'bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900' },
+  { value: 'from-gray-900 via-gray-900 to-blue-950', label: 'Escuro · Profundo',      preview: 'bg-gradient-to-br from-gray-900 via-gray-900 to-blue-950' },
+  { value: 'from-gray-50 via-white to-blue-50',      label: 'Claro · Azulado',        preview: 'bg-gradient-to-br from-gray-50 via-white to-blue-50' },
+];
+
+// ============================================================
+// MAIN
+// ============================================================
 const AdminLanding = () => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +70,7 @@ const AdminLanding = () => {
   };
 
   const resetarTudo = async () => {
-    if (!window.confirm('Tem certeza? Isso vai reverter TODAS as seções para o padrão. As imagens enviadas serão mantidas no banco, mas os campos serão limpos.')) return;
+    if (!window.confirm('Tem certeza? Isso vai reverter TODAS as seções para o padrão.')) return;
     if (!window.confirm('Última confirmação: resetar tudo?')) return;
     setSalvando(true);
     try {
@@ -108,30 +123,30 @@ const AdminLanding = () => {
     }
   };
 
-  if (loading) return <div className="text-gray-400 py-20 text-center">Carregando configuração...</div>;
-  if (!config) return <div className="text-red-400 py-20 text-center">Erro: config não carregada.</div>;
+  if (loading) return <div className="p-12 text-center text-slate-500">Carregando configuração...</div>;
+  if (!config) return <div className="p-12 text-center text-red-500">Erro: config não carregada.</div>;
 
   return (
-    <div className="max-w-7xl mx-auto p-6 md:p-8">
-      {/* TOP BAR */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <div className="max-w-[1600px] mx-auto p-6 md:p-8">
+      {/* ============= TOP BAR ============= */}
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white">Editor da Landing Page</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Edite textos, seções, imagens e ordem. As mudanças aparecem em simidnape.com.br após salvar.
+          <h1 className="text-3xl font-bold text-slate-900">Editor da Landing Page</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Edite textos, imagens, slides e ordem das seções. As mudanças aparecem em simidnape.com.br após salvar.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <a href="/" target="_blank" rel="noreferrer"
-            className="bg-gray-800 hover:bg-gray-700 text-white font-medium px-4 py-2 rounded-lg text-sm border border-gray-700">
+            className="bg-white hover:bg-slate-50 text-slate-700 font-medium px-4 py-2 rounded-lg text-sm border border-slate-200 shadow-sm">
             👁️ Ver landing
           </a>
           <button onClick={resetarTudo} disabled={salvando}
-            className="bg-red-900/30 hover:bg-red-900/50 text-red-300 font-medium px-4 py-2 rounded-lg text-sm border border-red-800 disabled:opacity-50">
+            className="bg-white hover:bg-red-50 text-red-600 font-medium px-4 py-2 rounded-lg text-sm border border-red-200 disabled:opacity-50 shadow-sm">
             🔄 Resetar tudo
           </button>
           <button onClick={salvarSecao} disabled={salvando}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-sm disabled:opacity-50">
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-sm disabled:opacity-50 shadow-sm">
             {salvando ? 'Salvando...' : '💾 Salvar seção'}
           </button>
         </div>
@@ -140,18 +155,20 @@ const AdminLanding = () => {
       {msg && (
         <div className={`rounded-lg p-3 mb-6 text-sm ${
           msg.tipo === 'sucesso'
-            ? 'bg-green-500/20 border border-green-500/30 text-green-300'
-            : 'bg-red-500/20 border border-red-500/30 text-red-300'
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+            : 'bg-red-50 border border-red-200 text-red-700'
         }`}>
           {msg.tipo === 'sucesso' ? '✅' : '⚠️'} {msg.texto}
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* MENU LATERAL */}
-        <div className="lg:col-span-1 bg-gray-800 border border-gray-700 rounded-xl p-3">
-          <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold px-3 py-2">Seções</p>
-          <div className="space-y-1">
+        {/* ============= SIDEBAR ============= */}
+        <div className="lg:col-span-1 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+          <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-2">
+            Seções
+          </p>
+          <div className="space-y-0.5">
             {config.sections_order.map((secao, idx) => {
               const info = SECOES_INFO[secao] || { icon: '📄', label: secao };
               const ativa = secaoAtiva === secao;
@@ -159,29 +176,29 @@ const AdminLanding = () => {
               return (
                 <div key={secao}
                   className={`flex items-center gap-1 rounded-lg transition ${
-                    ativa ? 'bg-blue-600/20 border border-blue-500/50' : 'hover:bg-gray-700/50'
+                    ativa ? 'bg-blue-50 border border-blue-200' : 'hover:bg-slate-50 border border-transparent'
                   }`}>
                   <button onClick={() => setSecaoAtiva(secao)}
-                    className={`flex-1 flex items-center gap-2 px-3 py-2 text-left text-sm ${
-                      ativa ? 'text-white font-medium' : 'text-gray-300'
+                    className={`flex-1 flex items-center gap-2 px-2.5 py-2 text-left text-sm ${
+                      ativa ? 'text-blue-700 font-semibold' : 'text-slate-600'
                     }`}>
                     <span>{info.icon}</span>
                     <span className="truncate">{info.label}</span>
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); toggleEnabled(secao); }}
                     title={habilitada ? 'Desativar' : 'Ativar'}
-                    className={`w-6 h-6 rounded text-xs flex items-center justify-center ${
-                      habilitada ? 'bg-green-500/30 text-green-300' : 'bg-gray-700 text-gray-500'
+                    className={`w-5 h-5 rounded text-[8px] flex items-center justify-center transition ${
+                      habilitada ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'
                     }`}>
                     {habilitada ? '●' : '○'}
                   </button>
                   <div className="flex flex-col">
                     <button onClick={(e) => { e.stopPropagation(); moverSecao(secao, 'up'); }}
                       disabled={idx === 0}
-                      className="text-gray-500 hover:text-white text-xs leading-none px-1 disabled:opacity-30">▲</button>
+                      className="text-slate-300 hover:text-slate-600 text-[10px] leading-none px-1 disabled:opacity-30">▲</button>
                     <button onClick={(e) => { e.stopPropagation(); moverSecao(secao, 'down'); }}
                       disabled={idx === config.sections_order.length - 1}
-                      className="text-gray-500 hover:text-white text-xs leading-none px-1 disabled:opacity-30">▼</button>
+                      className="text-slate-300 hover:text-slate-600 text-[10px] leading-none px-1 disabled:opacity-30">▼</button>
                   </div>
                 </div>
               );
@@ -189,36 +206,36 @@ const AdminLanding = () => {
           </div>
 
           <button onClick={salvarOrdem} disabled={salvando}
-            className="w-full mt-3 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium py-2 rounded-lg disabled:opacity-50">
-            💾 Salvar ordem das seções
+            className="w-full mt-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium py-2 rounded-lg disabled:opacity-50 transition">
+            💾 Salvar ordem
           </button>
 
-          <div className="border-t border-gray-700 mt-3 pt-3">
-            <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold px-3 py-1">Global</p>
+          <div className="border-t border-slate-200 mt-3 pt-3">
+            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1">Global</p>
             <button onClick={() => setSecaoAtiva('_global')}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left ${
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
                 secaoAtiva === '_global'
-                  ? 'bg-blue-600/20 border border-blue-500/50 text-white font-medium'
-                  : 'text-gray-300 hover:bg-gray-700/50'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
               }`}>
-              <span>⚙️</span><span>Configurações Globais</span>
+              <span>⚙️</span><span>SEO e Meta Tags</span>
             </button>
             <button onClick={() => setSecaoAtiva('_popup')}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left mt-1 ${
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left mt-0.5 ${
                 secaoAtiva === '_popup'
-                  ? 'bg-blue-600/20 border border-blue-500/50 text-white font-medium'
-                  : 'text-gray-300 hover:bg-gray-700/50'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
               }`}>
-              <span>📢</span><span>Pop-up de Promoção</span>
-              <span className={`ml-auto text-xs ${config.popup?.enabled ? 'text-green-400' : 'text-gray-500'}`}>
+              <span>📢</span><span className="flex-1">Pop-up</span>
+              <span className={`text-[10px] ${config.popup?.enabled ? 'text-emerald-500' : 'text-slate-400'}`}>
                 {config.popup?.enabled ? '● ON' : '○ OFF'}
               </span>
             </button>
           </div>
         </div>
 
-        {/* EDITOR */}
-        <div className="lg:col-span-3 bg-gray-800 border border-gray-700 rounded-xl p-6">
+        {/* ============= EDITOR ============= */}
+        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           {secaoAtiva === '_global' && <EditorGlobal config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva === '_popup' && <EditorPopup config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva !== '_global' && secaoAtiva !== '_popup' && (
@@ -232,41 +249,41 @@ const AdminLanding = () => {
 };
 
 // ============================================================
-// HELPERS
+// HELPERS DE INPUT (tema claro)
 // ============================================================
 const Input = ({ label, value, onChange, placeholder, type = 'text', help }) => (
   <div className="mb-4">
-    <label className="block text-sm font-medium text-gray-300 mb-1.5">{label}</label>
-    {help && <p className="text-xs text-gray-500 mb-1.5 leading-relaxed">{help}</p>}
+    <label className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
+    {help && <p className="text-xs text-slate-500 mb-1.5 leading-relaxed">{help}</p>}
     <input type={type} value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
   </div>
 );
 
 const Textarea = ({ label, value, onChange, rows = 3, placeholder, help }) => (
   <div className="mb-4">
-    <label className="block text-sm font-medium text-gray-300 mb-1.5">{label}</label>
-    {help && <p className="text-xs text-gray-500 mb-1.5 leading-relaxed">{help}</p>}
+    <label className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
+    {help && <p className="text-xs text-slate-500 mb-1.5 leading-relaxed">{help}</p>}
     <textarea value={value ?? ''} onChange={(e) => onChange(e.target.value)} rows={rows} placeholder={placeholder}
-      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
   </div>
 );
 
 const Toggle = ({ label, value, onChange }) => (
   <label className="flex items-center gap-3 mb-4 cursor-pointer">
-    <div className={`relative w-11 h-6 rounded-full transition ${value ? 'bg-blue-600' : 'bg-gray-700'}`}>
-      <div className="absolute top-0.5 w-5 h-5 bg-white rounded-full transition"
+    <div className={`relative w-11 h-6 rounded-full transition ${value ? 'bg-blue-600' : 'bg-slate-300'}`}>
+      <div className="absolute top-0.5 w-5 h-5 bg-white rounded-full transition shadow-sm"
         style={{ left: value ? '22px' : '2px' }} />
     </div>
-    <span className="text-sm text-gray-300">{label}</span>
+    <span className="text-sm font-medium text-slate-700">{label}</span>
   </label>
 );
 
 const ListHeader = ({ label, onAdd, addLabel = '+ Adicionar' }) => (
-  <div className="flex items-center justify-between mt-6 mb-2">
-    <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">{label}</p>
+  <div className="flex items-center justify-between mt-6 mb-2 pb-2 border-b border-slate-200">
+    <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">{label}</p>
     {onAdd && (
-      <button onClick={onAdd} className="text-blue-400 hover:text-blue-300 text-xs font-medium">
+      <button onClick={onAdd} className="text-blue-600 hover:text-blue-700 text-xs font-semibold">
         {addLabel}
       </button>
     )}
@@ -274,11 +291,11 @@ const ListHeader = ({ label, onAdd, addLabel = '+ Adicionar' }) => (
 );
 
 const ItemBox = ({ index, onRemove, children, label = 'Item' }) => (
-  <div className="bg-gray-900 border border-gray-700 rounded-lg p-3 mb-2">
+  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-2">
     <div className="flex items-center justify-between mb-2">
-      <span className="text-xs text-gray-400 font-medium">{label} {index + 1}</span>
+      <span className="text-xs text-slate-600 font-semibold">{label} {index + 1}</span>
       {onRemove && (
-        <button onClick={onRemove} className="text-red-400 hover:text-red-300 text-xs">🗑️ Remover</button>
+        <button onClick={onRemove} className="text-red-500 hover:text-red-700 text-xs">🗑️ Remover</button>
       )}
     </div>
     {children}
@@ -292,12 +309,12 @@ const EditorSecao = ({ secao, data, onChange, onSave, salvando }) => {
   const info = SECOES_INFO[secao] || { icon: '📄', label: secao };
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-700">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
         <span className="text-3xl">{info.icon}</span>
         <div>
-          <h2 className="text-xl font-bold text-white">{info.label}</h2>
-          <p className="text-xs text-gray-400">
-            {data.enabled !== false ? '● Ativa na landing' : '○ Desativada (não aparece)'}
+          <h2 className="text-xl font-bold text-slate-900">{info.label}</h2>
+          <p className="text-xs text-slate-500">
+            {data.enabled !== false ? '● Visível na landing' : '○ Oculta na landing'}
           </p>
         </div>
       </div>
@@ -305,6 +322,7 @@ const EditorSecao = ({ secao, data, onChange, onSave, salvando }) => {
       {secao === 'hero' && <EditorHero data={data} onChange={onChange} />}
       {secao === 'credibility' && <EditorCredibility data={data} onChange={onChange} />}
       {secao === 'problem' && <EditorProblem data={data} onChange={onChange} />}
+      {secao === 'before_after' && <EditorBeforeAfter data={data} onChange={onChange} />}
       {secao === 'solution' && <EditorSolution data={data} onChange={onChange} />}
       {secao === 'founder' && <EditorFounder data={data} onChange={onChange} />}
       {secao === 'video' && <EditorVideo data={data} onChange={onChange} />}
@@ -319,9 +337,9 @@ const EditorSecao = ({ secao, data, onChange, onSave, salvando }) => {
       {secao === 'final_cta' && <EditorFinalCTA data={data} onChange={onChange} />}
       {secao === 'footer' && <EditorFooter data={data} onChange={onChange} />}
 
-      <div className="mt-8 pt-4 border-t border-gray-700 flex justify-end">
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
         <button onClick={onSave} disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-sm disabled:opacity-50">
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
           {salvando ? 'Salvando...' : `💾 Salvar "${info.label}"`}
         </button>
       </div>
@@ -330,112 +348,213 @@ const EditorSecao = ({ secao, data, onChange, onSave, salvando }) => {
 };
 
 // ============================================================
-// EDITOR HERO
+// EDITOR HERO — com carrossel de slides + preview
 // ============================================================
 const EditorHero = ({ data, onChange }) => {
-  const setArr = (field, index, key, value) => {
-    const arr = [...(data[field] || [])];
-    arr[index] = { ...arr[index], [key]: value };
-    onChange(field, arr);
+  const slides = data.slides || [];
+  const [slideAtivo, setSlideAtivo] = useState(0);
+
+  const updateSlide = (i, key, value) => {
+    const arr = [...slides];
+    arr[i] = { ...arr[i], [key]: value };
+    onChange('slides', arr);
   };
-  const addArr = (field, item) => onChange(field, [...(data[field] || []), item]);
-  const removeArr = (field, index) => onChange(field, (data[field] || []).filter((_, i) => i !== index));
+
+  const addSlide = () => {
+    onChange('slides', [...slides, {
+      badge: '',
+      brand_line: '',
+      headline: 'Novo slide',
+      subheadline: '',
+      cta_primary_text: '',
+      cta_primary_link: '/register',
+      cta_secondary_text: '',
+      cta_secondary_video_url: '',
+      image: '',
+      gradient: 'from-blue-50 via-white to-purple-50',
+    }]);
+    setSlideAtivo(slides.length);
+  };
+
+  const removeSlide = (i) => {
+    const arr = slides.filter((_, j) => j !== i);
+    onChange('slides', arr);
+    setSlideAtivo(Math.max(0, Math.min(i, arr.length - 1)));
+  };
+
+  const slide = slides[slideAtivo] || {};
+  const isDark = slide.gradient?.includes('gray-900') || slide.gradient?.includes('blue-9');
 
   return (
     <>
       <Toggle label="Hero ativado" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
-      <Input label="Badge (linha pequena no topo)" value={data.badge} onChange={(v) => onChange('badge', v)}
-        help="Ex: 🇧🇷 Feito por quem conhece sala de aula" />
-      <Input label="Linha da marca (acima da headline)" value={data.brand_line}
-        onChange={(v) => onChange('brand_line', v)}
-        help="Ex: SIMIDNAPE PRO · O Professor Inesquecível" />
-      <Textarea label="Headline principal" value={data.headline}
-        onChange={(v) => onChange('headline', v)} rows={2} />
-      <Textarea label="Subheadline" value={data.subheadline}
-        onChange={(v) => onChange('subheadline', v)} rows={3} />
+      <Toggle label="Carrossel ativado (recomendado)" value={data.carousel_enabled !== false}
+        onChange={(v) => onChange('carousel_enabled', v)} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input label="Texto do CTA principal" value={data.cta_primary_text}
-          onChange={(v) => onChange('cta_primary_text', v)} />
-        <Input label="Link do CTA principal" value={data.cta_primary_link}
-          onChange={(v) => onChange('cta_primary_link', v)} />
-        <Input label="Texto do CTA secundário" value={data.cta_secondary_text}
-          onChange={(v) => onChange('cta_secondary_text', v)} />
-        <Input label="URL do vídeo do CTA secundário" value={data.cta_secondary_video_url}
-          onChange={(v) => onChange('cta_secondary_video_url', v)}
-          help="YouTube, Vimeo ou .mp4. Deixe vazio para ocultar o botão." />
+      {/* =========================================== */}
+      {/* EDITOR DE SLIDES */}
+      {/* =========================================== */}
+      <ListHeader label={`Slides (${slides.length})`} onAdd={addSlide} addLabel="+ Adicionar slide" />
+
+      {/* Abas de slides */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {slides.map((s, i) => (
+          <button key={i} onClick={() => setSlideAtivo(i)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              slideAtivo === i
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}>
+            Slide {i + 1}
+          </button>
+        ))}
       </div>
 
-      <UploadImage
-        slot="hero_image"
-        label="Foto principal do Hero (lado direito)"
-        value={data.hero_image}
-        onChange={(v) => onChange('hero_image', v)}
-        help="Foto de professor(a). Se vazio, mostra placeholder cinza."
-      />
+      {slides.length === 0 && (
+        <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300 mb-4">
+          <p className="text-slate-500 text-sm mb-3">Nenhum slide ainda</p>
+          <button onClick={addSlide}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-sm">
+            + Criar primeiro slide
+          </button>
+        </div>
+      )}
 
-      <ListHeader
-        label="Badges flutuantes sobre a foto"
-        onAdd={() => addArr('float_badges', { icon: '⭐', title: '', subtitle: '' })} />
-      {(data.float_badges || []).map((b, i) => (
-        <ItemBox key={i} index={i} label="Badge" onRemove={() => removeArr('float_badges', i)}>
-          <div className="grid grid-cols-3 gap-2">
-            <Input label="Ícone" value={b.icon} onChange={(v) => setArr('float_badges', i, 'icon', v)} placeholder="⚡" />
-            <div className="col-span-2">
-              <Input label="Título" value={b.title} onChange={(v) => setArr('float_badges', i, 'title', v)} />
+      {slides.length > 0 && slide && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          {/* Coluna de edição */}
+          <div className="lg:col-span-3">
+            <ItemBox index={slideAtivo} label="Slide" onRemove={() => removeSlide(slideAtivo)}>
+              <Input label="Badge (linha pequena no topo)" value={slide.badge}
+                onChange={(v) => updateSlide(slideAtivo, 'badge', v)} />
+              <Input label="Brand line (acima da headline)" value={slide.brand_line}
+                onChange={(v) => updateSlide(slideAtivo, 'brand_line', v)} />
+              <Textarea label="Headline principal" value={slide.headline}
+                onChange={(v) => updateSlide(slideAtivo, 'headline', v)} rows={2} />
+              <Textarea label="Subheadline" value={slide.subheadline}
+                onChange={(v) => updateSlide(slideAtivo, 'subheadline', v)} rows={3} />
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Texto botão principal" value={slide.cta_primary_text}
+                  onChange={(v) => updateSlide(slideAtivo, 'cta_primary_text', v)} />
+                <Input label="Link botão principal" value={slide.cta_primary_link}
+                  onChange={(v) => updateSlide(slideAtivo, 'cta_primary_link', v)} />
+                <Input label="Texto botão secundário" value={slide.cta_secondary_text}
+                  onChange={(v) => updateSlide(slideAtivo, 'cta_secondary_text', v)} />
+                <Input label="URL vídeo do botão secundário" value={slide.cta_secondary_video_url}
+                  onChange={(v) => updateSlide(slideAtivo, 'cta_secondary_video_url', v)} />
+              </div>
+
+              <UploadImage
+                slot={`hero_slide_${slideAtivo}`}
+                label="Imagem deste slide"
+                value={slide.image}
+                onChange={(v) => updateSlide(slideAtivo, 'image', v)}
+                help="A imagem aparece à direita do slide (coluna 2)."
+              />
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Fundo do slide</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {GRADIENTES_SLIDES.map((g) => (
+                    <button key={g.value} type="button"
+                      onClick={() => updateSlide(slideAtivo, 'gradient', g.value)}
+                      className={`flex items-center gap-3 p-2 rounded-lg border-2 transition text-left ${
+                        slide.gradient === g.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}>
+                      <div className={`w-10 h-10 rounded-lg ${g.preview} border border-slate-200`} />
+                      <span className="text-xs font-medium text-slate-700">{g.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </ItemBox>
+          </div>
+
+          {/* Preview */}
+          <div className="lg:col-span-2">
+            <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">
+              Prévia do slide
+            </p>
+            <div className={`rounded-xl overflow-hidden border-2 border-slate-200 shadow-sm ${slide.gradient?.startsWith('from-') ? 'bg-gradient-to-br ' + slide.gradient : 'bg-white'}`}>
+              <div className="p-4 min-h-[280px] flex flex-col justify-between">
+                <div>
+                  {slide.badge && (
+                    <div className={`inline-block rounded-full px-2.5 py-1 mb-3 ${
+                      isDark ? 'bg-white/10 text-white' : 'bg-white text-blue-700 border border-blue-200'
+                    }`}>
+                      <span className="text-[10px] font-semibold">{slide.badge}</span>
+                    </div>
+                  )}
+                  {slide.brand_line && (
+                    <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${
+                      isDark ? 'text-blue-300' : 'text-blue-700'
+                    }`}>
+                      {slide.brand_line}
+                    </p>
+                  )}
+                  <h3 className={`text-base font-bold leading-tight mb-2 ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    {slide.headline || 'Headline do slide'}
+                  </h3>
+                  <p className={`text-[11px] leading-snug mb-3 ${
+                    isDark ? 'text-slate-300' : 'text-slate-600'
+                  }`}>
+                    {slide.subheadline || 'Subheadline do slide'}
+                  </p>
+                </div>
+
+                {slide.image && (
+                  <div className="mt-2 rounded-lg overflow-hidden">
+                    <img src={slide.image} alt="" className="w-full h-24 object-cover" />
+                  </div>
+                )}
+
+                {slide.cta_primary_text && (
+                  <div className={`inline-block text-[10px] font-bold px-3 py-1.5 rounded-md mt-3 ${
+                    isDark ? 'bg-white text-slate-900' : 'bg-blue-600 text-white'
+                  }`}>
+                    {slide.cta_primary_text}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          <Input label="Subtítulo" value={b.subtitle} onChange={(v) => setArr('float_badges', i, 'subtitle', v)} />
-        </ItemBox>
-      ))}
 
-      <ListHeader
-        label="Métricas abaixo do CTA"
-        onAdd={() => addArr('metrics', { value: '', label: '' })} />
-      {(data.metrics || []).map((m, i) => (
-        <ItemBox key={i} index={i} label="Métrica" onRemove={() => removeArr('metrics', i)}>
-          <div className="grid grid-cols-2 gap-2">
-            <Input label="Valor" value={m.value} onChange={(v) => setArr('metrics', i, 'value', v)} placeholder="7" />
-            <Input label="Rótulo" value={m.label} onChange={(v) => setArr('metrics', i, 'label', v)} placeholder="motores de IA" />
+            <p className="text-[10px] text-slate-400 mt-2 text-center">
+              Prévia aproximada — o resultado final pode variar
+            </p>
           </div>
-        </ItemBox>
-      ))}
-
-      <div className="mt-6 pt-4 border-t border-gray-700">
-        <Input label="URL do vídeo principal do Hero" value={data.video_url}
-          onChange={(v) => onChange('video_url', v)}
-          placeholder="https://www.youtube.com/watch?v=..." />
-        <Toggle label="Mostrar vídeo principal" value={data.video_enabled}
-          onChange={(v) => onChange('video_enabled', v)} />
-      </div>
+        </div>
+      )}
     </>
   );
 };
 
 // ============================================================
-// EDITOR CREDIBILITY (novo formato: icon + title + description)
+// EDITOR CREDIBILITY
 // ============================================================
 const EditorCredibility = ({ data, onChange }) => {
-  const setArr = (i, key, value) => {
+  const setItem = (i, key, value) => {
     const arr = [...(data.items || [])];
     arr[i] = { ...arr[i], [key]: value };
     onChange('items', arr);
   };
-
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
-
-      <ListHeader
-        label="Itens de credibilidade"
-        onAdd={() => onChange('items', [...(data.items || []), { icon: '⭐', title: '', description: '' }])} />
+      <ListHeader label="Números de destaque"
+        onAdd={() => onChange('items', [...(data.items || []), { title: '', description: '', icon: '' }])} />
       {(data.items || []).map((item, i) => (
-        <ItemBox key={i} index={i} label="Item"
+        <ItemBox key={i} index={i} label="Número"
           onRemove={() => onChange('items', (data.items || []).filter((_, j) => j !== i))}>
-          <Input label="Ícone" value={item.icon} onChange={(v) => setArr(i, 'icon', v)} placeholder="🎯" />
-          <Input label="Título" value={item.title} onChange={(v) => setArr(i, 'title', v)} />
-          <Textarea label="Descrição" value={item.description}
-            onChange={(v) => setArr(i, 'description', v)} rows={2} />
+          <div className="grid grid-cols-2 gap-2">
+            <Input label="Número grande" value={item.title} onChange={(v) => setItem(i, 'title', v)} placeholder="3.500+" />
+            <Input label="Rótulo" value={item.description} onChange={(v) => setItem(i, 'description', v)} placeholder="Professores impactados" />
+          </div>
+          <Input label="Detalhe (linha cinza abaixo)" value={item.icon} onChange={(v) => setItem(i, 'icon', v)} />
         </ItemBox>
       ))}
     </>
@@ -456,21 +575,44 @@ const EditorProblem = ({ data, onChange }) => {
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
-      <UploadImage slot="problem_image" label="Imagem lateral (opcional)"
-        value={data.image} onChange={(v) => onChange('image', v)}
-        help="Foto de professor(a). Se vazio, os cards ficam centralizados." />
-      <Input label="Texto de transição" value={data.transition_text}
-        onChange={(v) => onChange('transition_text', v)} />
-
+      <Input label="Texto de transição (frase em negrito)" value={data.transition_text} onChange={(v) => onChange('transition_text', v)} />
       <ListHeader label="Cards de dor"
         onAdd={() => onChange('cards', [...(data.cards || []), { icon: '😩', title: '', description: '' }])} />
       {(data.cards || []).map((c, i) => (
-        <ItemBox key={i} index={i} label="Card"
-          onRemove={() => onChange('cards', (data.cards || []).filter((_, j) => j !== i))}>
-          <Input label="Ícone" value={c.icon} onChange={(v) => setCard(i, 'icon', v)} />
+        <ItemBox key={i} index={i} label="Card" onRemove={() => onChange('cards', (data.cards || []).filter((_, j) => j !== i))}>
+          <Input label="Ícone (emoji)" value={c.icon} onChange={(v) => setCard(i, 'icon', v)} />
           <Input label="Título" value={c.title} onChange={(v) => setCard(i, 'title', v)} />
-          <Textarea label="Descrição" value={c.description}
-            onChange={(v) => setCard(i, 'description', v)} rows={2} />
+          <Textarea label="Descrição" value={c.description} onChange={(v) => setCard(i, 'description', v)} rows={2} />
+        </ItemBox>
+      ))}
+    </>
+  );
+};
+
+// ============================================================
+// EDITOR BEFORE / AFTER
+// ============================================================
+const EditorBeforeAfter = ({ data, onChange }) => {
+  const setItem = (i, key, value) => {
+    const arr = [...(data.items || [])];
+    arr[i] = { ...arr[i], [key]: value };
+    onChange('items', arr);
+  };
+  return (
+    <>
+      <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
+      <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
+      <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Rótulo ANTES" value={data.before_label} onChange={(v) => onChange('before_label', v)} placeholder="Antes" />
+        <Input label="Rótulo DEPOIS" value={data.after_label} onChange={(v) => onChange('after_label', v)} placeholder="Depois" />
+      </div>
+      <ListHeader label="Linhas de comparação"
+        onAdd={() => onChange('items', [...(data.items || []), { before: '', after: '' }])} />
+      {(data.items || []).map((item, i) => (
+        <ItemBox key={i} index={i} label="Linha" onRemove={() => onChange('items', (data.items || []).filter((_, j) => j !== i))}>
+          <Textarea label="🔴 Antes" value={item.before} onChange={(v) => setItem(i, 'before', v)} rows={2} />
+          <Textarea label="🟢 Depois" value={item.after} onChange={(v) => setItem(i, 'after', v)} rows={2} />
         </ItemBox>
       ))}
     </>
@@ -490,15 +632,13 @@ const EditorSolution = ({ data, onChange }) => {
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
-      <Textarea label="Subtítulo" value={data.subtitle}
-        onChange={(v) => onChange('subtitle', v)} rows={2} />
-      <UploadImage slot="solution_image" label="Print/ilustração do sistema (opcional)"
-        value={data.image} onChange={(v) => onChange('image', v)} />
-
+      <Textarea label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} rows={2} />
+      <UploadImage slot="solution_image" label="Imagem do sistema (opcional)"
+        value={data.image} onChange={(v) => onChange('image', v)}
+        help="Print da tela do sistema ou ilustração." />
       <ListHeader label="Motores de IA (7)"
         onAdd={() => onChange('motors', [...(data.motors || []), {
-          icon: '⭐', name: '', description: '',
-          gradient: 'from-blue-500 to-indigo-500', features: []
+          icon: '⭐', name: '', description: '', gradient: 'from-blue-500 to-indigo-500', features: []
         }])} />
       {(data.motors || []).map((m, i) => (
         <ItemBox key={i} index={i} label="Motor"
@@ -509,13 +649,9 @@ const EditorSolution = ({ data, onChange }) => {
               <Input label="Nome" value={m.name} onChange={(v) => setMotor(i, 'name', v)} />
             </div>
           </div>
-          <Textarea label="Descrição" value={m.description}
-            onChange={(v) => setMotor(i, 'description', v)} rows={2} />
+          <Textarea label="Descrição" value={m.description} onChange={(v) => setMotor(i, 'description', v)} rows={2} />
           <Textarea label="Features (uma por linha)" value={(m.features || []).join('\n')}
             onChange={(v) => setMotor(i, 'features', v.split('\n').filter(Boolean))} rows={3} />
-          <Input label="Gradiente (Tailwind)" value={m.gradient}
-            onChange={(v) => setMotor(i, 'gradient', v)}
-            placeholder="from-blue-500 to-indigo-500" />
         </ItemBox>
       ))}
     </>
@@ -535,30 +671,24 @@ const EditorFounder = ({ data, onChange }) => {
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Sobretítulo (kicker)" value={data.title} onChange={(v) => onChange('title', v)} />
-      <Input label="Nome do criador" value={data.name} onChange={(v) => onChange('name', v)} />
+      <Input label="Nome" value={data.name} onChange={(v) => onChange('name', v)} />
       <Input label="Subtítulo (cargo)" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
       <UploadImage slot="founder_photo" label="Foto do criador"
         value={data.photo} onChange={(v) => onChange('photo', v)}
-        help="Foto profissional do Darilson. Se vazio, mostra as iniciais." />
-      <Textarea label="Citação (quote)" value={data.quote}
-        onChange={(v) => onChange('quote', v)} rows={2} />
+        help="Foto profissional. Se vazio, mostra as iniciais." />
+      <Textarea label="Citação (quote)" value={data.quote} onChange={(v) => onChange('quote', v)} rows={2} />
       <Textarea label="Bio (parágrafos separados por linha em branco)"
-        value={data.bio} onChange={(v) => onChange('bio', v)} rows={10}
-        help="Separe cada parágrafo com uma linha em branco. Ficará formatado automaticamente." />
+        value={data.bio} onChange={(v) => onChange('bio', v)} rows={10} />
       <Textarea label="Explicação do significado SIMIDNAPE"
         value={data.brand_explanation} onChange={(v) => onChange('brand_explanation', v)} rows={4} />
-      <Input label="URL do vídeo do criador (opcional)" value={data.video_url}
-        onChange={(v) => onChange('video_url', v)}
-        placeholder="https://www.youtube.com/watch?v=..." />
-
-      <ListHeader label="Stats de destaque (3 números)"
+      <Input label="URL do vídeo do criador (opcional)" value={data.video_url} onChange={(v) => onChange('video_url', v)} />
+      <ListHeader label="Stats de destaque"
         onAdd={() => onChange('highlight_stats', [...(data.highlight_stats || []), { value: '', label: '' }])} />
       {(data.highlight_stats || []).map((s, i) => (
-        <ItemBox key={i} index={i} label="Stat"
-          onRemove={() => onChange('highlight_stats', (data.highlight_stats || []).filter((_, j) => j !== i))}>
+        <ItemBox key={i} index={i} label="Stat" onRemove={() => onChange('highlight_stats', (data.highlight_stats || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-2 gap-2">
-            <Input label="Valor" value={s.value} onChange={(v) => setStat(i, 'value', v)} placeholder="18+" />
-            <Input label="Rótulo" value={s.label} onChange={(v) => setStat(i, 'label', v)} placeholder="anos em educação" />
+            <Input label="Valor" value={s.value} onChange={(v) => setStat(i, 'value', v)} />
+            <Input label="Rótulo" value={s.label} onChange={(v) => setStat(i, 'label', v)} />
           </div>
         </ItemBox>
       ))}
@@ -575,7 +705,7 @@ const EditorVideo = ({ data, onChange }) => (
     <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
     <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
     <Input label="URL do vídeo" value={data.video_url} onChange={(v) => onChange('video_url', v)}
-      placeholder="https://www.youtube.com/watch?v=..." />
+      help="YouTube, Vimeo ou arquivo .mp4" />
   </>
 );
 
@@ -593,20 +723,17 @@ const EditorHowItWorks = ({ data, onChange }) => {
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
-
       <ListHeader label="Passos"
         onAdd={() => onChange('steps', [...(data.steps || []), { number: '', title: '', description: '' }])} />
       {(data.steps || []).map((s, i) => (
-        <ItemBox key={i} index={i} label="Passo"
-          onRemove={() => onChange('steps', (data.steps || []).filter((_, j) => j !== i))}>
+        <ItemBox key={i} index={i} label="Passo" onRemove={() => onChange('steps', (data.steps || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-3 gap-2">
             <Input label="Número" value={s.number} onChange={(v) => setStep(i, 'number', v)} />
             <div className="col-span-2">
               <Input label="Título" value={s.title} onChange={(v) => setStep(i, 'title', v)} />
             </div>
           </div>
-          <Textarea label="Descrição" value={s.description}
-            onChange={(v) => setStep(i, 'description', v)} rows={2} />
+          <Textarea label="Descrição" value={s.description} onChange={(v) => setStep(i, 'description', v)} rows={2} />
         </ItemBox>
       ))}
     </>
@@ -626,12 +753,21 @@ const EditorMetrics = ({ data, onChange }) => {
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
-
+      <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
+      <UploadImage slot="metrics_bg" label="Imagem de fundo (opcional)"
+        value={data.background_image} onChange={(v) => onChange('background_image', v)}
+        help="Imagem que fica por trás dos números com uma sobreposição escura." />
+      <Input label="URL do vídeo de fundo (opcional)"
+        value={data.background_video_url} onChange={(v) => onChange('background_video_url', v)}
+        help="Se preenchido, tem prioridade sobre a imagem." />
+      <Input label="Intensidade da sobreposição escura (0 a 1)"
+        type="number" value={data.background_overlay}
+        onChange={(v) => onChange('background_overlay', parseFloat(v) || 0.85)}
+        help="0.85 deixa 85% escuro. Recomendado: 0.8 a 0.9" />
       <ListHeader label="Métricas"
         onAdd={() => onChange('metrics', [...(data.metrics || []), { value: '', label: '' }])} />
       {(data.metrics || []).map((m, i) => (
-        <ItemBox key={i} index={i} label="Métrica"
-          onRemove={() => onChange('metrics', (data.metrics || []).filter((_, j) => j !== i))}>
+        <ItemBox key={i} index={i} label="Métrica" onRemove={() => onChange('metrics', (data.metrics || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-2 gap-2">
             <Input label="Valor" value={m.value} onChange={(v) => setMetric(i, 'value', v)} />
             <Input label="Rótulo" value={m.label} onChange={(v) => setMetric(i, 'label', v)} />
@@ -660,20 +796,16 @@ const EditorTestimonials = ({ data, onChange }) => {
         value={data.image} onChange={(v) => onChange('image', v)}
         help="Foto grande que aparece à esquerda do depoimento principal." />
       <Input label="URL do vídeo do depoimento destaque" value={data.video_url}
-        onChange={(v) => onChange('video_url', v)}
-        help="Se preenchido, mostra botão de play na foto." />
-
+        onChange={(v) => onChange('video_url', v)} />
       <ListHeader label="Depoimentos em texto"
         onAdd={() => onChange('testimonials', [...(data.testimonials || []), { name: '', school: '', text: '' }])} />
       {(data.testimonials || []).map((t, i) => (
-        <ItemBox key={i} index={i} label="Depoimento"
-          onRemove={() => onChange('testimonials', (data.testimonials || []).filter((_, j) => j !== i))}>
+        <ItemBox key={i} index={i} label="Depoimento" onRemove={() => onChange('testimonials', (data.testimonials || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-2 gap-2">
             <Input label="Nome" value={t.name} onChange={(v) => setItem(i, 'name', v)} />
             <Input label="Escola/Info" value={t.school} onChange={(v) => setItem(i, 'school', v)} />
           </div>
-          <Textarea label="Depoimento" value={t.text}
-            onChange={(v) => setItem(i, 'text', v)} rows={3} />
+          <Textarea label="Depoimento" value={t.text} onChange={(v) => setItem(i, 'text', v)} rows={3} />
         </ItemBox>
       ))}
     </>
@@ -695,12 +827,10 @@ const EditorComparison = ({ data, onChange }) => {
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Textarea label="Colunas (uma por linha)" value={(data.columns || []).join('\n')}
         onChange={(v) => onChange('columns', v.split('\n').filter(Boolean))} rows={3} />
-
       <ListHeader label="Linhas de comparação"
         onAdd={() => onChange('rows', [...(data.rows || []), { feature: '', values: [] }])} />
       {(data.rows || []).map((r, i) => (
-        <ItemBox key={i} index={i} label="Linha"
-          onRemove={() => onChange('rows', (data.rows || []).filter((_, j) => j !== i))}>
+        <ItemBox key={i} index={i} label="Linha" onRemove={() => onChange('rows', (data.rows || []).filter((_, j) => j !== i))}>
           <Input label="Recurso" value={r.feature} onChange={(v) => setRow(i, 'feature', v)} />
           <Input label="Valores (separados por vírgula)"
             value={(r.values || []).join(', ')}
@@ -713,29 +843,24 @@ const EditorComparison = ({ data, onChange }) => {
 };
 
 // ============================================================
-// EDITOR FOUNDER OFFER (NOVA SEÇÃO)
+// EDITOR FOUNDER OFFER
 // ============================================================
 const EditorFounderOffer = ({ data, onChange }) => (
   <>
     <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
-    <Input label="Badge (selo do topo)" value={data.badge} onChange={(v) => onChange('badge', v)}
-      help="Ex: 🎁 Oferta de Fundador" />
+    <Input label="Badge" value={data.badge} onChange={(v) => onChange('badge', v)} />
     <Textarea label="Título" value={data.title} onChange={(v) => onChange('title', v)} rows={2} />
-    <Textarea label="Descrição" value={data.description}
-      onChange={(v) => onChange('description', v)} rows={4} />
-
+    <Textarea label="Descrição" value={data.description} onChange={(v) => onChange('description', v)} rows={4} />
     <div className="grid grid-cols-2 gap-4">
-      <Input label="Preço normal (riscado)" value={data.price_normal}
-        onChange={(v) => onChange('price_normal', v)} placeholder="R$ 19,90" />
-      <Input label="Preço de fundador (destaque)" value={data.price_founder}
-        onChange={(v) => onChange('price_founder', v)} placeholder="R$ 14,90" />
+      <Input label="Preço normal (riscado)" value={data.price_normal} onChange={(v) => onChange('price_normal', v)} />
+      <Input label="Preço de fundador (destaque)" value={data.price_founder} onChange={(v) => onChange('price_founder', v)} />
       <Input label="Total de vagas" type="number" value={data.spots_total}
         onChange={(v) => onChange('spots_total', parseInt(v) || 0)} />
       <Input label="Vagas restantes" type="number" value={data.spots_remaining}
-        onChange={(v) => onChange('spots_remaining', parseInt(v) || 0)}
-        help="Diminua conforme as vendas acontecerem" />
+        onChange={(v) => onChange('spots_remaining', parseInt(v) || 0)} />
     </div>
-
+    <Input label="Rótulo do período (abaixo do preço)" value={data.period_label}
+      onChange={(v) => onChange('period_label', v)} placeholder="para sempre" />
     <Input label="Texto do botão" value={data.cta_text} onChange={(v) => onChange('cta_text', v)} />
     <Input label="Link do botão" value={data.cta_link} onChange={(v) => onChange('cta_link', v)} />
   </>
@@ -749,8 +874,8 @@ const EditorPlans = ({ data, onChange }) => (
     <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
     <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
     <Textarea label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} rows={2} />
-    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-xs text-blue-200 mt-4">
-      ℹ️ Os planos (preços e créditos) são gerenciados em <code>subscription_service.py</code>. Esta seção só edita os textos acima.
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
+      ℹ️ Os planos (preços e créditos) são gerenciados no sistema. Esta seção edita apenas os textos.
     </div>
   </>
 );
@@ -782,17 +907,13 @@ const EditorFAQ = ({ data, onChange }) => {
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
       <UploadImage slot="faq_image" label="Foto lateral"
-        value={data.image} onChange={(v) => onChange('image', v)}
-        help="Foto de professora que aparece à esquerda das perguntas." />
-
-      <ListHeader label="Perguntas frequentes"
+        value={data.image} onChange={(v) => onChange('image', v)} />
+      <ListHeader label="Perguntas"
         onAdd={() => onChange('items', [...(data.items || []), { question: '', answer: '' }])} />
       {(data.items || []).map((f, i) => (
-        <ItemBox key={i} index={i} label="Pergunta"
-          onRemove={() => onChange('items', (data.items || []).filter((_, j) => j !== i))}>
+        <ItemBox key={i} index={i} label="Pergunta" onRemove={() => onChange('items', (data.items || []).filter((_, j) => j !== i))}>
           <Input label="Pergunta" value={f.question} onChange={(v) => setItem(i, 'question', v)} />
-          <Textarea label="Resposta" value={f.answer}
-            onChange={(v) => setItem(i, 'answer', v)} rows={3} />
+          <Textarea label="Resposta" value={f.answer} onChange={(v) => setItem(i, 'answer', v)} rows={3} />
         </ItemBox>
       ))}
     </>
@@ -806,8 +927,7 @@ const EditorFinalCTA = ({ data, onChange }) => (
   <>
     <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
     <Textarea label="Headline" value={data.headline} onChange={(v) => onChange('headline', v)} rows={2} />
-    <Textarea label="Subheadline" value={data.subheadline}
-      onChange={(v) => onChange('subheadline', v)} rows={2} />
+    <Textarea label="Subheadline" value={data.subheadline} onChange={(v) => onChange('subheadline', v)} rows={2} />
     <Input label="Texto do botão" value={data.cta_text} onChange={(v) => onChange('cta_text', v)} />
     <Input label="Link do botão" value={data.cta_link} onChange={(v) => onChange('cta_link', v)} />
   </>
@@ -824,17 +944,14 @@ const EditorFooter = ({ data, onChange }) => {
   };
   return (
     <>
-      <Toggle label="Footer ativado" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
-      <Input label="Texto de copyright" value={data.copyright_text}
-        onChange={(v) => onChange('copyright_text', v)} />
-      <Textarea label="Explicação da marca SIMIDNAPE"
+      <Toggle label="Rodapé ativado" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
+      <Input label="Copyright" value={data.copyright_text} onChange={(v) => onChange('copyright_text', v)} />
+      <Textarea label="Explicação do significado SIMIDNAPE"
         value={data.brand_explanation} onChange={(v) => onChange('brand_explanation', v)} rows={3} />
-
-      <ListHeader label="Links do footer"
+      <ListHeader label="Links do rodapé"
         onAdd={() => onChange('links', [...(data.links || []), { label: '', href: '' }])} />
       {(data.links || []).map((l, i) => (
-        <ItemBox key={i} index={i} label="Link"
-          onRemove={() => onChange('links', (data.links || []).filter((_, j) => j !== i))}>
+        <ItemBox key={i} index={i} label="Link" onRemove={() => onChange('links', (data.links || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-2 gap-2">
             <Input label="Rótulo" value={l.label} onChange={(v) => setLink(i, 'label', v)} />
             <Input label="URL" value={l.href} onChange={(v) => setLink(i, 'href', v)} />
@@ -846,7 +963,7 @@ const EditorFooter = ({ data, onChange }) => {
 };
 
 // ============================================================
-// EDITOR GLOBAL
+// EDITOR GLOBAL (SEO)
 // ============================================================
 const EditorGlobal = ({ config, setConfig, salvando }) => {
   const update = (field, value) => setConfig(prev => ({ ...prev, [field]: value }));
@@ -861,20 +978,20 @@ const EditorGlobal = ({ config, setConfig, salvando }) => {
   };
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-700">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
         <span className="text-3xl">⚙️</span>
         <div>
-          <h2 className="text-xl font-bold text-white">Configurações Globais</h2>
-          <p className="text-xs text-gray-400">SEO e informações gerais</p>
+          <h2 className="text-xl font-bold text-slate-900">SEO e Meta Tags</h2>
+          <p className="text-xs text-slate-500">Como a página aparece no Google e nas redes sociais</p>
         </div>
       </div>
-      <Input label="Título SEO (aparece no Google)" value={config.seo_title}
-        onChange={(v) => update('seo_title', v)} />
-      <Textarea label="Descrição SEO" value={config.seo_description}
-        onChange={(v) => update('seo_description', v)} rows={3} />
-      <div className="mt-8 pt-4 border-t border-gray-700 flex justify-end">
+      <Input label="Título SEO" value={config.seo_title} onChange={(v) => update('seo_title', v)}
+        help="Aparece na aba do navegador e como título nos resultados do Google (máx. 60 caracteres)" />
+      <Textarea label="Descrição SEO" value={config.seo_description} onChange={(v) => update('seo_description', v)} rows={3}
+        help="Aparece como resumo nos resultados do Google (máx. 160 caracteres)" />
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
         <button onClick={salvar} disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-sm disabled:opacity-50">
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
           {salvando ? 'Salvando...' : '💾 Salvar configurações'}
         </button>
       </div>
@@ -896,11 +1013,11 @@ const EditorPopup = ({ config, setConfig, salvando }) => {
   };
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-700">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
         <span className="text-3xl">📢</span>
         <div>
-          <h2 className="text-xl font-bold text-white">Pop-up de Promoção</h2>
-          <p className="text-xs text-gray-400">Aparece no canto da landing após alguns segundos</p>
+          <h2 className="text-xl font-bold text-slate-900">Pop-up de Promoção</h2>
+          <p className="text-xs text-slate-500">Aparece no canto da landing após alguns segundos</p>
         </div>
       </div>
       <Toggle label="Pop-up ativado" value={popup.enabled} onChange={(v) => update('enabled', v)} />
@@ -910,13 +1027,13 @@ const EditorPopup = ({ config, setConfig, salvando }) => {
         <Input label="Texto do botão" value={popup.cta_text} onChange={(v) => update('cta_text', v)} />
         <Input label="Link do botão" value={popup.cta_link} onChange={(v) => update('cta_link', v)} />
         <Input label="Delay em segundos" type="number" value={popup.delay_seconds}
-          onChange={(v) => update('delay_seconds', parseInt(v) || 5)} />
+          onChange={(v) => update('delay_seconds', parseInt(v) || 8)} />
       </div>
       <Toggle label="Mostrar apenas uma vez por sessão" value={popup.show_once_per_user}
         onChange={(v) => update('show_once_per_user', v)} />
-      <div className="mt-8 pt-4 border-t border-gray-700 flex justify-end">
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
         <button onClick={salvar} disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-sm disabled:opacity-50">
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
           {salvando ? 'Salvando...' : '💾 Salvar pop-up'}
         </button>
       </div>
