@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
+import { useSEO } from '../hooks/useSEO';
 
 // Seções — Parte 1
 import {
@@ -34,6 +35,13 @@ const LandingPage = () => {
   const [error, setError] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  // SEO Dinâmico — aplica o que o admin configurou
+  useSEO({
+    title: config?.seo_title,
+    description: config?.seo_description,
+    url: 'https://simidnape.com.br',
+  });
 
   // ============================================================
   // SCROLL
