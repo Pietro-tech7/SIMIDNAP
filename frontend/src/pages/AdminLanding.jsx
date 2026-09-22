@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import api from '../api/api';
+import UploadImage from '../components/UploadImage';
 
 // ============================================================
 // METADADOS DAS SEÇÕES
@@ -16,6 +16,7 @@ const SECOES_INFO = {
   metrics:       { icon: '📊', label: 'Métricas' },
   testimonials:  { icon: '💬', label: 'Depoimentos' },
   comparison:    { icon: '⚖️', label: 'Comparativo' },
+  founder_offer: { icon: '🎁', label: 'Oferta de Fundador' },
   plans:         { icon: '💰', label: 'Planos' },
   guarantee:     { icon: '🛡️', label: 'Garantia' },
   faq:           { icon: '❓', label: 'FAQ' },
@@ -54,7 +55,7 @@ const AdminLanding = () => {
   };
 
   const resetarTudo = async () => {
-    if (!window.confirm('Tem certeza? Isso vai reverter TODAS as seções para o padrão.')) return;
+    if (!window.confirm('Tem certeza? Isso vai reverter TODAS as seções para o padrão. As imagens enviadas serão mantidas no banco, mas os campos serão limpos.')) return;
     if (!window.confirm('Última confirmação: resetar tudo?')) return;
     setSalvando(true);
     try {
@@ -117,7 +118,7 @@ const AdminLanding = () => {
         <div>
           <h1 className="text-3xl font-bold text-white">Editor da Landing Page</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Edite textos, seções e ordem. As mudanças aparecem em simidnape.com.br.
+            Edite textos, seções, imagens e ordem. As mudanças aparecem em simidnape.com.br após salvar.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -149,9 +150,7 @@ const AdminLanding = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* MENU LATERAL */}
         <div className="lg:col-span-1 bg-gray-800 border border-gray-700 rounded-xl p-3">
-          <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold px-3 py-2">
-            Seções
-          </p>
+          <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold px-3 py-2">Seções</p>
           <div className="space-y-1">
             {config.sections_order.map((secao, idx) => {
               const info = SECOES_INFO[secao] || { icon: '📄', label: secao };
@@ -238,8 +237,8 @@ const AdminLanding = () => {
 const Input = ({ label, value, onChange, placeholder, type = 'text', help }) => (
   <div className="mb-4">
     <label className="block text-sm font-medium text-gray-300 mb-1.5">{label}</label>
-    {help && <p className="text-xs text-gray-500 mb-1.5">{help}</p>}
-    <input type={type} value={value || ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+    {help && <p className="text-xs text-gray-500 mb-1.5 leading-relaxed">{help}</p>}
+    <input type={type} value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
       className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
   </div>
 );
@@ -247,27 +246,9 @@ const Input = ({ label, value, onChange, placeholder, type = 'text', help }) => 
 const Textarea = ({ label, value, onChange, rows = 3, placeholder, help }) => (
   <div className="mb-4">
     <label className="block text-sm font-medium text-gray-300 mb-1.5">{label}</label>
-    {help && <p className="text-xs text-gray-500 mb-1.5">{help}</p>}
-    <textarea value={value || ''} onChange={(e) => onChange(e.target.value)} rows={rows} placeholder={placeholder}
+    {help && <p className="text-xs text-gray-500 mb-1.5 leading-relaxed">{help}</p>}
+    <textarea value={value ?? ''} onChange={(e) => onChange(e.target.value)} rows={rows} placeholder={placeholder}
       className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-  </div>
-);
-
-const ImageInput = ({ label, value, onChange, help }) => (
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-gray-300 mb-1.5">📷 {label}</label>
-    <p className="text-xs text-gray-500 mb-1.5">
-      {help || 'Cole a URL de uma imagem hospedada (ex: Cloudinary, Imgur). Deixe vazio para usar o placeholder.'}
-    </p>
-    <input type="url" value={value || ''} onChange={(e) => onChange(e.target.value)}
-      placeholder="https://exemplo.com/imagem.jpg"
-      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-    {value && (
-      <div className="mt-2 rounded-lg overflow-hidden border border-gray-700 max-w-xs">
-        <img src={value} alt="Preview" className="w-full h-auto"
-          onError={(e) => { e.target.style.display = 'none'; }} />
-      </div>
-    )}
   </div>
 );
 
@@ -281,7 +262,7 @@ const Toggle = ({ label, value, onChange }) => (
   </label>
 );
 
-const ListEditorHeader = ({ label, onAdd, addLabel = '+ Adicionar' }) => (
+const ListHeader = ({ label, onAdd, addLabel = '+ Adicionar' }) => (
   <div className="flex items-center justify-between mt-6 mb-2">
     <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">{label}</p>
     {onAdd && (
@@ -292,7 +273,7 @@ const ListEditorHeader = ({ label, onAdd, addLabel = '+ Adicionar' }) => (
   </div>
 );
 
-const ItemWrapper = ({ index, onRemove, children, label }) => (
+const ItemBox = ({ index, onRemove, children, label = 'Item' }) => (
   <div className="bg-gray-900 border border-gray-700 rounded-lg p-3 mb-2">
     <div className="flex items-center justify-between mb-2">
       <span className="text-xs text-gray-400 font-medium">{label} {index + 1}</span>
@@ -305,7 +286,7 @@ const ItemWrapper = ({ index, onRemove, children, label }) => (
 );
 
 // ============================================================
-// DISPATCHER DE EDITORES
+// DISPATCHER
 // ============================================================
 const EditorSecao = ({ secao, data, onChange, onSave, salvando }) => {
   const info = SECOES_INFO[secao] || { icon: '📄', label: secao };
@@ -331,6 +312,7 @@ const EditorSecao = ({ secao, data, onChange, onSave, salvando }) => {
       {secao === 'metrics' && <EditorMetrics data={data} onChange={onChange} />}
       {secao === 'testimonials' && <EditorTestimonials data={data} onChange={onChange} />}
       {secao === 'comparison' && <EditorComparison data={data} onChange={onChange} />}
+      {secao === 'founder_offer' && <EditorFounderOffer data={data} onChange={onChange} />}
       {secao === 'plans' && <EditorPlans data={data} onChange={onChange} />}
       {secao === 'guarantee' && <EditorGuarantee data={data} onChange={onChange} />}
       {secao === 'faq' && <EditorFAQ data={data} onChange={onChange} />}
@@ -348,38 +330,27 @@ const EditorSecao = ({ secao, data, onChange, onSave, salvando }) => {
 };
 
 // ============================================================
-// EDITOR HERO (completo)
+// EDITOR HERO
 // ============================================================
 const EditorHero = ({ data, onChange }) => {
-  const updateArrayItem = (field, index, key, value) => {
+  const setArr = (field, index, key, value) => {
     const arr = [...(data[field] || [])];
     arr[index] = { ...arr[index], [key]: value };
     onChange(field, arr);
   };
-
-  const addArrayItem = (field, emptyItem) => {
-    onChange(field, [...(data[field] || []), emptyItem]);
-  };
-
-  const removeArrayItem = (field, index) => {
-    onChange(field, (data[field] || []).filter((_, i) => i !== index));
-  };
+  const addArr = (field, item) => onChange(field, [...(data[field] || []), item]);
+  const removeArr = (field, index) => onChange(field, (data[field] || []).filter((_, i) => i !== index));
 
   return (
     <>
       <Toggle label="Hero ativado" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
-
-      <Input label="Badge (texto pequeno no topo)" value={data.badge}
-        onChange={(v) => onChange('badge', v)}
-        help="Ex: 🇧🇷 Feito por professor, para professor" />
-
+      <Input label="Badge (linha pequena no topo)" value={data.badge} onChange={(v) => onChange('badge', v)}
+        help="Ex: 🇧🇷 Feito por quem conhece sala de aula" />
       <Input label="Linha da marca (acima da headline)" value={data.brand_line}
         onChange={(v) => onChange('brand_line', v)}
-        help="Ex: SIMIDNAPE PRO — O Professor Inesquecível" />
-
+        help="Ex: SIMIDNAPE PRO · O Professor Inesquecível" />
       <Textarea label="Headline principal" value={data.headline}
         onChange={(v) => onChange('headline', v)} rows={2} />
-
       <Textarea label="Subheadline" value={data.subheadline}
         onChange={(v) => onChange('subheadline', v)} rows={3} />
 
@@ -391,66 +362,49 @@ const EditorHero = ({ data, onChange }) => {
         <Input label="Texto do CTA secundário" value={data.cta_secondary_text}
           onChange={(v) => onChange('cta_secondary_text', v)} />
         <Input label="URL do vídeo do CTA secundário" value={data.cta_secondary_video_url}
-          onChange={(v) => onChange('cta_secondary_video_url', v)} />
+          onChange={(v) => onChange('cta_secondary_video_url', v)}
+          help="YouTube, Vimeo ou .mp4. Deixe vazio para ocultar o botão." />
       </div>
 
-      <ImageInput label="Foto principal do Hero (lado direito)" value={data.hero_image}
+      <UploadImage
+        slot="hero_image"
+        label="Foto principal do Hero (lado direito)"
+        value={data.hero_image}
         onChange={(v) => onChange('hero_image', v)}
-        help="Fica ao lado direito do Hero. Se vazio, mostra placeholder com 👩‍🏫." />
-
-      <ImageInput label="Imagem de fundo do Hero (opcional)" value={data.bg_image}
-        onChange={(v) => onChange('bg_image', v)}
-        help="Imagem que fica por trás de tudo (com opacidade baixa). Se vazio, usa o gradiente." />
-
-      {/* ============ FLOAT BADGES ============ */}
-      <ListEditorHeader
-        label="Badges flutuantes sobre a foto (3)"
-        onAdd={() => addArrayItem('float_badges', { icon: '⭐', title: '', subtitle: '' })}
-        addLabel="+ Adicionar badge"
+        help="Foto de professor(a). Se vazio, mostra placeholder cinza."
       />
-      {(data.float_badges || []).map((badge, i) => (
-        <ItemWrapper key={i} index={i} label="Badge" onRemove={() => removeArrayItem('float_badges', i)}>
+
+      <ListHeader
+        label="Badges flutuantes sobre a foto"
+        onAdd={() => addArr('float_badges', { icon: '⭐', title: '', subtitle: '' })} />
+      {(data.float_badges || []).map((b, i) => (
+        <ItemBox key={i} index={i} label="Badge" onRemove={() => removeArr('float_badges', i)}>
           <div className="grid grid-cols-3 gap-2">
-            <Input label="Ícone" value={badge.icon}
-              onChange={(v) => updateArrayItem('float_badges', i, 'icon', v)}
-              placeholder="⚡" />
+            <Input label="Ícone" value={b.icon} onChange={(v) => setArr('float_badges', i, 'icon', v)} placeholder="⚡" />
             <div className="col-span-2">
-              <Input label="Título" value={badge.title}
-                onChange={(v) => updateArrayItem('float_badges', i, 'title', v)}
-                placeholder="Planos em minutos" />
+              <Input label="Título" value={b.title} onChange={(v) => setArr('float_badges', i, 'title', v)} />
             </div>
           </div>
-          <Input label="Subtítulo" value={badge.subtitle}
-            onChange={(v) => updateArrayItem('float_badges', i, 'subtitle', v)}
-            placeholder="Não em horas" />
-        </ItemWrapper>
+          <Input label="Subtítulo" value={b.subtitle} onChange={(v) => setArr('float_badges', i, 'subtitle', v)} />
+        </ItemBox>
       ))}
 
-      {/* ============ MÉTRICAS DO HERO ============ */}
-      <ListEditorHeader
-        label="Métricas abaixo do CTA (3)"
-        onAdd={() => addArrayItem('metrics', { value: '', label: '' })}
-        addLabel="+ Adicionar métrica"
-      />
+      <ListHeader
+        label="Métricas abaixo do CTA"
+        onAdd={() => addArr('metrics', { value: '', label: '' })} />
       {(data.metrics || []).map((m, i) => (
-        <ItemWrapper key={i} index={i} label="Métrica" onRemove={() => removeArrayItem('metrics', i)}>
+        <ItemBox key={i} index={i} label="Métrica" onRemove={() => removeArr('metrics', i)}>
           <div className="grid grid-cols-2 gap-2">
-            <Input label="Valor" value={m.value}
-              onChange={(v) => updateArrayItem('metrics', i, 'value', v)}
-              placeholder="7" />
-            <Input label="Rótulo" value={m.label}
-              onChange={(v) => updateArrayItem('metrics', i, 'label', v)}
-              placeholder="motores de IA" />
+            <Input label="Valor" value={m.value} onChange={(v) => setArr('metrics', i, 'value', v)} placeholder="7" />
+            <Input label="Rótulo" value={m.label} onChange={(v) => setArr('metrics', i, 'label', v)} placeholder="motores de IA" />
           </div>
-        </ItemWrapper>
+        </ItemBox>
       ))}
 
-      {/* ============ VÍDEO PRINCIPAL ============ */}
       <div className="mt-6 pt-4 border-t border-gray-700">
-        <Input label="URL do vídeo principal (hero)" value={data.video_url}
+        <Input label="URL do vídeo principal do Hero" value={data.video_url}
           onChange={(v) => onChange('video_url', v)}
-          placeholder="https://www.youtube.com/watch?v=..."
-          help="Aparece abaixo do Hero em um bloco grande. YouTube, Vimeo ou .mp4." />
+          placeholder="https://www.youtube.com/watch?v=..." />
         <Toggle label="Mostrar vídeo principal" value={data.video_enabled}
           onChange={(v) => onChange('video_enabled', v)} />
       </div>
@@ -459,50 +413,65 @@ const EditorHero = ({ data, onChange }) => {
 };
 
 // ============================================================
-// EDITOR CREDIBILITY
+// EDITOR CREDIBILITY (novo formato: icon + title + description)
 // ============================================================
-const EditorCredibility = ({ data, onChange }) => (
-  <>
-    <Toggle label="Barra ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
-    <Textarea label="Itens (um por linha)" value={(data.items || []).join('\n')}
-      onChange={(v) => onChange('items', v.split('\n').filter(Boolean))} rows={5}
-      help="Cada linha vira um check na barra escura." />
-  </>
-);
-
-// ============================================================
-// EDITOR PROBLEM
-// ============================================================
-const EditorProblem = ({ data, onChange }) => {
-  const updateCard = (i, key, value) => {
-    const arr = [...(data.cards || [])];
+const EditorCredibility = ({ data, onChange }) => {
+  const setArr = (i, key, value) => {
+    const arr = [...(data.items || [])];
     arr[i] = { ...arr[i], [key]: value };
-    onChange('cards', arr);
+    onChange('items', arr);
   };
 
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
+
+      <ListHeader
+        label="Itens de credibilidade"
+        onAdd={() => onChange('items', [...(data.items || []), { icon: '⭐', title: '', description: '' }])} />
+      {(data.items || []).map((item, i) => (
+        <ItemBox key={i} index={i} label="Item"
+          onRemove={() => onChange('items', (data.items || []).filter((_, j) => j !== i))}>
+          <Input label="Ícone" value={item.icon} onChange={(v) => setArr(i, 'icon', v)} placeholder="🎯" />
+          <Input label="Título" value={item.title} onChange={(v) => setArr(i, 'title', v)} />
+          <Textarea label="Descrição" value={item.description}
+            onChange={(v) => setArr(i, 'description', v)} rows={2} />
+        </ItemBox>
+      ))}
+    </>
+  );
+};
+
+// ============================================================
+// EDITOR PROBLEM
+// ============================================================
+const EditorProblem = ({ data, onChange }) => {
+  const setCard = (i, key, value) => {
+    const arr = [...(data.cards || [])];
+    arr[i] = { ...arr[i], [key]: value };
+    onChange('cards', arr);
+  };
+  return (
+    <>
+      <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
-      <ImageInput label="Imagem lateral (opcional)" value={data.image}
-        onChange={(v) => onChange('image', v)}
-        help="Foto de professor(a). Se vazio, mostra só os cards centralizados." />
+      <UploadImage slot="problem_image" label="Imagem lateral (opcional)"
+        value={data.image} onChange={(v) => onChange('image', v)}
+        help="Foto de professor(a). Se vazio, os cards ficam centralizados." />
       <Input label="Texto de transição" value={data.transition_text}
         onChange={(v) => onChange('transition_text', v)} />
 
-      <ListEditorHeader
-        label="Cards de dor (3)"
-        onAdd={() => onChange('cards', [...(data.cards || []), { icon: '😩', title: '', description: '' }])}
-      />
+      <ListHeader label="Cards de dor"
+        onAdd={() => onChange('cards', [...(data.cards || []), { icon: '😩', title: '', description: '' }])} />
       {(data.cards || []).map((c, i) => (
-        <ItemWrapper key={i} index={i} label="Card"
+        <ItemBox key={i} index={i} label="Card"
           onRemove={() => onChange('cards', (data.cards || []).filter((_, j) => j !== i))}>
-          <Input label="Ícone" value={c.icon} onChange={(v) => updateCard(i, 'icon', v)} />
-          <Input label="Título" value={c.title} onChange={(v) => updateCard(i, 'title', v)} />
+          <Input label="Ícone" value={c.icon} onChange={(v) => setCard(i, 'icon', v)} />
+          <Input label="Título" value={c.title} onChange={(v) => setCard(i, 'title', v)} />
           <Textarea label="Descrição" value={c.description}
-            onChange={(v) => updateCard(i, 'description', v)} rows={2} />
-        </ItemWrapper>
+            onChange={(v) => setCard(i, 'description', v)} rows={2} />
+        </ItemBox>
       ))}
     </>
   );
@@ -512,48 +481,42 @@ const EditorProblem = ({ data, onChange }) => {
 // EDITOR SOLUTION
 // ============================================================
 const EditorSolution = ({ data, onChange }) => {
-  const updateMotor = (i, key, value) => {
+  const setMotor = (i, key, value) => {
     const arr = [...(data.motors || [])];
     arr[i] = { ...arr[i], [key]: value };
     onChange('motors', arr);
   };
-
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Textarea label="Subtítulo" value={data.subtitle}
         onChange={(v) => onChange('subtitle', v)} rows={2} />
-      <ImageInput label="Imagem/print do sistema (opcional)" value={data.image}
-        onChange={(v) => onChange('image', v)}
-        help="Print da interface, por exemplo. Aparece acima do grid." />
+      <UploadImage slot="solution_image" label="Print/ilustração do sistema (opcional)"
+        value={data.image} onChange={(v) => onChange('image', v)} />
 
-      <ListEditorHeader
-        label="Motores de IA (7)"
+      <ListHeader label="Motores de IA (7)"
         onAdd={() => onChange('motors', [...(data.motors || []), {
           icon: '⭐', name: '', description: '',
           gradient: 'from-blue-500 to-indigo-500', features: []
-        }])}
-      />
+        }])} />
       {(data.motors || []).map((m, i) => (
-        <ItemWrapper key={i} index={i} label="Motor"
+        <ItemBox key={i} index={i} label="Motor"
           onRemove={() => onChange('motors', (data.motors || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-3 gap-2">
-            <Input label="Ícone" value={m.icon} onChange={(v) => updateMotor(i, 'icon', v)} />
+            <Input label="Ícone" value={m.icon} onChange={(v) => setMotor(i, 'icon', v)} />
             <div className="col-span-2">
-              <Input label="Nome" value={m.name} onChange={(v) => updateMotor(i, 'name', v)} />
+              <Input label="Nome" value={m.name} onChange={(v) => setMotor(i, 'name', v)} />
             </div>
           </div>
           <Textarea label="Descrição" value={m.description}
-            onChange={(v) => updateMotor(i, 'description', v)} rows={2} />
+            onChange={(v) => setMotor(i, 'description', v)} rows={2} />
           <Textarea label="Features (uma por linha)" value={(m.features || []).join('\n')}
-            onChange={(v) => updateMotor(i, 'features', v.split('\n').filter(Boolean))} rows={3}
-            help="Aparecem como bullets dentro do card do motor." />
+            onChange={(v) => setMotor(i, 'features', v.split('\n').filter(Boolean))} rows={3} />
           <Input label="Gradiente (Tailwind)" value={m.gradient}
-            onChange={(v) => updateMotor(i, 'gradient', v)}
-            placeholder="from-blue-500 to-indigo-500"
-            help="Classes de gradiente Tailwind" />
-        </ItemWrapper>
+            onChange={(v) => setMotor(i, 'gradient', v)}
+            placeholder="from-blue-500 to-indigo-500" />
+        </ItemBox>
       ))}
     </>
   );
@@ -562,26 +525,46 @@ const EditorSolution = ({ data, onChange }) => {
 // ============================================================
 // EDITOR FOUNDER
 // ============================================================
-const EditorFounder = ({ data, onChange }) => (
-  <>
-    <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
-    <Input label="Sobretítulo (kicker)" value={data.title} onChange={(v) => onChange('title', v)}
-      placeholder="Uma palavra do criador" />
-    <Input label="Nome do criador" value={data.name} onChange={(v) => onChange('name', v)} />
-    <Input label="Subtítulo (cargo)" value={data.subtitle} onChange={(v) => onChange('subtitle', v)}
-      placeholder="Psicanalista, Educador e Criador do SIMIDNAPE" />
-    <ImageInput label="Foto do criador" value={data.photo} onChange={(v) => onChange('photo', v)}
-      help="Foto profissional. Se vazio, mostra as iniciais em gradiente." />
-    <Textarea label="Citação (quote)" value={data.quote} onChange={(v) => onChange('quote', v)} rows={2} />
-    <Textarea label="Bio curta" value={data.bio} onChange={(v) => onChange('bio', v)} rows={4} />
-    <Textarea label="Explicação do significado de SIMIDNAPE" value={data.brand_explanation}
-      onChange={(v) => onChange('brand_explanation', v)} rows={4}
-      help="Aparece em um bloco azul destacado abaixo da bio." />
-    <Input label="URL do vídeo do criador (opcional)" value={data.video_url}
-      onChange={(v) => onChange('video_url', v)}
-      placeholder="https://www.youtube.com/watch?v=..." />
-  </>
-);
+const EditorFounder = ({ data, onChange }) => {
+  const setStat = (i, key, value) => {
+    const arr = [...(data.highlight_stats || [])];
+    arr[i] = { ...arr[i], [key]: value };
+    onChange('highlight_stats', arr);
+  };
+  return (
+    <>
+      <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
+      <Input label="Sobretítulo (kicker)" value={data.title} onChange={(v) => onChange('title', v)} />
+      <Input label="Nome do criador" value={data.name} onChange={(v) => onChange('name', v)} />
+      <Input label="Subtítulo (cargo)" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
+      <UploadImage slot="founder_photo" label="Foto do criador"
+        value={data.photo} onChange={(v) => onChange('photo', v)}
+        help="Foto profissional do Darilson. Se vazio, mostra as iniciais." />
+      <Textarea label="Citação (quote)" value={data.quote}
+        onChange={(v) => onChange('quote', v)} rows={2} />
+      <Textarea label="Bio (parágrafos separados por linha em branco)"
+        value={data.bio} onChange={(v) => onChange('bio', v)} rows={10}
+        help="Separe cada parágrafo com uma linha em branco. Ficará formatado automaticamente." />
+      <Textarea label="Explicação do significado SIMIDNAPE"
+        value={data.brand_explanation} onChange={(v) => onChange('brand_explanation', v)} rows={4} />
+      <Input label="URL do vídeo do criador (opcional)" value={data.video_url}
+        onChange={(v) => onChange('video_url', v)}
+        placeholder="https://www.youtube.com/watch?v=..." />
+
+      <ListHeader label="Stats de destaque (3 números)"
+        onAdd={() => onChange('highlight_stats', [...(data.highlight_stats || []), { value: '', label: '' }])} />
+      {(data.highlight_stats || []).map((s, i) => (
+        <ItemBox key={i} index={i} label="Stat"
+          onRemove={() => onChange('highlight_stats', (data.highlight_stats || []).filter((_, j) => j !== i))}>
+          <div className="grid grid-cols-2 gap-2">
+            <Input label="Valor" value={s.value} onChange={(v) => setStat(i, 'value', v)} placeholder="18+" />
+            <Input label="Rótulo" value={s.label} onChange={(v) => setStat(i, 'label', v)} placeholder="anos em educação" />
+          </div>
+        </ItemBox>
+      ))}
+    </>
+  );
+};
 
 // ============================================================
 // EDITOR VIDEO
@@ -592,8 +575,7 @@ const EditorVideo = ({ data, onChange }) => (
     <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
     <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
     <Input label="URL do vídeo" value={data.video_url} onChange={(v) => onChange('video_url', v)}
-      placeholder="https://www.youtube.com/watch?v=..."
-      help="YouTube, Vimeo ou arquivo .mp4" />
+      placeholder="https://www.youtube.com/watch?v=..." />
   </>
 );
 
@@ -601,34 +583,31 @@ const EditorVideo = ({ data, onChange }) => (
 // EDITOR HOW IT WORKS
 // ============================================================
 const EditorHowItWorks = ({ data, onChange }) => {
-  const updateStep = (i, key, value) => {
+  const setStep = (i, key, value) => {
     const arr = [...(data.steps || [])];
     arr[i] = { ...arr[i], [key]: value };
     onChange('steps', arr);
   };
-
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
 
-      <ListEditorHeader
-        label="Passos (3)"
-        onAdd={() => onChange('steps', [...(data.steps || []), { number: '', title: '', description: '' }])}
-      />
+      <ListHeader label="Passos"
+        onAdd={() => onChange('steps', [...(data.steps || []), { number: '', title: '', description: '' }])} />
       {(data.steps || []).map((s, i) => (
-        <ItemWrapper key={i} index={i} label="Passo"
+        <ItemBox key={i} index={i} label="Passo"
           onRemove={() => onChange('steps', (data.steps || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-3 gap-2">
-            <Input label="Número" value={s.number} onChange={(v) => updateStep(i, 'number', v)} />
+            <Input label="Número" value={s.number} onChange={(v) => setStep(i, 'number', v)} />
             <div className="col-span-2">
-              <Input label="Título" value={s.title} onChange={(v) => updateStep(i, 'title', v)} />
+              <Input label="Título" value={s.title} onChange={(v) => setStep(i, 'title', v)} />
             </div>
           </div>
           <Textarea label="Descrição" value={s.description}
-            onChange={(v) => updateStep(i, 'description', v)} rows={2} />
-        </ItemWrapper>
+            onChange={(v) => setStep(i, 'description', v)} rows={2} />
+        </ItemBox>
       ))}
     </>
   );
@@ -638,29 +617,26 @@ const EditorHowItWorks = ({ data, onChange }) => {
 // EDITOR METRICS
 // ============================================================
 const EditorMetrics = ({ data, onChange }) => {
-  const updateMetric = (i, key, value) => {
+  const setMetric = (i, key, value) => {
     const arr = [...(data.metrics || [])];
     arr[i] = { ...arr[i], [key]: value };
     onChange('metrics', arr);
   };
-
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
 
-      <ListEditorHeader
-        label="Métricas (4)"
-        onAdd={() => onChange('metrics', [...(data.metrics || []), { value: '', label: '' }])}
-      />
+      <ListHeader label="Métricas"
+        onAdd={() => onChange('metrics', [...(data.metrics || []), { value: '', label: '' }])} />
       {(data.metrics || []).map((m, i) => (
-        <ItemWrapper key={i} index={i} label="Métrica"
+        <ItemBox key={i} index={i} label="Métrica"
           onRemove={() => onChange('metrics', (data.metrics || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-2 gap-2">
-            <Input label="Valor" value={m.value} onChange={(v) => updateMetric(i, 'value', v)} />
-            <Input label="Rótulo" value={m.label} onChange={(v) => updateMetric(i, 'label', v)} />
+            <Input label="Valor" value={m.value} onChange={(v) => setMetric(i, 'value', v)} />
+            <Input label="Rótulo" value={m.label} onChange={(v) => setMetric(i, 'label', v)} />
           </div>
-        </ItemWrapper>
+        </ItemBox>
       ))}
     </>
   );
@@ -670,38 +646,35 @@ const EditorMetrics = ({ data, onChange }) => {
 // EDITOR TESTIMONIALS
 // ============================================================
 const EditorTestimonials = ({ data, onChange }) => {
-  const updateItem = (i, key, value) => {
+  const setItem = (i, key, value) => {
     const arr = [...(data.testimonials || [])];
     arr[i] = { ...arr[i], [key]: value };
     onChange('testimonials', arr);
   };
-
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
-      <ImageInput label="Foto do depoimento em destaque" value={data.image}
-        onChange={(v) => onChange('image', v)}
-        help="Foto grande que aparece à esquerda do depoimento principal (estilo Isaac)." />
-      <Input label="URL do vídeo do depoimento" value={data.video_url}
+      <UploadImage slot="testimonials_image" label="Foto do depoimento destaque"
+        value={data.image} onChange={(v) => onChange('image', v)}
+        help="Foto grande que aparece à esquerda do depoimento principal." />
+      <Input label="URL do vídeo do depoimento destaque" value={data.video_url}
         onChange={(v) => onChange('video_url', v)}
-        help="Se preenchido, mostra botão de play na foto. YouTube, Vimeo ou .mp4." />
+        help="Se preenchido, mostra botão de play na foto." />
 
-      <ListEditorHeader
-        label="Depoimentos (texto)"
-        onAdd={() => onChange('testimonials', [...(data.testimonials || []), { name: '', school: '', text: '' }])}
-      />
+      <ListHeader label="Depoimentos em texto"
+        onAdd={() => onChange('testimonials', [...(data.testimonials || []), { name: '', school: '', text: '' }])} />
       {(data.testimonials || []).map((t, i) => (
-        <ItemWrapper key={i} index={i} label="Depoimento"
+        <ItemBox key={i} index={i} label="Depoimento"
           onRemove={() => onChange('testimonials', (data.testimonials || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-2 gap-2">
-            <Input label="Nome" value={t.name} onChange={(v) => updateItem(i, 'name', v)} />
-            <Input label="Escola/Info" value={t.school} onChange={(v) => updateItem(i, 'school', v)} />
+            <Input label="Nome" value={t.name} onChange={(v) => setItem(i, 'name', v)} />
+            <Input label="Escola/Info" value={t.school} onChange={(v) => setItem(i, 'school', v)} />
           </div>
           <Textarea label="Depoimento" value={t.text}
-            onChange={(v) => updateItem(i, 'text', v)} rows={3} />
-        </ItemWrapper>
+            onChange={(v) => setItem(i, 'text', v)} rows={3} />
+        </ItemBox>
       ))}
     </>
   );
@@ -711,12 +684,11 @@ const EditorTestimonials = ({ data, onChange }) => {
 // EDITOR COMPARISON
 // ============================================================
 const EditorComparison = ({ data, onChange }) => {
-  const updateRow = (i, key, value) => {
+  const setRow = (i, key, value) => {
     const arr = [...(data.rows || [])];
     arr[i] = { ...arr[i], [key]: value };
     onChange('rows', arr);
   };
-
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
@@ -724,22 +696,50 @@ const EditorComparison = ({ data, onChange }) => {
       <Textarea label="Colunas (uma por linha)" value={(data.columns || []).join('\n')}
         onChange={(v) => onChange('columns', v.split('\n').filter(Boolean))} rows={3} />
 
-      <ListEditorHeader
-        label="Linhas de comparação"
-        onAdd={() => onChange('rows', [...(data.rows || []), { feature: '', values: [] }])}
-      />
+      <ListHeader label="Linhas de comparação"
+        onAdd={() => onChange('rows', [...(data.rows || []), { feature: '', values: [] }])} />
       {(data.rows || []).map((r, i) => (
-        <ItemWrapper key={i} index={i} label="Linha"
+        <ItemBox key={i} index={i} label="Linha"
           onRemove={() => onChange('rows', (data.rows || []).filter((_, j) => j !== i))}>
-          <Input label="Recurso" value={r.feature} onChange={(v) => updateRow(i, 'feature', v)} />
-          <Input label="Valores (separados por vírgula)" value={(r.values || []).join(', ')}
-            onChange={(v) => updateRow(i, 'values', v.split(',').map(s => s.trim()))}
+          <Input label="Recurso" value={r.feature} onChange={(v) => setRow(i, 'feature', v)} />
+          <Input label="Valores (separados por vírgula)"
+            value={(r.values || []).join(', ')}
+            onChange={(v) => setRow(i, 'values', v.split(',').map(s => s.trim()))}
             help="Ex: ✅, ⚠️, ❌" />
-        </ItemWrapper>
+        </ItemBox>
       ))}
     </>
   );
 };
+
+// ============================================================
+// EDITOR FOUNDER OFFER (NOVA SEÇÃO)
+// ============================================================
+const EditorFounderOffer = ({ data, onChange }) => (
+  <>
+    <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
+    <Input label="Badge (selo do topo)" value={data.badge} onChange={(v) => onChange('badge', v)}
+      help="Ex: 🎁 Oferta de Fundador" />
+    <Textarea label="Título" value={data.title} onChange={(v) => onChange('title', v)} rows={2} />
+    <Textarea label="Descrição" value={data.description}
+      onChange={(v) => onChange('description', v)} rows={4} />
+
+    <div className="grid grid-cols-2 gap-4">
+      <Input label="Preço normal (riscado)" value={data.price_normal}
+        onChange={(v) => onChange('price_normal', v)} placeholder="R$ 19,90" />
+      <Input label="Preço de fundador (destaque)" value={data.price_founder}
+        onChange={(v) => onChange('price_founder', v)} placeholder="R$ 14,90" />
+      <Input label="Total de vagas" type="number" value={data.spots_total}
+        onChange={(v) => onChange('spots_total', parseInt(v) || 0)} />
+      <Input label="Vagas restantes" type="number" value={data.spots_remaining}
+        onChange={(v) => onChange('spots_remaining', parseInt(v) || 0)}
+        help="Diminua conforme as vendas acontecerem" />
+    </div>
+
+    <Input label="Texto do botão" value={data.cta_text} onChange={(v) => onChange('cta_text', v)} />
+    <Input label="Link do botão" value={data.cta_link} onChange={(v) => onChange('cta_link', v)} />
+  </>
+);
 
 // ============================================================
 // EDITOR PLANS
@@ -750,7 +750,7 @@ const EditorPlans = ({ data, onChange }) => (
     <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
     <Textarea label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} rows={2} />
     <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-xs text-blue-200 mt-4">
-      ℹ️ Os planos em si (preços, créditos) são gerenciados em <code>subscription_service.py</code>. Esta seção só edita os textos acima.
+      ℹ️ Os planos (preços e créditos) são gerenciados em <code>subscription_service.py</code>. Esta seção só edita os textos acima.
     </div>
   </>
 );
@@ -771,32 +771,29 @@ const EditorGuarantee = ({ data, onChange }) => (
 // EDITOR FAQ
 // ============================================================
 const EditorFAQ = ({ data, onChange }) => {
-  const updateItem = (i, key, value) => {
+  const setItem = (i, key, value) => {
     const arr = [...(data.items || [])];
     arr[i] = { ...arr[i], [key]: value };
     onChange('items', arr);
   };
-
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
-      <ImageInput label="Foto lateral (2 colunas)" value={data.image}
-        onChange={(v) => onChange('image', v)}
-        help="Foto de professor(a) que aparece à esquerda das perguntas (estilo Isaac)." />
+      <UploadImage slot="faq_image" label="Foto lateral"
+        value={data.image} onChange={(v) => onChange('image', v)}
+        help="Foto de professora que aparece à esquerda das perguntas." />
 
-      <ListEditorHeader
-        label="Perguntas frequentes"
-        onAdd={() => onChange('items', [...(data.items || []), { question: '', answer: '' }])}
-      />
+      <ListHeader label="Perguntas frequentes"
+        onAdd={() => onChange('items', [...(data.items || []), { question: '', answer: '' }])} />
       {(data.items || []).map((f, i) => (
-        <ItemWrapper key={i} index={i} label="Pergunta"
+        <ItemBox key={i} index={i} label="Pergunta"
           onRemove={() => onChange('items', (data.items || []).filter((_, j) => j !== i))}>
-          <Input label="Pergunta" value={f.question} onChange={(v) => updateItem(i, 'question', v)} />
+          <Input label="Pergunta" value={f.question} onChange={(v) => setItem(i, 'question', v)} />
           <Textarea label="Resposta" value={f.answer}
-            onChange={(v) => updateItem(i, 'answer', v)} rows={3} />
-        </ItemWrapper>
+            onChange={(v) => setItem(i, 'answer', v)} rows={3} />
+        </ItemBox>
       ))}
     </>
   );
@@ -820,33 +817,29 @@ const EditorFinalCTA = ({ data, onChange }) => (
 // EDITOR FOOTER
 // ============================================================
 const EditorFooter = ({ data, onChange }) => {
-  const updateLink = (i, key, value) => {
+  const setLink = (i, key, value) => {
     const arr = [...(data.links || [])];
     arr[i] = { ...arr[i], [key]: value };
     onChange('links', arr);
   };
-
   return (
     <>
       <Toggle label="Footer ativado" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Texto de copyright" value={data.copyright_text}
         onChange={(v) => onChange('copyright_text', v)} />
-      <Textarea label="Explicação da marca SIMIDNAPE" value={data.brand_explanation}
-        onChange={(v) => onChange('brand_explanation', v)} rows={3}
-        help="Significado do acrônimo SIMIDNAPE que aparece no footer." />
+      <Textarea label="Explicação da marca SIMIDNAPE"
+        value={data.brand_explanation} onChange={(v) => onChange('brand_explanation', v)} rows={3} />
 
-      <ListEditorHeader
-        label="Links do footer"
-        onAdd={() => onChange('links', [...(data.links || []), { label: '', href: '' }])}
-      />
+      <ListHeader label="Links do footer"
+        onAdd={() => onChange('links', [...(data.links || []), { label: '', href: '' }])} />
       {(data.links || []).map((l, i) => (
-        <ItemWrapper key={i} index={i} label="Link"
+        <ItemBox key={i} index={i} label="Link"
           onRemove={() => onChange('links', (data.links || []).filter((_, j) => j !== i))}>
           <div className="grid grid-cols-2 gap-2">
-            <Input label="Rótulo" value={l.label} onChange={(v) => updateLink(i, 'label', v)} />
-            <Input label="URL" value={l.href} onChange={(v) => updateLink(i, 'href', v)} />
+            <Input label="Rótulo" value={l.label} onChange={(v) => setLink(i, 'label', v)} />
+            <Input label="URL" value={l.href} onChange={(v) => setLink(i, 'href', v)} />
           </div>
-        </ItemWrapper>
+        </ItemBox>
       ))}
     </>
   );
@@ -862,8 +855,6 @@ const EditorGlobal = ({ config, setConfig, salvando }) => {
       const res = await api.put('/landing/admin/config', {
         seo_title: config.seo_title,
         seo_description: config.seo_description,
-        primary_color: config.primary_color,
-        accent_color: config.accent_color,
       });
       setConfig(res.data.config);
     } catch {}
@@ -874,19 +865,13 @@ const EditorGlobal = ({ config, setConfig, salvando }) => {
         <span className="text-3xl">⚙️</span>
         <div>
           <h2 className="text-xl font-bold text-white">Configurações Globais</h2>
-          <p className="text-xs text-gray-400">SEO, cores e informações gerais</p>
+          <p className="text-xs text-gray-400">SEO e informações gerais</p>
         </div>
       </div>
       <Input label="Título SEO (aparece no Google)" value={config.seo_title}
         onChange={(v) => update('seo_title', v)} />
       <Textarea label="Descrição SEO" value={config.seo_description}
         onChange={(v) => update('seo_description', v)} rows={3} />
-      <div className="grid grid-cols-2 gap-4">
-        <Input label="Cor primária (hex)" value={config.primary_color}
-          onChange={(v) => update('primary_color', v)} placeholder="#2563eb" />
-        <Input label="Cor de destaque (hex)" value={config.accent_color}
-          onChange={(v) => update('accent_color', v)} placeholder="#7c3aed" />
-      </div>
       <div className="mt-8 pt-4 border-t border-gray-700 flex justify-end">
         <button onClick={salvar} disabled={salvando}
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-sm disabled:opacity-50">
