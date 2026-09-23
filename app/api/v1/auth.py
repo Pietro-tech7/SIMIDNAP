@@ -4,6 +4,7 @@ from ...core.database import get_db
 from ...models.user import User
 from ...schemas.auth import UserRegister, UserLogin, TokenResponse
 from ...core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
+from ...services.email_service import send_welcome_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -21,6 +22,13 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Dispara e-mail de boas-vindas (falha silenciosa — não quebra o cadastro)
+    try:
+        send_welcome_email(new_user.email, new_user.full_name)
+    except Exception as e:
+        print(f"[Register] Erro ao enviar boas-vindas: {e}")
+
     return {"message": "Usuário criado com sucesso."}
 
 @router.post("/login", response_model=TokenResponse)
