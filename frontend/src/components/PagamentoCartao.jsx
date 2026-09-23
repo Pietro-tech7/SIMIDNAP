@@ -22,10 +22,6 @@ function garantirInitMP() {
 
 // ============================================================
 // Extrai mensagem de erro legível de qualquer formato do backend.
-// O FastAPI/Pydantic pode devolver:
-//   - string
-//   - { detail: "mensagem" }
-//   - { detail: [{type, loc, msg, input}, ...] }  ← 422 do Pydantic
 // ============================================================
 function extrairMensagemErro(err) {
   const detail = err?.response?.data?.detail;
@@ -53,17 +49,21 @@ function extrairMensagemErro(err) {
   );
 }
 
+// ============================================================
+// Extrai o formData do argumento do CardPayment Brick.
+// Aceita:
+//   - { formData: {...} }   ← formato antigo
+//   - { token, ... }        ← formato direto (v1.0.7+)
+// ============================================================
+function extrairFormData(arg) {
+  if (!arg) return null;
+  if (arg.formData && typeof arg.formData === 'object') return arg.formData;
+  if (arg.token) return arg; // formato direto
+  return arg; // fallback
+}
+
 /**
  * Modal de pagamento com cartão (Checkout Transparente do Mercado Pago).
- *
- * Props:
- *  - tipo:      'subscription' | 'credits'
- *  - codigo:    código do plano (ex: 'padrao') ou pacote (ex: 'pack_5')
- *  - nome:      nome amigável
- *  - preco:     número em reais (ex: 19.90)
- *  - userEmail: email do usuário logado
- *  - onClose:   () => void
- *  - onSuccess: (data) => void
  */
 export default function PagamentoCartao({
   tipo,
@@ -87,7 +87,20 @@ export default function PagamentoCartao({
   // ============================================================
   // Callback chamado pelo CardPayment quando o cliente clica em Pagar
   // ============================================================
-  const handleSubmit = async ({ formData }) => {
+  const handleSubmit = async (arg) => {
+    console.log('[PagamentoCartao] arg recebido do Brick:', arg);
+
+    const formData = extrairFormData(arg);
+    console.log('[PagamentoCartao] formData extraído:', formData);
+
+    if (!formData || !formData.token) {
+      setEstado('erro');
+      setMsgErro(
+        'Não foi possível validar os dados do cartão. Preencha todos os campos e tente novamente.'
+      );
+      return;
+    }
+
     setEstado('processando');
     setMsgErro(null);
 
@@ -101,6 +114,8 @@ export default function PagamentoCartao({
         tipo === 'subscription'
           ? { plan: codigo, card: formData }
           : { package: codigo, card: formData };
+
+      console.log('[PagamentoCartao] payload enviado:', payload);
 
       const res = await api.post(endpoint, payload);
       const status = res.data?.status;
@@ -133,7 +148,6 @@ export default function PagamentoCartao({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 relative">
-        {/* Botão fechar */}
         <button
           type="button"
           onClick={onClose}
@@ -145,7 +159,6 @@ export default function PagamentoCartao({
         </button>
 
         <div className="p-6">
-          {/* Cabeçalho */}
           <div className="mb-5 pr-8">
             <p className="text-xs uppercase tracking-wide text-gray-500 font-medium">
               {tipo === 'subscription' ? 'Assinatura mensal' : 'Compra de créditos'}
@@ -159,7 +172,6 @@ export default function PagamentoCartao({
             </p>
           </div>
 
-          {/* Estado: SUCESSO */}
           {estado === 'sucesso' && (
             <div className="text-center py-10">
               <div className="text-6xl mb-4">✅</div>
@@ -174,14 +186,12 @@ export default function PagamentoCartao({
             </div>
           )}
 
-          {/* Estado: ERRO */}
           {estado === 'erro' && (
             <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 text-sm">
               ⚠️ {typeof msgErro === 'string' ? msgErro : 'Erro ao processar pagamento.'}
             </div>
           )}
 
-          {/* Estado: FORMULÁRIO / PROCESSANDO */}
           {(estado === 'form' || estado === 'erro' || estado === 'processando') && (
             <>
               {!mpOk ? (

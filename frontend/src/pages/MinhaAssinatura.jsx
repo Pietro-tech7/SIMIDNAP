@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/api';
+import { useAuth } from '../contexts/AuthContext';
 import PagamentoPix from '../components/PagamentoPix';
 import PagamentoCartao from '../components/PagamentoCartao';
 
 const MinhaAssinatura = () => {
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [status, setStatus] = useState(null);
   const [planos, setPlanos] = useState([]);
   const [pacotes, setPacotes] = useState([]);
@@ -520,7 +522,7 @@ const MinhaAssinatura = () => {
           codigo={pagamentoCartao.codigo}
           nome={pagamentoCartao.nome}
           preco={pagamentoCartao.preco}
-          userEmail=""
+          userEmail={user?.email || ''}
           onClose={() => setPagamentoCartao(null)}
           onSuccess={handleCartaoSuccess}
         />
