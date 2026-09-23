@@ -3,12 +3,17 @@ Serviço de integração com o Mercado Pago.
 
 Modos suportados:
 1. Checkout Transparente (Pix) — QR Code gerado dentro do SIMIDNAPE
-2. Checkout Pro (Cartão/Débito) — redireciona para o MP (via preapproval)
+2. Checkout Transparente (Cartão) — Card Payment Brick + preapproval/payments
 3. Webhook — recebe notificações e adiciona créditos/ativa assinaturas
+
+E-mails transacionais (Brevo):
+- Confirmação de compra (créditos e assinaturas) — PIX e cartão
+- Cancelamento de assinatura
 
 Credenciais (env):
 - MERCADOPAGO_ACCESS_TOKEN
 - MERCADOPAGO_PUBLIC_KEY
+- BREVO_API_KEY
 """
 
 import os
@@ -21,6 +26,7 @@ from sqlalchemy.orm import Session
 
 from ..models.subscription import Subscription, PaymentHistory, UsageLog
 from ..models.user import User
+from .email_service import send_purchase_email, send_cancellation_email
 
 
 # ============================================================
@@ -40,6 +46,13 @@ PLANOS_PRECOS = {
     "avancado": 49.90,
 }
 
+PLANOS_NOMES = {
+    "basico": "Plano Básico",
+    "padrao": "Plano Padrão",
+    "avancado": "Plano Avançado",
+    "trial": "Plano Trial (Grátis)",
+}
+
 PACOTES_CREDITOS = {
     "pack_5":  {"creditos": 5,  "preco": 4.90,  "nome": "5 créditos"},
     "pack_10": {"creditos": 10, "preco": 12.90, "nome": "10 créditos"},
@@ -48,7 +61,7 @@ PACOTES_CREDITOS = {
 
 
 # ============================================================
-# HELPERS
+# HELPERS — HEADERS HTTP
 # ============================================================
 def _headers() -> Dict[str, str]:
     """Headers padrão (GET, consultas)."""
@@ -71,6 +84,9 @@ def _headers_post() -> Dict[str, str]:
     return headers
 
 
+# ============================================================
+# HELPERS — EXTERNAL REFERENCE
+# ============================================================
 def _montar_external_reference(user_id: str, tipo: str, item: str) -> str:
     return f"{user_id}|{tipo}|{item}|{int(time.time())}"
 
@@ -82,6 +98,83 @@ def _parse_external_reference(ref: str) -> Dict[str, Optional[str]]:
         "tipo":    partes[1] if len(partes) > 1 else None,
         "item":    partes[2] if len(partes) > 2 else None,
     }
+
+
+# ============================================================
+# HELPERS — E-MAIL (idempotência)
+# ============================================================
+def _enviar_email_creditos(db: Session, hist: PaymentHistory) -> None:
+    """
+    Envia e-mail de confirmação para compra de CRÉDITOS avulsos.
+    Idempotente: usa flag `_email_sent` no payment_data.
+    """
+    try:
+        meta = hist.payment_data or {}
+        if meta.get("_email_sent"):
+            return
+
+        user = db.query(User).filter(User.id == hist.user_id).first()
+        if not user:
+            return
+
+        info = _parse_external_reference(hist.external_reference or "")
+        package = info.get("item") or "credits"
+        pacote_info = PACOTES_CREDITOS.get(package, {})
+        nome_produto = pacote_info.get("nome", "Créditos")
+        creditos = (hist.credits_added or 0) / 10.0
+
+        enviado = send_purchase_email(
+            email=user.email,
+            nome=user.full_name or user.email,
+            produto=nome_produto,
+            valor=(hist.amount or 0) / 100.0,
+            metodo=hist.payment_method or "pix",
+            creditos_adicionados=creditos,
+            tipo="credits",
+        )
+        if enviado:
+            meta["_email_sent"] = True
+            hist.payment_data = meta
+            db.commit()
+    except Exception as e:
+        print(f"[Email] Falha ao enviar confirmação de créditos: {e}")
+
+
+def _enviar_email_assinatura(db: Session, sub: Subscription) -> None:
+    """
+    Envia e-mail de confirmação para ASSINATURA ativada.
+    Idempotente: usa o external_reference como chave em payment_metadata.
+    Isso permite reenvio em renovações futuras (novo external_reference).
+    """
+    try:
+        meta = sub.payment_metadata or {}
+        ext_ref = sub.external_reference or ""
+        if meta.get("_last_email_ref") == ext_ref:
+            return
+
+        user = db.query(User).filter(User.id == sub.user_id).first()
+        if not user:
+            return
+
+        plano = sub.plan or "basico"
+        nome_produto = PLANOS_NOMES.get(plano, f"Plano {plano.capitalize()}")
+        valor = PLANOS_PRECOS.get(plano, 0.0)
+
+        enviado = send_purchase_email(
+            email=user.email,
+            nome=user.full_name or user.email,
+            produto=nome_produto,
+            valor=valor,
+            metodo=sub.payment_method or "pix",
+            creditos_adicionados=None,
+            tipo="subscription",
+        )
+        if enviado:
+            meta["_last_email_ref"] = ext_ref
+            sub.payment_metadata = meta
+            db.commit()
+    except Exception as e:
+        print(f"[Email] Falha ao enviar confirmação de assinatura: {e}")
 
 
 # ============================================================
@@ -235,6 +328,9 @@ def get_payment_status(db: Session, user: User, payment_id: str) -> Dict[str, An
                     ))
                 db.commit()
 
+                # 📧 E-mail de confirmação (idempotente)
+                _enviar_email_creditos(db, hist)
+
         elif info["tipo"] == "subscription":
             sub = db.query(Subscription).filter(
                 Subscription.external_reference == ext_ref
@@ -252,6 +348,9 @@ def get_payment_status(db: Session, user: User, payment_id: str) -> Dict[str, An
                     sub.period_end = datetime.utcnow() + timedelta(days=30)
                 db.commit()
 
+                # 📧 E-mail de confirmação (idempotente)
+                _enviar_email_assinatura(db, sub)
+
     return {
         "payment_id": str(payment_id),
         "status": status,
@@ -260,7 +359,7 @@ def get_payment_status(db: Session, user: User, payment_id: str) -> Dict[str, An
 
 
 # ============================================================
-# CHECKOUT PRO — ASSINATURA (cartão/débito)
+# CHECKOUT PRO — ASSINATURA (cartão/débito) — legado, mantido por segurança
 # ============================================================
 def create_subscription_checkout(db: Session, user: User, plan: str) -> Dict[str, Any]:
     """Assinatura recorrente via Checkout Pro (redirecionamento)."""
@@ -312,7 +411,7 @@ def create_subscription_checkout(db: Session, user: User, plan: str) -> Dict[str
 
 
 # ============================================================
-# CHECKOUT PRO — CRÉDITOS
+# CHECKOUT PRO — CRÉDITOS — legado, mantido por segurança
 # ============================================================
 def create_credits_checkout(db: Session, user: User, package: str) -> Dict[str, Any]:
     """Créditos avulsos via Checkout Pro (redirecionamento)."""
@@ -424,6 +523,11 @@ def _handle_payment(db: Session, payment_id: str) -> Dict[str, Any]:
             meta["_credits_added"] = True
         hist.payment_data = meta
         db.commit()
+
+        # 📧 E-mail de confirmação (idempotente)
+        if status_mp == "approved":
+            _enviar_email_creditos(db, hist)
+
         return {"ok": True, "status": status_mp}
 
     # ---- Assinatura via Pix ----
@@ -448,6 +552,11 @@ def _handle_payment(db: Session, payment_id: str) -> Dict[str, Any]:
                 sub.period_start = datetime.utcnow()
                 sub.period_end = datetime.utcnow() + timedelta(days=30)
         db.commit()
+
+        # 📧 E-mail de confirmação (idempotente)
+        if status_mp == "approved":
+            _enviar_email_assinatura(db, sub)
+
         return {"ok": True, "status": status_mp}
 
     return {"ok": True, "ignored": info["tipo"]}
@@ -484,6 +593,11 @@ def _handle_preapproval(db: Session, preapproval_id: str) -> Dict[str, Any]:
         sub.status = "canceled"
 
     db.commit()
+
+    # 📧 E-mail de confirmação (idempotente)
+    if status_mp == "authorized":
+        _enviar_email_assinatura(db, sub)
+
     return {"ok": True, "status": status_mp}
 
 
@@ -511,7 +625,16 @@ def _handle_authorized_payment(db: Session, auth_payment_id: str) -> Dict[str, A
     sub.period_start = datetime.utcnow()
     sub.period_end = datetime.utcnow() + timedelta(days=30)
     sub.status = "active"
+
+    # Renovação: novo external_reference para permitir novo e-mail
+    sub.external_reference = _montar_external_reference(
+        str(sub.user_id), "subscription", sub.plan or "basico"
+    )
     db.commit()
+
+    # 📧 E-mail de confirmação de renovação
+    _enviar_email_assinatura(db, sub)
+
     return {"ok": True, "renewed": True}
 
 
@@ -533,10 +656,23 @@ def cancel_subscription(db: Session, user: User) -> Subscription:
         except Exception as e:
             print(f"[MP] Erro ao cancelar no MP: {e}")
 
+    plano_anterior = sub.plan or "basico"
     sub.status = "canceled"
     sub.payment_status = "cancelled"
     db.commit()
     db.refresh(sub)
+
+    # 📧 E-mail de cancelamento (não idempotente — só dispara em ação do usuário)
+    try:
+        nome_plano = PLANOS_NOMES.get(plano_anterior, f"Plano {plano_anterior.capitalize()}")
+        send_cancellation_email(
+            email=user.email,
+            nome=user.full_name or user.email,
+            plano=nome_plano,
+        )
+    except Exception as e:
+        print(f"[Email] Falha ao enviar cancelamento: {e}")
+
     return sub
 
 
@@ -563,6 +699,7 @@ def list_packages() -> List[Dict[str, Any]]:
         }
         for codigo, info in PACOTES_CREDITOS.items()
     ]
+
 
 # ============================================================
 # CARTÃO DE CRÉDITO — CRÉDITOS AVULSOS (Checkout Transparente)
@@ -645,6 +782,10 @@ def create_card_credits(db: Session, user: User, package: str, card_data: Dict[s
 
     db.commit()
 
+    # 📧 E-mail de confirmação (idempotente) se aprovado na hora
+    if status_mp == "approved":
+        _enviar_email_creditos(db, hist)
+
     return {
         "payment_id": str(data.get("id")),
         "status": status_mp,
@@ -721,6 +862,10 @@ def create_card_subscription(db: Session, user: User, plan: str, card_data: Dict
             sub.period_end = datetime.utcnow() + timedelta(days=30)
 
     db.commit()
+
+    # 📧 E-mail de confirmação (idempotente)
+    if status_mp == "authorized":
+        _enviar_email_assinatura(db, sub)
 
     return {
         "payment_id": data.get("id"),
