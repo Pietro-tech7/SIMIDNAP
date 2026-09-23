@@ -4,7 +4,6 @@ import api from '../api/api';
 
 // ============================================================
 // Inicializa o SDK do Mercado Pago UMA ÚNICA VEZ por sessão.
-// Chamar initMercadoPago() duas vezes causa erro.
 // ============================================================
 let mpJaInicializado = false;
 
@@ -21,17 +20,50 @@ function garantirInitMP() {
   return true;
 }
 
+// ============================================================
+// Extrai mensagem de erro legível de qualquer formato do backend.
+// O FastAPI/Pydantic pode devolver:
+//   - string
+//   - { detail: "mensagem" }
+//   - { detail: [{type, loc, msg, input}, ...] }  ← 422 do Pydantic
+// ============================================================
+function extrairMensagemErro(err) {
+  const detail = err?.response?.data?.detail;
+
+  if (typeof detail === 'string') return detail;
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => {
+        const campo = Array.isArray(d?.loc) ? d.loc.slice(-1)[0] : '';
+        const msg = d?.msg || 'valor inválido';
+        return campo ? `${campo}: ${msg}` : msg;
+      })
+      .join(' | ');
+  }
+
+  if (detail && typeof detail === 'object') {
+    return JSON.stringify(detail);
+  }
+
+  return (
+    err?.response?.data?.message ||
+    err?.message ||
+    'Erro ao processar pagamento. Tente novamente em alguns instantes.'
+  );
+}
+
 /**
  * Modal de pagamento com cartão (Checkout Transparente do Mercado Pago).
  *
  * Props:
  *  - tipo:      'subscription' | 'credits'
  *  - codigo:    código do plano (ex: 'padrao') ou pacote (ex: 'pack_5')
- *  - nome:      nome amigável para exibir (ex: "Plano Padrão" / "5 créditos")
+ *  - nome:      nome amigável
  *  - preco:     número em reais (ex: 19.90)
- *  - userEmail: email do usuário logado (preenche o campo payer.email)
+ *  - userEmail: email do usuário logado
  *  - onClose:   () => void
- *  - onSuccess: (data) => void  — chamado após aprovação
+ *  - onSuccess: (data) => void
  */
 export default function PagamentoCartao({
   tipo,
@@ -50,8 +82,7 @@ export default function PagamentoCartao({
     setMpOk(garantirInitMP());
   }, []);
 
-  const formatBRL = (v) =>
-    `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+  const formatBRL = (v) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
 
   // ============================================================
   // Callback chamado pelo CardPayment quando o cliente clica em Pagar
@@ -86,16 +117,13 @@ export default function PagamentoCartao({
         );
       }
     } catch (err) {
-      const detail =
-        err?.response?.data?.detail ||
-        'Erro ao processar pagamento. Tente novamente em alguns instantes.';
+      console.error('[PagamentoCartao] erro:', err?.response?.data || err);
       setEstado('erro');
-      setMsgErro(detail);
+      setMsgErro(extrairMensagemErro(err));
     }
   };
 
   const handleError = (err) => {
-    // Erros do próprio Brick (ex: validação de formulário)
     console.error('[CardPayment Brick]', err);
   };
 
@@ -149,7 +177,7 @@ export default function PagamentoCartao({
           {/* Estado: ERRO */}
           {estado === 'erro' && (
             <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 text-sm">
-              ⚠️ {msgErro}
+              ⚠️ {typeof msgErro === 'string' ? msgErro : 'Erro ao processar pagamento.'}
             </div>
           )}
 

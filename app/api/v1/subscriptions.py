@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from pydantic import BaseModel
 
 from ...core.database import get_db
@@ -60,22 +60,16 @@ def get_current_user(authorization: str = Header(...), db: Session = Depends(get
 class TrocarPlanoRequest(BaseModel):
     plano: str
 
-class CardDataModel(BaseModel):
-    token: str
-    payment_method_id: str
-    installments: int = 1
-    issuer_id: Optional[str] = None
-    payer: Optional[Dict[str, Any]] = None
-
-
 class CardSubscriptionRequest(BaseModel):
     plan: str
-    card: CardDataModel
+    # O Mercado Pago envia vários campos com tipos que variam.
+    # Aceitamos como dict livre e validamos dentro do service.
+    card: Dict[str, Any]
 
 
 class CardCreditsRequest(BaseModel):
     package: str
-    card: CardDataModel
+    card: Dict[str, Any]
 
 
 # ============================================================
@@ -232,7 +226,7 @@ def card_subscription(
     Recebe o token gerado pelo Card Payment Brick no frontend.
     """
     try:
-        return create_card_subscription(db, current_user, data.plan, data.card.dict())
+        return create_card_subscription(db, current_user, data.plan, data.card)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -257,7 +251,7 @@ def card_credits(
     Recebe o token gerado pelo Card Payment Brick no frontend.
     """
     try:
-        return create_card_credits(db, current_user, data.package, data.card.dict())
+        return create_card_credits(db, current_user, data.package, data.card)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
