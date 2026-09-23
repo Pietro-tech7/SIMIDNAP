@@ -1,7 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/api';
 import AvatarUpload from '../components/AvatarUpload';
+
+// Lista de UFs do Brasil
+const UFS = [
+  ['AC', 'Acre'], ['AL', 'Alagoas'], ['AP', 'Amapá'], ['AM', 'Amazonas'],
+  ['BA', 'Bahia'], ['CE', 'Ceará'], ['DF', 'Distrito Federal'], ['ES', 'Espírito Santo'],
+  ['GO', 'Goiás'], ['MA', 'Maranhão'], ['MT', 'Mato Grosso'], ['MS', 'Mato Grosso do Sul'],
+  ['MG', 'Minas Gerais'], ['PA', 'Pará'], ['PB', 'Paraíba'], ['PR', 'Paraná'],
+  ['PE', 'Pernambuco'], ['PI', 'Piauí'], ['RJ', 'Rio de Janeiro'], ['RN', 'Rio Grande do Norte'],
+  ['RS', 'Rio Grande do Sul'], ['RO', 'Rondônia'], ['RR', 'Roraima'], ['SC', 'Santa Catarina'],
+  ['SP', 'São Paulo'], ['SE', 'Sergipe'], ['TO', 'Tocantins'],
+];
+
+const REDES = [
+  ['estadual', 'Rede pública estadual'],
+  ['municipal', 'Rede pública municipal'],
+  ['privada', 'Rede privada'],
+  ['outro', 'Outro'],
+];
+
+const NOMES_UF = Object.fromEntries(UFS);
+const NOMES_REDE = Object.fromEntries(REDES);
 
 const Perfil = () => {
   const { user, refreshUser } = useAuth();
@@ -13,6 +35,8 @@ const Perfil = () => {
 
   const [editandoPerfil, setEditandoPerfil] = useState(false);
   const [nomeEdit, setNomeEdit] = useState('');
+  const [estadoEdit, setEstadoEdit] = useState('');
+  const [redeEdit, setRedeEdit] = useState('');
   const [salvandoPerfil, setSalvandoPerfil] = useState(false);
   const [msgPerfil, setMsgPerfil] = useState(null);
 
@@ -43,10 +67,12 @@ const Perfil = () => {
     carregarDados();
     if (user) {
       setNomeEdit(user.full_name || '');
+      setEstadoEdit(user.estado || '');
+      setRedeEdit(user.rede || '');
     }
   }, [user]);
 
-  const handleTrocarPlano = (codigo, nome) => {
+  const handleTrocarPlano = () => {
     navigate('/minha-assinatura');
   };
 
@@ -55,9 +81,13 @@ const Perfil = () => {
     setMsgPerfil(null);
     setSalvandoPerfil(true);
     try {
-      await api.put('/users/me', { full_name: nomeEdit });
+      await api.put('/users/me', {
+        full_name: nomeEdit,
+        estado: estadoEdit || null,
+        rede: redeEdit || null,
+      });
       if (refreshUser) await refreshUser();
-      setMsgPerfil({ tipo: 'sucesso', texto: 'Nome atualizado com sucesso!' });
+      setMsgPerfil({ tipo: 'sucesso', texto: 'Perfil atualizado com sucesso!' });
       setEditandoPerfil(false);
     } catch {
       setMsgPerfil({ tipo: 'erro', texto: 'Erro ao salvar. Tente novamente.' });
@@ -117,7 +147,7 @@ const Perfil = () => {
               onClick={() => setEditandoPerfil(true)}
               className="text-sm text-blue-600 hover:text-blue-800 font-medium"
             >
-              ✏️ Editar nome
+              ✏️ Editar dados
             </button>
           )}
         </div>
@@ -141,6 +171,18 @@ const Perfil = () => {
                   <p className="text-xs text-gray-500 uppercase tracking-wide">E-mail</p>
                   <p className="text-gray-800 font-medium">{user?.email}</p>
                 </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Estado</p>
+                  <p className="text-gray-800 font-medium">
+                    {user?.estado ? `${NOMES_UF[user.estado] || user.estado} (${user.estado})` : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Rede de ensino</p>
+                  <p className="text-gray-800 font-medium">
+                    {user?.rede ? (NOMES_REDE[user.rede] || user.rede) : '—'}
+                  </p>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSalvarPerfil} className="space-y-3">
@@ -156,6 +198,36 @@ const Perfil = () => {
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                    <select
+                      value={estadoEdit}
+                      onChange={(e) => setEstadoEdit(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="">Selecione...</option>
+                      {UFS.map(([uf, nome]) => (
+                        <option key={uf} value={uf}>{nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Rede de ensino</label>
+                    <select
+                      value={redeEdit}
+                      onChange={(e) => setRedeEdit(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="">Selecione...</option>
+                      {REDES.map(([val, nome]) => (
+                        <option key={val} value={val}>{nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
                   <input
@@ -185,6 +257,8 @@ const Perfil = () => {
                     onClick={() => {
                       setEditandoPerfil(false);
                       setNomeEdit(user.full_name || '');
+                      setEstadoEdit(user.estado || '');
+                      setRedeEdit(user.rede || '');
                       setMsgPerfil(null);
                     }}
                     className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-4 py-2 rounded-lg text-sm"

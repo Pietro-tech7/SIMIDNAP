@@ -43,6 +43,11 @@ def update_profile(
         current_user.full_name = data.full_name
     if data.avatar_url is not None:
         current_user.avatar_url = data.avatar_url
+    if data.estado is not None:
+        current_user.estado = (data.estado or "").upper() or None
+    if data.rede is not None:
+        current_user.rede = data.rede or None
+
     db.commit()
     db.refresh(current_user)
     return current_user
@@ -55,11 +60,10 @@ async def upload_avatar(
     current_user: User = Depends(get_current_user),
 ):
     """Recebe a imagem já redimensionada em base64 e salva no perfil."""
-    # Valida tipo
     if file.content_type not in ("image/jpeg", "image/png", "image/webp"):
         raise HTTPException(
             status_code=400,
-            detail="Formato inválido. Use JPG, PNG ou WEBP."
+            detail="Formato inválido. Use JPG, PNG ou WEBP.",
         )
 
     conteudo = await file.read()
@@ -67,10 +71,9 @@ async def upload_avatar(
     if len(conteudo) > LIMITE_AVATAR:
         raise HTTPException(
             status_code=400,
-            detail="Imagem muito grande. Máximo 2 MB."
+            detail="Imagem muito grande. Máximo 2 MB.",
         )
 
-    # Converte para base64 e salva como data URL
     b64 = base64.b64encode(conteudo).decode("utf-8")
     data_url = f"data:{file.content_type};base64,{b64}"
 
@@ -103,13 +106,13 @@ def change_password(
     if len(data.new_password) < 6:
         raise HTTPException(
             status_code=400,
-            detail="A nova senha deve ter pelo menos 6 caracteres."
+            detail="A nova senha deve ter pelo menos 6 caracteres.",
         )
 
     if data.current_password == data.new_password:
         raise HTTPException(
             status_code=400,
-            detail="A nova senha deve ser diferente da atual."
+            detail="A nova senha deve ser diferente da atual.",
         )
 
     current_user.hashed_password = hash_password(data.new_password)

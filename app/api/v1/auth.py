@@ -8,16 +8,20 @@ from ...services.email_service import send_welcome_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
 @router.post("/register", status_code=201)
 def register(user_data: UserRegister, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == user_data.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="E-mail já cadastrado.")
+
     hashed = hash_password(user_data.password)
     new_user = User(
         email=user_data.email,
         hashed_password=hashed,
-        full_name=user_data.full_name
+        full_name=user_data.full_name,
+        estado=(user_data.estado or "").upper() or None,
+        rede=user_data.rede or None,
     )
     db.add(new_user)
     db.commit()
@@ -30,6 +34,7 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
         print(f"[Register] Erro ao enviar boas-vindas: {e}")
 
     return {"message": "Usuário criado com sucesso."}
+
 
 @router.post("/login", response_model=TokenResponse)
 def login(user_data: UserLogin, response: Response, db: Session = Depends(get_db)):
@@ -48,9 +53,10 @@ def login(user_data: UserLogin, response: Response, db: Session = Depends(get_db
         httponly=True,
         secure=False,
         samesite="lax",
-        max_age=7 * 24 * 60 * 60
+        max_age=7 * 24 * 60 * 60,
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 @router.post("/refresh", response_model=TokenResponse)
 def refresh_token(response: Response, refresh_token: str = Cookie(None)):
@@ -64,6 +70,7 @@ def refresh_token(response: Response, refresh_token: str = Cookie(None)):
         raise HTTPException(status_code=401, detail="Token inválido.")
     new_access = create_access_token(data={"sub": user_id})
     return {"access_token": new_access, "token_type": "bearer"}
+
 
 @router.post("/logout")
 def logout(response: Response):

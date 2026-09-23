@@ -2,9 +2,29 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 
+// Lista de UFs do Brasil
+const UFS = [
+  ['AC', 'Acre'], ['AL', 'Alagoas'], ['AP', 'Amapá'], ['AM', 'Amazonas'],
+  ['BA', 'Bahia'], ['CE', 'Ceará'], ['DF', 'Distrito Federal'], ['ES', 'Espírito Santo'],
+  ['GO', 'Goiás'], ['MA', 'Maranhão'], ['MT', 'Mato Grosso'], ['MS', 'Mato Grosso do Sul'],
+  ['MG', 'Minas Gerais'], ['PA', 'Pará'], ['PB', 'Paraíba'], ['PR', 'Paraná'],
+  ['PE', 'Pernambuco'], ['PI', 'Piauí'], ['RJ', 'Rio de Janeiro'], ['RN', 'Rio Grande do Norte'],
+  ['RS', 'Rio Grande do Sul'], ['RO', 'Rondônia'], ['RR', 'Roraima'], ['SC', 'Santa Catarina'],
+  ['SP', 'São Paulo'], ['SE', 'Sergipe'], ['TO', 'Tocantins'],
+];
+
+const REDES = [
+  ['estadual', 'Rede pública estadual'],
+  ['municipal', 'Rede pública municipal'],
+  ['privada', 'Rede privada'],
+  ['outro', 'Outro'],
+];
+
 const Register = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [estado, setEstado] = useState('');
+  const [rede, setRede] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -21,6 +41,14 @@ const Register = () => {
     setError('');
     setSuccess('');
 
+    if (!estado) {
+      setError('Selecione o estado onde você leciona.');
+      return;
+    }
+    if (!rede) {
+      setError('Selecione a rede de ensino.');
+      return;
+    }
     if (password.length < 6) {
       setError('A senha deve ter pelo menos 6 caracteres.');
       return;
@@ -35,7 +63,7 @@ const Register = () => {
     }
 
     try {
-      await register(email, password, fullName);
+      await register(email, password, fullName, estado, rede);
       setSuccess('Cadastro realizado! Redirecionando para o login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
@@ -122,6 +150,39 @@ const Register = () => {
                 placeholder="Como você se chama?"
                 required
               />
+            </div>
+
+            {/* Estado + Rede */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Estado onde leciona</label>
+                <select
+                  value={estado}
+                  onChange={(e) => setEstado(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+                  required
+                >
+                  <option value="">Selecione...</option>
+                  {UFS.map(([uf, nome]) => (
+                    <option key={uf} value={uf}>{nome}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Rede de ensino</label>
+                <select
+                  value={rede}
+                  onChange={(e) => setRede(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+                  required
+                >
+                  <option value="">Selecione...</option>
+                  {REDES.map(([val, nome]) => (
+                    <option key={val} value={val}>{nome}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* E-mail */}
