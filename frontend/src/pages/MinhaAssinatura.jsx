@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/api';
 import PagamentoPix from '../components/PagamentoPix';
+import PagamentoCartao from '../components/PagamentoCartao';
 
 const MinhaAssinatura = () => {
   const [searchParams] = useSearchParams();
@@ -15,6 +16,9 @@ const MinhaAssinatura = () => {
 
   // Pagamento Pix ativo (QR Code)
   const [pagamentoPix, setPagamentoPix] = useState(null);
+
+  // Pagamento com Cartão ativo (modal transparente)
+  const [pagamentoCartao, setPagamentoCartao] = useState(null);
 
   // Mensagem de retorno do MP (Checkout Pro)
   useEffect(() => {
@@ -93,37 +97,31 @@ const MinhaAssinatura = () => {
   };
 
   // ============================================================
-  // CARTÃO — Assinatura (redireciona para o MP)
+  // CARTÃO — Assinatura (modal transparente, sem redirecionar)
   // ============================================================
-  const assinarComCartao = async (codigo, nome) => {
-    if (!window.confirm(`Pagar com cartão o plano ${nome}? Você será redirecionado para o Mercado Pago.`)) return;
-    setAcaoEmAndamento(`cartao_${codigo}`);
+  const assinarComCartao = (codigo, nome) => {
     setMsg(null);
-    try {
-      const res = await api.post('/subscriptions/checkout', { plan: codigo });
-      window.location.href = res.data.checkout_url;
-    } catch (err) {
-      const detail = err?.response?.data?.detail || 'Erro ao iniciar pagamento com cartão.';
-      setMsg({ tipo: 'erro', texto: detail });
-      setAcaoEmAndamento(null);
-    }
+    const plano = planos.find(p => p.codigo === codigo);
+    setPagamentoCartao({
+      tipo: 'subscription',
+      codigo,
+      nome: `Plano ${nome}`,
+      preco: plano?.preco || 0,
+    });
   };
 
   // ============================================================
-  // CARTÃO — Créditos avulsos (redireciona para o MP)
+  // CARTÃO — Créditos avulsos (modal transparente, sem redirecionar)
   // ============================================================
-  const comprarComCartao = async (codigo, nome) => {
-    if (!window.confirm(`Pagar com cartão ${nome}? Você será redirecionado para o Mercado Pago.`)) return;
-    setAcaoEmAndamento(`cartao_${codigo}`);
+  const comprarComCartao = (codigo, nome) => {
     setMsg(null);
-    try {
-      const res = await api.post('/subscriptions/checkout-credits', { package: codigo });
-      window.location.href = res.data.checkout_url;
-    } catch (err) {
-      const detail = err?.response?.data?.detail || 'Erro ao iniciar pagamento com cartão.';
-      setMsg({ tipo: 'erro', texto: detail });
-      setAcaoEmAndamento(null);
-    }
+    const pacote = pacotes.find(p => p.codigo === codigo);
+    setPagamentoCartao({
+      tipo: 'credits',
+      codigo,
+      nome,
+      preco: pacote?.preco || 0,
+    });
   };
 
   // ============================================================
@@ -153,6 +151,13 @@ const MinhaAssinatura = () => {
   const handlePixSuccess = async () => {
     setPagamentoPix(null);
     setMsg({ tipo: 'sucesso', texto: 'Pagamento confirmado! Seus créditos foram atualizados.' });
+    await carregarDados();
+    window.dispatchEvent(new CustomEvent('subscription-updated'));
+  };
+
+  const handleCartaoSuccess = async () => {
+    setPagamentoCartao(null);
+    setMsg({ tipo: 'sucesso', texto: 'Pagamento com cartão confirmado! Seus créditos foram atualizados.' });
     await carregarDados();
     window.dispatchEvent(new CustomEvent('subscription-updated'));
   };
@@ -503,6 +508,21 @@ const MinhaAssinatura = () => {
           paymentData={pagamentoPix}
           onClose={() => setPagamentoPix(null)}
           onSuccess={handlePixSuccess}
+        />
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL DE PAGAMENTO COM CARTÃO */}
+      {/* ============================================================ */}
+      {pagamentoCartao && (
+        <PagamentoCartao
+          tipo={pagamentoCartao.tipo}
+          codigo={pagamentoCartao.codigo}
+          nome={pagamentoCartao.nome}
+          preco={pagamentoCartao.preco}
+          userEmail=""
+          onClose={() => setPagamentoCartao(null)}
+          onSuccess={handleCartaoSuccess}
         />
       )}
     </div>

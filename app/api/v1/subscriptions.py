@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 
 from ...core.database import get_db
@@ -15,6 +15,8 @@ from ...services.payment_service import (
     create_credits_checkout,
     create_pix_subscription,
     create_pix_credits,
+    create_card_subscription,
+    create_card_credits,
     get_payment_status,
     cancel_subscription,
     get_payment_history,
@@ -57,6 +59,23 @@ def get_current_user(authorization: str = Header(...), db: Session = Depends(get
 
 class TrocarPlanoRequest(BaseModel):
     plano: str
+
+class CardDataModel(BaseModel):
+    token: str
+    payment_method_id: str
+    installments: int = 1
+    issuer_id: Optional[str] = None
+    payer: Optional[Dict[str, Any]] = None
+
+
+class CardSubscriptionRequest(BaseModel):
+    plan: str
+    card: CardDataModel
+
+
+class CardCreditsRequest(BaseModel):
+    package: str
+    card: CardDataModel
 
 
 # ============================================================
@@ -197,6 +216,55 @@ def checkout_credits(
         raise HTTPException(
             status_code=500,
             detail="Erro ao criar compra de créditos. Tente novamente em alguns instantes."
+        )
+
+# ============================================================
+# CARTÃO — ASSINATURA (Checkout Transparente)
+# ============================================================
+@router.post("/card/subscription")
+def card_subscription(
+    data: CardSubscriptionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Assinatura com cartão de crédito via Checkout Transparente.
+    Recebe o token gerado pelo Card Payment Brick no frontend.
+    """
+    try:
+        return create_card_subscription(db, current_user, data.plan, data.card.dict())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"[Card Subscription] Erro: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao processar pagamento com cartão. Tente novamente."
+        )
+
+
+# ============================================================
+# CARTÃO — CRÉDITOS AVULSOS (Checkout Transparente)
+# ============================================================
+@router.post("/card/credits")
+def card_credits(
+    data: CardCreditsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Compra de créditos com cartão via Checkout Transparente.
+    Recebe o token gerado pelo Card Payment Brick no frontend.
+    """
+    try:
+        return create_card_credits(db, current_user, data.package, data.card.dict())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"[Card Credits] Erro: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao processar pagamento com cartão. Tente novamente."
         )
 
 

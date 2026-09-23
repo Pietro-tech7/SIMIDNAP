@@ -563,3 +563,171 @@ def list_packages() -> List[Dict[str, Any]]:
         }
         for codigo, info in PACOTES_CREDITOS.items()
     ]
+
+# ============================================================
+# CARTÃO DE CRÉDITO — CRÉDITOS AVULSOS (Checkout Transparente)
+# ============================================================
+def create_card_credits(db: Session, user: User, package: str, card_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Cria um pagamento com cartão de crédito para compra de créditos avulsos.
+    O card_data vem do Card Payment Brick (token, payment_method_id, etc).
+    """
+    if package not in PACOTES_CREDITOS:
+        raise ValueError(f"Pacote inválido: {package}")
+
+    pacote = PACOTES_CREDITOS[package]
+    ext_ref = _montar_external_reference(str(user.id), "credits", package)
+
+    token = card_data.get("token")
+    payment_method_id = card_data.get("payment_method_id")
+    if not token:
+        raise ValueError("Token do cartão ausente.")
+    if not payment_method_id:
+        raise ValueError("payment_method_id ausente.")
+
+    installments = int(card_data.get("installments") or 1)
+    issuer_id = card_data.get("issuer_id")
+    payer_data = card_data.get("payer") or {}
+
+    payer: Dict[str, Any] = {"email": user.email}
+    identification = payer_data.get("identification")
+    if identification:
+        payer["identification"] = identification
+
+    body: Dict[str, Any] = {
+        "transaction_amount": float(pacote["preco"]),
+        "token": token,
+        "description": f"SIMIDNAPE PRO - {pacote['nome']}",
+        "installments": installments,
+        "payment_method_id": payment_method_id,
+        "payer": payer,
+        "external_reference": ext_ref,
+        "notification_url": f"{BACKEND_URL}/api/v1/subscriptions/webhook",
+        "statement_descriptor": "SIMIDNAPE",
+    }
+    if issuer_id:
+        body["issuer_id"] = str(issuer_id)
+
+    resp = requests.post(f"{MP_BASE}/v1/payments", json=body, headers=_headers_post(), timeout=30)
+    if resp.status_code not in (200, 201):
+        raise Exception(f"Erro Mercado Pago ({resp.status_code}): {resp.text}")
+
+    data = resp.json()
+    status_mp = data.get("status") or "pending"
+
+    hist = PaymentHistory(
+        user_id=user.id,
+        payment_provider="mercadopago",
+        payment_provider_id=str(data.get("id")),
+        external_reference=ext_ref,
+        amount=int(pacote["preco"] * 100),
+        credits_added=pacote["creditos"] * 10,
+        status=status_mp,
+        payment_method="credit_card",
+        payment_data=data,
+    )
+    db.add(hist)
+
+    # Se aprovado na hora, adiciona créditos imediatamente
+    if status_mp == "approved":
+        meta = hist.payment_data or {}
+        if not meta.get("_credits_added"):
+            sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
+            if sub:
+                sub.credits_total += hist.credits_added
+                db.add(UsageLog(
+                    user_id=user.id,
+                    task_type=f"purchase_{package}",
+                    credits_consumed=-hist.credits_added,
+                ))
+            meta["_credits_added"] = True
+            hist.payment_data = meta
+
+    db.commit()
+
+    return {
+        "payment_id": str(data.get("id")),
+        "status": status_mp,
+        "status_detail": data.get("status_detail"),
+        "external_reference": ext_ref,
+        "valor": pacote["preco"],
+        "tipo": "credits",
+        "item": package,
+    }
+
+
+# ============================================================
+# CARTÃO DE CRÉDITO — ASSINATURA (Checkout Transparente via preapproval)
+# ============================================================
+def create_card_subscription(db: Session, user: User, plan: str, card_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Cria uma assinatura recorrente com cartão de crédito (preapproval).
+    O card_data vem do Card Payment Brick (token gerado no frontend).
+    """
+    if plan not in PLANOS_PRECOS:
+        raise ValueError(f"Plano inválido: {plan}")
+
+    preco = PLANOS_PRECOS[plan]
+    ext_ref = _montar_external_reference(str(user.id), "subscription", plan)
+
+    token = card_data.get("token")
+    if not token:
+        raise ValueError("Token do cartão ausente.")
+
+    body = {
+        "reason": f"SIMIDNAPE PRO - Plano {plan.capitalize()}",
+        "external_reference": ext_ref,
+        "payer_email": user.email,
+        "card_token_id": token,
+        "auto_recurring": {
+            "frequency": 1,
+            "frequency_type": "months",
+            "transaction_amount": float(preco),
+            "currency_id": "BRL",
+        },
+        "back_url": f"{FRONTEND_URL}/minha-assinatura",
+        "status": "authorized",
+    }
+
+    resp = requests.post(f"{MP_BASE}/preapproval", json=body, headers=_headers_post(), timeout=30)
+    if resp.status_code not in (200, 201):
+        raise Exception(f"Erro Mercado Pago ({resp.status_code}): {resp.text}")
+
+    data = resp.json()
+    status_mp = data.get("status")
+
+    sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
+    if not sub:
+        sub = Subscription(user_id=user.id, plan="trial", status="active",
+                           credits_total=50, credits_used=0)
+        db.add(sub)
+        db.flush()
+
+    sub.payment_provider = "mercadopago"
+    sub.payment_provider_id = data.get("id")
+    sub.payment_method = "credit_card"
+    sub.payment_status = status_mp
+    sub.external_reference = ext_ref
+    sub.payment_metadata = data
+
+    if status_mp == "authorized":
+        from .subscription_service import PLANOS
+        if plan in PLANOS:
+            sub.plan = plan
+            sub.status = "active"
+            sub.credits_total = PLANOS[plan]["creditos_mes"]
+            sub.credits_used = 0
+            sub.period_start = datetime.utcnow()
+            sub.period_end = datetime.utcnow() + timedelta(days=30)
+
+    db.commit()
+
+    return {
+        "payment_id": data.get("id"),
+        "status": status_mp or "pending",
+        "status_detail": data.get("status_detail") or status_mp,
+        "external_reference": ext_ref,
+        "valor": preco,
+        "tipo": "subscription",
+        "item": plan,
+    }
