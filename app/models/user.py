@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from ..core.database import Base
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -14,5 +15,12 @@ class User(Base):
     is_superuser = Column(Boolean, default=False)
     gemini_api_key = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
+
+    # ============================================================
+    # LOCALIZAÇÃO E REDE DE ENSINO
+    # ============================================================
+    estado = Column(String(2), nullable=True, index=True)   # UF: 'PI', 'MA', 'SP', ...
+    rede = Column(String(20), nullable=True, index=True)    # 'estadual' | 'municipal' | 'privada' | 'outro'
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())

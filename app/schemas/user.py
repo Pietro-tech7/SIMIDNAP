@@ -11,6 +11,8 @@ class UserOut(BaseModel):
     is_active: bool
     is_superuser: bool
     avatar_url: Optional[str] = None
+    estado: Optional[str] = None
+    rede: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime]
 
@@ -26,3 +28,5 @@ class ChangePassword(BaseModel):
 class UpdateProfile(BaseModel):
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    estado: Optional[str] = None
+    rede: Optional[str] = None
