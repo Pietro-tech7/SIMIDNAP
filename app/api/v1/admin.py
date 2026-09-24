@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, timedelta
+import math
 
 from ...core.database import get_db
 from ...models.user import User
@@ -11,6 +13,7 @@ from ...models.reflection import Reflection
 from ...models.material import Material
 from ...models.pedagogical_case import PedagogicalCase
 from ...models.successful_practice import SuccessfulPractice
+from ...models.question_bank_fundamental import QuestionBankFundamental
 from ...schemas.admin import (
     AdminUserOut,
     AdminUserUpdate,
@@ -22,6 +25,14 @@ from ...schemas.admin import (
     AdminContentItem,
     AdminContentList,
     AdminContentDetail,
+)
+from ...schemas.admin_question_bank import (
+    AdminQuestionItem,
+    AdminQuestionListResponse,
+    AdminQuestionUpdate,
+    AdminQuestionApprovalRequest,
+    AdminQuestionStats,
+    AdminQuestionStatsItem,
 )
 from ...services.subscription_service import PLANOS
 from ...core.security import decode_token
@@ -364,7 +375,7 @@ def list_usage(
 
 
 # ============================================================
-# CONTEÚDOS GERADOS POR USUÁRIO (visor do super admin)
+# CONTEÚDOS GERADOS POR USUÁRIO
 # ============================================================
 @router.get("/users/{user_id}/content", response_model=AdminContentList)
 def list_user_content(
@@ -373,18 +384,12 @@ def list_user_content(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_superuser),
 ):
-    """
-    Lista todos os conteúdos gerados por um usuário.
-    Opcionalmente filtra por content_type:
-    'pratica_exitosa' | 'material' | 'neuroaula' | 'aula_que_funciona' | 'reflection' | 'pedagogical_case'
-    """
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
 
     items: List[AdminContentItem] = []
 
-    # ---- Práticas Exitosas ----
     if not content_type or content_type == "pratica_exitosa":
         for p in db.query(SuccessfulPractice).filter(
             SuccessfulPractice.user_id == user_id
@@ -400,7 +405,6 @@ def list_user_content(
                 created_at=p.created_at,
             ))
 
-    # ---- Materiais ----
     if not content_type or content_type == "material":
         for m in db.query(Material).filter(
             Material.user_id == user_id
@@ -418,7 +422,6 @@ def list_user_content(
                 created_at=m.created_at,
             ))
 
-    # ---- Lesson Plans (neuroaula / aula_que_funciona) ----
     if not content_type or content_type in ("neuroaula", "aula_que_funciona"):
         q = db.query(LessonPlan).filter(LessonPlan.user_id == user_id)
         if content_type:
@@ -431,13 +434,12 @@ def list_user_content(
                 subtitulo_partes.append(lp.subject)
             items.append(AdminContentItem(
                 id=lp.id,
-                content_type=lp.plan_type,  # 'neuroaula' ou 'aula_que_funciona'
+                content_type=lp.plan_type,
                 title=lp.title,
                 subtitle=" • ".join([str(x) for x in subtitulo_partes if x]),
                 created_at=lp.created_at,
             ))
 
-    # ---- Reflections (Terapia Pedagógica) ----
     if not content_type or content_type == "reflection":
         for r in db.query(Reflection).filter(
             Reflection.user_id == user_id
@@ -451,7 +453,6 @@ def list_user_content(
                 created_at=r.created_at,
             ))
 
-    # ---- Pedagogical Cases (Meu Aluno / Situação Pedagógica) ----
     if not content_type or content_type == "pedagogical_case":
         for pc in db.query(PedagogicalCase).filter(
             PedagogicalCase.user_id == user_id
@@ -469,10 +470,8 @@ def list_user_content(
                 created_at=pc.created_at,
             ))
 
-    # Ordena por data (mais recente primeiro)
     items.sort(key=lambda x: x.created_at, reverse=True)
 
-    # Contagem por tipo
     counts: dict = {}
     for it in items:
         counts[it.content_type] = counts.get(it.content_type, 0) + 1
@@ -487,12 +486,10 @@ def get_content_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_superuser),
 ):
-    """Retorna o conteúdo completo de um item específico."""
     tipos_validos = ("pratica_exitosa", "material", "neuroaula", "aula_que_funciona", "reflection", "pedagogical_case")
     if content_type not in tipos_validos:
         raise HTTPException(status_code=400, detail=f"Tipo inválido. Use: {tipos_validos}")
 
-    # ---- Práticas Exitosas ----
     if content_type == "pratica_exitosa":
         item = db.query(SuccessfulPractice).filter(SuccessfulPractice.id == content_id).first()
         if not item:
@@ -520,7 +517,6 @@ def get_content_detail(
             },
         )
 
-    # ---- Materiais ----
     if content_type == "material":
         item = db.query(Material).filter(Material.id == content_id).first()
         if not item:
@@ -540,7 +536,6 @@ def get_content_detail(
             },
         )
 
-    # ---- Lesson Plans ----
     if content_type in ("neuroaula", "aula_que_funciona"):
         item = db.query(LessonPlan).filter(LessonPlan.id == content_id).first()
         if not item:
@@ -560,7 +555,6 @@ def get_content_detail(
             },
         )
 
-    # ---- Reflections ----
     if content_type == "reflection":
         item = db.query(Reflection).filter(Reflection.id == content_id).first()
         if not item:
@@ -577,7 +571,6 @@ def get_content_detail(
             },
         )
 
-    # ---- Pedagogical Cases ----
     if content_type == "pedagogical_case":
         item = db.query(PedagogicalCase).filter(PedagogicalCase.id == content_id).first()
         if not item:
@@ -600,3 +593,338 @@ def get_content_detail(
                 "notes": item.notes,
             },
         )
+
+
+# ═══════════════════════════════════════════════════════════════
+# CURADORIA — BANCO DE QUESTÕES FUNDAMENTAL (NOVO - NÃO MUDA NADA ACIMA)
+# ═══════════════════════════════════════════════════════════════
+
+def _montar_question_item(q: QuestionBankFundamental, db: Session) -> AdminQuestionItem:
+    """Monta o item com dados do professor que enviou."""
+    nome_autor = None
+    email_autor = None
+    if q.submitted_by:
+        user = db.query(User).filter(User.id == q.submitted_by).first()
+        if user:
+            nome_autor = user.full_name
+            email_autor = user.email
+
+    return AdminQuestionItem(
+        id=q.id,
+        fonte=q.fonte,
+        ano=q.ano,
+        etapa=q.etapa,
+        serie=q.serie,
+        componente=q.componente,
+        disciplina=q.disciplina,
+        numero=q.numero,
+        tipo=q.tipo,
+        enunciado=q.enunciado,
+        alternativas=q.alternativas,
+        gabarito=q.gabarito,
+        imagem_url=q.imagem_url,
+        habilidade_codigo=q.habilidade_codigo,
+        referencial=q.referencial,
+        descritores=q.descritores,
+        dificuldade=q.dificuldade,
+        origem=q.origem,
+        approved=q.approved,
+        submitted_by=q.submitted_by,
+        submitted_by_email=email_autor,
+        submitted_by_name=nome_autor,
+        created_at=q.created_at,
+    )
+
+
+@router.get("/question-bank/stats", response_model=AdminQuestionStats)
+def admin_question_bank_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Estatísticas do banco de questões fundamental."""
+    total_pendentes = db.query(QuestionBankFundamental).filter(
+        QuestionBankFundamental.approved == False,
+        QuestionBankFundamental.anulada == False,
+    ).count()
+
+    total_aprovadas = db.query(QuestionBankFundamental).filter(
+        QuestionBankFundamental.approved == True,
+        QuestionBankFundamental.anulada == False,
+    ).count()
+
+    total_anuladas = db.query(QuestionBankFundamental).filter(
+        QuestionBankFundamental.anulada == True,
+    ).count()
+
+    # Por autor (top 20)
+    rows_autor = (
+        db.query(QuestionBankFundamental.submitted_by, func.count(QuestionBankFundamental.id))
+        .filter(QuestionBankFundamental.submitted_by.isnot(None))
+        .group_by(QuestionBankFundamental.submitted_by)
+        .order_by(func.count(QuestionBankFundamental.id).desc())
+        .limit(20)
+        .all()
+    )
+    por_autor = []
+    for sub_id, qtd in rows_autor:
+        u = db.query(User).filter(User.id == sub_id).first()
+        chave = u.full_name if u else "Desconhecido"
+        por_autor.append(AdminQuestionStatsItem(chave=chave, quantidade=qtd))
+
+    def agrupar(campo):
+        rows = (
+            db.query(campo, func.count(QuestionBankFundamental.id))
+            .filter(campo.isnot(None))
+            .group_by(campo)
+            .all()
+        )
+        return [AdminQuestionStatsItem(chave=str(r[0]), quantidade=r[1]) for r in rows if r[0]]
+
+    return AdminQuestionStats(
+        total_pendentes=total_pendentes,
+        total_aprovadas=total_aprovadas,
+        total_anuladas=total_anuladas,
+        por_autor=por_autor,
+        por_componente=agrupar(QuestionBankFundamental.componente),
+        por_referencial=agrupar(QuestionBankFundamental.referencial),
+    )
+
+
+@router.get("/question-bank/pendentes", response_model=AdminQuestionListResponse)
+def admin_question_bank_pendentes(
+    etapa: Optional[str] = Query(None),
+    componente: Optional[str] = Query(None),
+    referencial: Optional[str] = Query(None),
+    busca: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Lista questões aguardando aprovação (curadoria)."""
+    query = db.query(QuestionBankFundamental).filter(
+        QuestionBankFundamental.approved == False,
+        QuestionBankFundamental.anulada == False,
+    )
+
+    if etapa:
+        query = query.filter(QuestionBankFundamental.etapa == etapa)
+    if componente:
+        query = query.filter(QuestionBankFundamental.componente == componente)
+    if referencial:
+        query = query.filter(QuestionBankFundamental.referencial == referencial)
+    if busca:
+        termo = f"%{busca.lower()}%"
+        query = query.filter(func.lower(QuestionBankFundamental.enunciado).like(termo))
+
+    total = query.count()
+    total_pages = max(1, math.ceil(total / per_page))
+    offset = (page - 1) * per_page
+
+    itens = (
+        query.order_by(QuestionBankFundamental.created_at.desc())
+        .offset(offset)
+        .limit(per_page)
+        .all()
+    )
+
+    return AdminQuestionListResponse(
+        items=[_montar_question_item(q, db) for q in itens],
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+    )
+
+
+@router.get("/question-bank/aprovadas", response_model=AdminQuestionListResponse)
+def admin_question_bank_aprovadas(
+    etapa: Optional[str] = Query(None),
+    componente: Optional[str] = Query(None),
+    referencial: Optional[str] = Query(None),
+    busca: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Lista questões já aprovadas."""
+    query = db.query(QuestionBankFundamental).filter(
+        QuestionBankFundamental.approved == True,
+        QuestionBankFundamental.anulada == False,
+    )
+
+    if etapa:
+        query = query.filter(QuestionBankFundamental.etapa == etapa)
+    if componente:
+        query = query.filter(QuestionBankFundamental.componente == componente)
+    if referencial:
+        query = query.filter(QuestionBankFundamental.referencial == referencial)
+    if busca:
+        termo = f"%{busca.lower()}%"
+        query = query.filter(func.lower(QuestionBankFundamental.enunciado).like(termo))
+
+    total = query.count()
+    total_pages = max(1, math.ceil(total / per_page))
+    offset = (page - 1) * per_page
+
+    itens = (
+        query.order_by(QuestionBankFundamental.created_at.desc())
+        .offset(offset)
+        .limit(per_page)
+        .all()
+    )
+
+    return AdminQuestionListResponse(
+        items=[_montar_question_item(q, db) for q in itens],
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+    )
+
+
+@router.get("/question-bank/{question_id}", response_model=AdminQuestionItem)
+def admin_question_bank_detalhe(
+    question_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Retorna uma questão para inspeção completa."""
+    q = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Questão não encontrada.")
+    return _montar_question_item(q, db)
+
+
+@router.patch("/question-bank/{question_id}/aprovar", response_model=AdminQuestionItem)
+def admin_question_bank_aprovar(
+    question_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Aprova uma questão (fica visível no Motor 8)."""
+    q = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Questão não encontrada.")
+
+    q.approved = True
+    q.approved_by = current_user.id
+    q.approved_at = datetime.utcnow()
+    db.commit()
+    db.refresh(q)
+    return _montar_question_item(q, db)
+
+
+@router.patch("/question-bank/{question_id}/rejeitar", response_model=AdminQuestionItem)
+def admin_question_bank_rejeitar(
+    question_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Rejeita uma questão (marca como anulada, não aparece em lugar nenhum)."""
+    q = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Questão não encontrada.")
+
+    q.anulada = True
+    q.approved = False
+    q.approved_by = current_user.id
+    q.approved_at = datetime.utcnow()
+    db.commit()
+    db.refresh(q)
+    return _montar_question_item(q, db)
+
+
+@router.patch("/question-bank/aprovar-lote")
+def admin_question_bank_aprovar_lote(
+    data: AdminQuestionApprovalRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Aprova várias questões de uma vez."""
+    qs = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id.in_(data.ids)).all()
+    total = 0
+    for q in qs:
+        q.approved = True
+        q.approved_by = current_user.id
+        q.approved_at = datetime.utcnow()
+        total += 1
+    db.commit()
+    return {"sucesso": True, "total_aprovado": total}
+
+
+@router.patch("/question-bank/rejeitar-lote")
+def admin_question_bank_rejeitar_lote(
+    data: AdminQuestionApprovalRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Rejeita várias questões de uma vez."""
+    qs = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id.in_(data.ids)).all()
+    total = 0
+    for q in qs:
+        q.anulada = True
+        q.approved = False
+        q.approved_by = current_user.id
+        q.approved_at = datetime.utcnow()
+        total += 1
+    db.commit()
+    return {"sucesso": True, "total_rejeitado": total}
+
+
+@router.put("/question-bank/{question_id}", response_model=AdminQuestionItem)
+def admin_question_bank_editar(
+    question_id: str,
+    data: AdminQuestionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Edita uma questão antes de aprovar."""
+    q = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Questão não encontrada.")
+
+    if data.enunciado is not None:
+        q.enunciado = data.enunciado
+    if data.alternativas is not None:
+        q.alternativas = data.alternativas
+    if data.gabarito is not None:
+        q.gabarito = data.gabarito
+    if data.habilidade_codigo is not None:
+        q.habilidade_codigo = data.habilidade_codigo
+    if data.referencial is not None:
+        q.referencial = data.referencial
+    if data.ano is not None:
+        q.ano = data.ano
+    if data.etapa is not None:
+        q.etapa = data.etapa
+    if data.serie is not None:
+        q.serie = data.serie
+    if data.componente is not None:
+        q.componente = data.componente
+    if data.disciplina is not None:
+        q.disciplina = data.disciplina
+    if data.imagem_url is not None:
+        q.imagem_url = data.imagem_url
+    if data.descritores is not None:
+        q.descritores = data.descritores
+
+    db.commit()
+    db.refresh(q)
+    return _montar_question_item(q, db)
+
+
+@router.delete("/question-bank/{question_id}", status_code=204)
+def admin_question_bank_excluir(
+    question_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Exclui definitivamente uma questão."""
+    q = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Questão não encontrada.")
+    db.delete(q)
+    db.commit()
+    return None
