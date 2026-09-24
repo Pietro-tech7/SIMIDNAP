@@ -4,7 +4,7 @@ import api from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import LatexText from '../components/LatexText';
 import EditorCabecalhoProva from '../components/EditorCabecalhoProva';
-import { gerarPdfsDaProva } from '../utils/gerarPdfProva';
+import { gerarProvaPDF, gerarGabaritoPDF } from '../utils/gerarPdfProva';
 
 const ETAPAS = [
   { value: 'EF', label: 'Ensino Fundamental' },
@@ -64,6 +64,7 @@ const BancoQuestoesIA = () => {
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
   const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [jaGerou, setJaGerou] = useState(false);   // rastreia se já gerou nesta sessão
 
   useEffect(() => {
     api.get(`/bncc/componentes?etapa=${etapa}`)
@@ -243,7 +244,6 @@ const BancoQuestoesIA = () => {
     setMinhasQuestoes(prev => prev.filter(q => q._localId !== localId));
   };
 
-  // -------- ILUSTRAÇÃO POR QUESTÃO --------
   const atualizarIlustracao = (localId, campo, valor) => {
     setMinhasQuestoes(prev => prev.map(q => {
       if (q._localId !== localId) return q;
@@ -262,18 +262,17 @@ const BancoQuestoesIA = () => {
     atualizarIlustracao(localId, 'imagem', b64);
   };
 
-  // -------- GERAR PDF --------
-  const gerarPDF = async () => {
-    if (!metaAtingida) {
-      alert(`Ainda faltam ${faltam} questão(ões) para atingir a meta de ${metaQuestoes}.`);
-      return;
-    }
+  // ============================================================
+  // GERAR PDF — 3 funções separadas, sempre disponíveis
+  // ============================================================
+  const _prepararDados = () => ({
+    titulo: titulo.trim(),
+    cabecalho,
+    questoes: minhasQuestoes,
+  });
 
-    setGerandoPdf(true);
-    setErro(''); setSucesso('');
-
+  const _salvarProvaNoBackend = async () => {
     try {
-      // 1. Salva a prova no backend
       const payloadProva = {
         titulo: titulo.trim(),
         modo: 'ia_gerada',
@@ -296,17 +295,21 @@ const BancoQuestoesIA = () => {
             descritor: q.descritor,
             descritor_texto: q.descritor_texto,
             nivel_cognitivo: q.nivel_cognitivo,
-            imagem_url: q.imagem_url,
+            imagem_url: q.ilustracao?.imagem || q.imagem_url || null,
           },
           icone_svg: q.ilustracao?.imagem || null,
         })),
         gabarito_incluido: true,
       };
-
       await api.post('/question-bank/exam-papers', payloadProva);
+    } catch (e) {
+      console.warn('Erro ao salvar prova no backend:', e);
+    }
+  };
 
-      // 2. Envia questões para curadoria
-      const payloadCuradoria = {
+  const _enviarCuradoria = async () => {
+    try {
+      const payload = {
         etapa,
         ano: etapa === 'EF' ? Number(ano) : null,
         serie: null,
@@ -326,20 +329,78 @@ const BancoQuestoesIA = () => {
           imagem_url: q.ilustracao?.imagem || q.imagem_url || null,
         })),
       };
+      await api.post('/question-ia/enviar-curadoria', payload);
+    } catch (e) {
+      console.warn('Erro ao enviar curadoria:', e);
+    }
+  };
 
-      await api.post('/question-ia/enviar-curadoria', payloadCuradoria);
-
-      // 3. Gera os 2 PDFs (Prova + Gabarito)
-      await gerarPdfsDaProva({
-        titulo: titulo.trim(),
-        cabecalho,
-        questoes: minhasQuestoes,
-      });
-
-      setSucesso(`✅ PDFs gerados! ${minhasQuestoes.length} questões enviadas para curadoria.`);
+  const gerarSoProva = async () => {
+    if (!metaAtingida) { alert(`Faltam ${faltam} questão(ões) para a meta.`); return; }
+    setGerandoPdf(true); setErro(''); setSucesso('');
+    try {
+      await _salvarProvaNoBackend();
+      await _enviarCuradoria();
+      await gerarProvaPDF(_prepararDados());
+      setJaGerou(true);
+      setSucesso('✅ PDF da PROVA gerado! Verifique a pasta de Downloads.');
     } catch (err) {
-      console.error(err);
-      setErro(err?.response?.data?.detail || err?.message || 'Erro ao gerar o PDF.');
+      setErro(err?.message || 'Erro ao gerar PDF da prova.');
+    } finally {
+      setGerandoPdf(false);
+    }
+  };
+
+  const gerarSoGabarito = async () => {
+    if (!metaAtingida) { alert(`Faltam ${faltam} questão(ões) para a meta.`); return; }
+    setGerandoPdf(true); setErro(''); setSucesso('');
+    try {
+      await gerarGabaritoPDF(_prepararDados());
+      setJaGerou(true);
+      setSucesso('✅ PDF do GABARITO gerado! Verifique a pasta de Downloads.');
+    } catch (err) {
+      setErro(err?.message || 'Erro ao gerar PDF do gabarito.');
+    } finally {
+      setGerandoPdf(false);
+    }
+  };
+
+  const gerarAmbos = async () => {
+    if (!metaAtingida) { alert(`Faltam ${faltam} questão(ões) para a meta.`); return; }
+    setGerandoPdf(true); setErro(''); setSucesso('');
+
+    const avisos = [];
+    try {
+      // 1. Salva + curadoria (uma única vez)
+      await _salvarProvaNoBackend();
+      await _enviarCuradoria();
+
+      // 2. Gera GABARITO primeiro (arquivo menor)
+      try {
+        await gerarGabaritoPDF(_prepararDados());
+      } catch (e) {
+        avisos.push('Gabarito: ' + (e?.message || 'erro'));
+      }
+
+      // 3. Delay para o navegador não bloquear múltiplos downloads
+      await new Promise(r => setTimeout(r, 1800));
+
+      // 4. Gera PROVA
+      try {
+        await gerarProvaPDF(_prepararDados());
+      } catch (e) {
+        avisos.push('Prova: ' + (e?.message || 'erro'));
+      }
+
+      setJaGerou(true);
+
+      if (avisos.length === 0) {
+        setSucesso('✅ PDFs gerados! Verifique a pasta de Downloads.');
+      } else {
+        setErro('Alguns PDFs falharam: ' + avisos.join(' | ') + '. Use os botões individuais.');
+      }
+    } catch (err) {
+      setErro(err?.message || 'Erro ao gerar PDFs.');
     } finally {
       setGerandoPdf(false);
     }
@@ -369,22 +430,13 @@ const BancoQuestoesIA = () => {
               placeholder="Ex: Avaliação de Matemática — Maio/2026"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Quantidade total da prova *
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="60"
-              value={metaQuestoes}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade total da prova *</label>
+            <input type="number" min="1" max="60" value={metaQuestoes}
               onChange={(e) => setMetaQuestoes(Number(e.target.value) || 0)}
-              className="w-full border-2 border-purple-300 rounded-lg px-3 py-2 text-sm font-semibold text-purple-700"
-            />
+              className="w-full border-2 border-purple-300 rounded-lg px-3 py-2 text-sm font-semibold text-purple-700" />
             <p className="text-xs text-gray-500 mt-1">Quantas questões a prova terá no total?</p>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Etapa</label>
             <select value={etapa} onChange={(e) => setEtapa(e.target.value)}
@@ -558,7 +610,7 @@ const BancoQuestoesIA = () => {
         )}
       </div>
 
-      {/* BARRA DE META */}
+      {/* BARRA DE META + 3 BOTÕES */}
       {metaQuestoes > 0 && (
         <div className={`rounded-xl p-5 mb-6 ${metaAtingida ? 'bg-green-50 border-2 border-green-300' : 'bg-blue-50 border border-blue-200'}`}>
           <div className="flex justify-between items-center mb-2">
@@ -574,14 +626,30 @@ const BancoQuestoesIA = () => {
               style={{ width: `${pctMeta}%` }} />
           </div>
           <p className={`text-xs mt-2 ${metaAtingida ? 'text-green-800' : 'text-blue-800'}`}>
-            {metaAtingida ? 'Você já tem todas as questões. Pode gerar o PDF.' : `Faltam ${faltam} questão(ões).`}
+            {metaAtingida ? 'Você pode baixar os PDFs quantas vezes quiser.' : `Faltam ${faltam} questão(ões).`}
           </p>
 
+          {jaGerou && (
+            <div className="mt-2 text-xs bg-yellow-50 border border-yellow-300 text-yellow-900 rounded p-2">
+              ℹ️ Os PDFs já foram gerados antes. Verifique a pasta de <strong>Downloads</strong> do seu navegador.
+            </div>
+          )}
+
           {metaAtingida && (
-            <button onClick={gerarPDF} disabled={gerandoPdf}
-              className="mt-3 w-full bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-bold py-3 rounded-lg transition">
-              {gerandoPdf ? '⏳ Gerando PDFs...' : '📄 Gerar PDF da Prova + Gabarito'}
-            </button>
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+              <button onClick={gerarSoProva} disabled={gerandoPdf}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3 rounded-lg transition">
+                {gerandoPdf ? '⏳...' : '📄 Baixar Prova'}
+              </button>
+              <button onClick={gerarSoGabarito} disabled={gerandoPdf}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold py-3 rounded-lg transition">
+                {gerandoPdf ? '⏳...' : '📋 Baixar Gabarito'}
+              </button>
+              <button onClick={gerarAmbos} disabled={gerandoPdf}
+                className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-bold py-3 rounded-lg transition">
+                {gerandoPdf ? '⏳ Gerando...' : '📥 Baixar Ambos'}
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -626,11 +694,6 @@ const BancoQuestoesIA = () => {
                     className="mt-1 w-5 h-5 text-teal-600 rounded flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-gray-800 mb-2"><LatexText text={q.enunciado} /></div>
-                    {q.precisa_ilustracao && q.descricao_ilustracao && (
-                      <div className="text-xs text-amber-700 bg-amber-50 rounded p-2 mb-2">
-                        🎨 <strong>Sugestão:</strong> {q.descricao_ilustracao}
-                      </div>
-                    )}
                     <div className="space-y-0.5 mb-2">
                       {(q.alternativas || []).map((a, ai) => (
                         <div key={ai} className="text-xs text-gray-700"><strong>({a.letra})</strong> {a.texto}</div>
@@ -647,12 +710,12 @@ const BancoQuestoesIA = () => {
         </div>
       )}
 
-      {/* MINHAS QUESTÕES (com sistema de ilustração) */}
+      {/* MINHAS QUESTÕES */}
       {minhasQuestoes.length > 0 && (
         <div className="mb-8">
           <div className="bg-teal-600 rounded-xl p-4 mb-4">
             <h2 className="font-bold text-white">✅ Minhas Questões ({minhasQuestoes.length})</h2>
-            <p className="text-xs text-teal-100 mt-0.5">Configure a ilustração de cada questão e gere o PDF quando atingir a meta.</p>
+            <p className="text-xs text-teal-100 mt-0.5">Configure a ilustração de cada questão.</p>
           </div>
 
           <div className="space-y-4">
@@ -678,7 +741,6 @@ const BancoQuestoesIA = () => {
                     ))}
                   </div>
 
-                  {/* ILUSTRAÇÃO */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                     <p className="text-xs font-semibold text-blue-900 mb-2">🎨 Ilustração desta questão</p>
 
@@ -707,7 +769,7 @@ const BancoQuestoesIA = () => {
 
                     {ilust.tipo === 'automatica' && q.descricao_ilustracao && (
                       <p className="text-xs text-amber-700 mt-2">
-                        💡 <strong>Sugestão da IA:</strong> {q.descricao_ilustracao}
+                        💡 Sugestão da IA: {q.descricao_ilustracao}
                       </p>
                     )}
 

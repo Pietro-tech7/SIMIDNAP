@@ -1,10 +1,5 @@
 import { gerarPDF } from './pdf';
 
-/**
- * Gera os 2 PDFs da prova (Prova + Gabarito) a partir dos dados fornecidos.
- * Reutiliza a função gerarPDF (com slicing inteligente) já existente.
- */
-
 // ============================================================
 // HELPERS
 // ============================================================
@@ -45,112 +40,109 @@ function criarContainer(htmlConteudo) {
 
 
 // ============================================================
-// CABEÇALHO (usado nos dois PDFs)
+// CABEÇALHO (com tabela para alinhamento perfeito)
 // ============================================================
-function montarCabecalho(cabecalho, compacto = false) {
+function montarCabecalho(cabecalho) {
   if (!cabecalho) return '';
 
   const tipoEscola = cabecalho.tipo_escola || 'ESCOLA MUNICIPAL';
   const nomeEscola = cabecalho.nome_escola || '';
   const labelEscola = tipoEscola === 'OUTRO' ? nomeEscola : `${tipoEscola}: ${nomeEscola}`;
 
-  const linhasCentrais = [
-    cabecalho.secretaria,
-    cabecalho.endereco,
-    [cabecalho.cep && `CEP: ${cabecalho.cep}`, cabecalho.cidade_estado].filter(Boolean).join(' - '),
-    [cabecalho.telefone && `FONE: ${cabecalho.telefone}`, cabecalho.email].filter(Boolean).join(' • '),
-  ].filter(Boolean);
-
   return `
-    <div style="margin-bottom: 12px;">
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
-        <div style="width: 80px; height: 80px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-          ${cabecalho.logo_prefeitura
-            ? `<img src="${cabecalho.logo_prefeitura}" alt="Logo" style="max-width: 80px; max-height: 80px; object-fit: contain;" />`
-            : ''}
+    <div style="margin-bottom: 14px;">
+      <!-- Linha 1: logos próximas do texto central -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+        <div style="width: 70px; height: 70px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+          ${cabecalho.logo_prefeitura ? `<img src="${cabecalho.logo_prefeitura}" style="max-width: 70px; max-height: 70px; object-fit: contain;" />` : ''}
         </div>
-
-        <div style="flex: 1; text-align: center; font-size: 11px; line-height: 1.4;">
-          ${linhasCentrais.map(l => `<div>${escapeHtml(l)}</div>`).join('')}
+        <div style="flex: 0 1 500px; text-align: center; font-size: 10px; line-height: 1.4;">
+          ${cabecalho.secretaria ? `<div style="font-weight: bold;">${escapeHtml(cabecalho.secretaria)}</div>` : ''}
+          ${cabecalho.endereco ? `<div>${escapeHtml(cabecalho.endereco)}</div>` : ''}
+          ${(cabecalho.cep || cabecalho.cidade_estado) ? `<div>${[cabecalho.cep && `CEP: ${cabecalho.cep}`, cabecalho.cidade_estado].filter(Boolean).map(escapeHtml).join(' - ')}</div>` : ''}
+          ${(cabecalho.telefone || cabecalho.email) ? `<div>${[cabecalho.telefone && `FONE: ${cabecalho.telefone}`, cabecalho.email].filter(Boolean).map(escapeHtml).join(' • ')}</div>` : ''}
         </div>
-
-        <div style="width: 80px; height: 80px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-          ${cabecalho.logo_escola
-            ? `<img src="${cabecalho.logo_escola}" alt="Logo" style="max-width: 80px; max-height: 80px; object-fit: contain;" />`
-            : ''}
+        <div style="width: 70px; height: 70px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+          ${cabecalho.logo_escola ? `<img src="${cabecalho.logo_escola}" style="max-width: 70px; max-height: 70px; object-fit: contain;" />` : ''}
         </div>
       </div>
 
-      <div style="border-top: 1px solid #000; padding-top: 8px; font-size: 11px; line-height: 1.6;">
-        ${nomeEscola ? `<div style="font-weight: bold; margin-bottom: 4px;">${escapeHtml(labelEscola)}</div>` : ''}
-
-        ${!compacto ? `
-          <div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 3px;">
-            <div style="flex: 1;">
-              <strong>DIRETOR(A):</strong> ${escapeHtml(cabecalho.diretor) || '____________________'}
-            </div>
-            <div style="flex: 1;">
-              <strong>COORDENADOR(A):</strong> ${escapeHtml(cabecalho.coordenador) || '____________________'}
-            </div>
-          </div>
-          <div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 3px;">
-            <div style="flex: 1;">
-              <strong>PROFESSOR(A):</strong> ${escapeHtml(cabecalho.professor) || '____________________'}
-            </div>
-            <div style="flex: 1;">
-              <strong>TURMA:</strong> ____________________
-            </div>
-            <div style="flex: 0 0 160px;">
-              <strong>TURNO:</strong> ( ) MANHÃ  ( ) TARDE
-            </div>
-          </div>
-          <div style="border-top: 1px solid #ccc; margin-top: 8px; padding-top: 6px;">
-            <strong>NOME DO ALUNO:</strong> _____________________________________________________________
-          </div>
-          <div style="margin-top: 3px;">
-            <strong>DATA:</strong> ____/_____/__________
-          </div>
-        ` : ''}
-      </div>
+      <!-- Linha 2: dados em tabela -->
+      <table style="width: 100%; font-size: 10px; border-top: 1px solid #000; padding-top: 6px; border-collapse: collapse;">
+        <tbody>
+          ${nomeEscola ? `<tr><td colspan="2" style="padding: 3px 0; font-weight: bold;">${escapeHtml(labelEscola)}</td></tr>` : ''}
+          <tr>
+            <td style="padding: 3px 0; width: 50%;">
+              <strong>DIRETOR(A):</strong> ${escapeHtml(cabecalho.diretor) || '___________________________'}
+            </td>
+            <td style="padding: 3px 0; width: 50%;">
+              <strong>COORDENADOR(A):</strong> ${escapeHtml(cabecalho.coordenador) || '___________________________'}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 3px 0;">
+              <strong>PROFESSOR(A):</strong> ${escapeHtml(cabecalho.professor) || '___________________________'}
+            </td>
+            <td style="padding: 3px 0;">
+              <strong>TURMA:</strong> ${escapeHtml(cabecalho.turma) || '__________'}
+              &nbsp;&nbsp;
+              <strong>TURNO:</strong> ( ) MANHÃ &nbsp; ( ) TARDE
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding: 6px 0 3px; border-top: 1px solid #ccc;">
+              <strong>NOME DO ALUNO:</strong> _____________________________________________________________
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding: 3px 0;">
+              <strong>DATA:</strong> ____/_____/__________
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   `;
 }
 
 
 // ============================================================
-// ILUSTRAÇÃO (renderiza conforme opção escolhida)
+// ILUSTRAÇÃO — sem nenhuma mensagem
 // ============================================================
 function montarIlustracao(questao) {
-  const ilust = questao.ilustracao || { tipo: 'automatica' };
+  const ilust = questao.ilustracao || { tipo: 'automatica', imagem: null };
   const tipo = ilust.tipo;
 
   if (tipo === 'nenhuma') return '';
 
-  if (tipo === 'personalizada' && ilust.imagem) {
-    return `
-      <div style="margin: 12px 0; text-align: center;">
-        <img src="${ilust.imagem}" alt="Ilustração" style="max-width: 320px; max-height: 200px; object-fit: contain;" />
-      </div>
-    `;
+  if (tipo === 'personalizada') {
+    if (ilust.imagem) {
+      return `
+        <div style="margin: 12px 0; text-align: center;">
+          <img src="${ilust.imagem}" style="max-width: 320px; max-height: 200px; object-fit: contain;" />
+        </div>
+      `;
+    }
+    return ''; // sem imagem, sem nada
   }
 
   if (tipo === 'espaco') {
+    // Área reservada em branco, sem texto
     return `
-      <div style="margin: 12px 0; border: 1px dashed #999; height: 100px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">
-        (Cole sua ilustração aqui)
-      </div>
+      <div style="margin: 12px 0; border: 1px dashed #d1d5db; height: 100px;"></div>
     `;
   }
 
   if (tipo === 'automatica') {
-    // Por enquanto: placeholder com a descrição sugerida pela IA
-    // Quando a biblioteca de ícones SVG estiver pronta (Bloco 4.5), trocaremos por <img> do SVG
-    const descricao = questao.descricao_ilustracao || 'Ilustração';
-    return `
-      <div style="margin: 12px 0; border: 1px dashed #d4a017; background: #fffaf0; padding: 8px; font-size: 9px; color: #8a6d00; text-align: center;">
-        🎨 <em>[Ilustração automática será exibida aqui: ${escapeHtml(descricao)}]</em>
-      </div>
-    `;
+    // Se tiver ícone (futuro, Bloco 4.5), mostra. Se não tiver, NÃO mostra nada.
+    if (ilust.imagem) {
+      return `
+        <div style="margin: 12px 0; text-align: center;">
+          <img src="${ilust.imagem}" style="max-width: 200px; max-height: 150px; object-fit: contain;" />
+        </div>
+      `;
+    }
+    return ''; // sem SVG ainda, deixa em branco (sem mensagens)
   }
 
   return '';
@@ -166,11 +158,8 @@ function montarQuestoes(questoes) {
       <div style="font-weight: bold; margin-bottom: 6px; font-size: 12px;">
         ${idx + 1}) ${escapeHtml(q.enunciado)}
       </div>
-
       ${q.imagem_url ? `<div style="margin: 8px 0; text-align: center;"><img src="${q.imagem_url}" style="max-width: 100%; max-height: 250px;" /></div>` : ''}
-
       ${montarIlustracao(q)}
-
       <div style="margin-top: 8px; font-size: 11px; line-height: 1.7;">
         ${(q.alternativas || []).map(a => `
           <div style="margin-bottom: 2px;">
@@ -184,7 +173,7 @@ function montarQuestoes(questoes) {
 
 
 // ============================================================
-// GABARITO (PDF do Gabarito)
+// GABARITO
 // ============================================================
 function montarGabaritoQuestoes(questoes) {
   return questoes.map((q, idx) => `
@@ -192,10 +181,8 @@ function montarGabaritoQuestoes(questoes) {
       <div style="font-size: 12px; font-weight: bold; color: #1e40af; margin-bottom: 4px;">
         Questão ${idx + 1} — Gabarito: <span style="color: #059669;">${escapeHtml(q.gabarito)}</span>
       </div>
-
       ${q.habilidade_codigo ? `<div style="font-size: 10px; color: #666;">Habilidade: <strong>${escapeHtml(q.habilidade_codigo)}</strong>${q.habilidade_texto ? ' — ' + escapeHtml(q.habilidade_texto) : ''}</div>` : ''}
       ${q.descritor ? `<div style="font-size: 10px; color: #666;">Descritor: <strong>${escapeHtml(q.descritor)}</strong>${q.descritor_texto ? ' — ' + escapeHtml(q.descritor_texto) : ''}</div>` : ''}
-
       ${q.explicacao_gabarito ? `
         <div style="margin-top: 6px; font-size: 11px; line-height: 1.5; background: #f3f4f6; padding: 6px; border-radius: 4px;">
           <strong>Explicação:</strong> ${escapeHtml(q.explicacao_gabarito)}
@@ -207,63 +194,56 @@ function montarGabaritoQuestoes(questoes) {
 
 
 // ============================================================
-// FUNÇÃO PRINCIPAL
+// FUNÇÕES PÚBLICAS (prova e gabarito SEPARADAS)
 // ============================================================
-export async function gerarPdfsDaProva(dados) {
-  const { titulo, cabecalho, questoes } = dados;
+export async function gerarProvaPDF({ titulo, cabecalho, questoes }) {
+  if (!questoes || questoes.length === 0) throw new Error('Sem questões.');
 
-  if (!questoes || questoes.length === 0) {
-    throw new Error('Nenhuma questão para gerar o PDF.');
-  }
-
-  const nomeBase = slug(titulo);
-
-  // -------- PDF 1: PROVA --------
-  const htmlProva = `
+  const html = `
     <div style="padding: 10px;">
-      ${montarCabecalho(cabecalho, false)}
-
-      <div style="text-align: center; margin: 14px 0 18px; font-weight: bold; font-size: 14px; text-transform: uppercase;">
+      ${montarCabecalho(cabecalho)}
+      <div style="text-align: center; margin: 14px 0 18px; font-weight: bold; font-size: 13px; text-transform: uppercase;">
         ${escapeHtml(titulo)}
       </div>
-
       ${montarQuestoes(questoes)}
     </div>
   `;
 
-  const containerProva = criarContainer(htmlProva);
+  const container = criarContainer(html);
   try {
-    await gerarPDF(containerProva, `${nomeBase}_PROVA`);
+    await gerarPDF(container, `${slug(titulo)}_PROVA`);
   } finally {
-    document.body.removeChild(containerProva);
+    document.body.removeChild(container);
   }
+}
 
-  // Pequena pausa entre os PDFs (evita concorrência no download)
-  await new Promise(r => setTimeout(r, 800));
+export async function gerarGabaritoPDF({ titulo, cabecalho, questoes }) {
+  if (!questoes || questoes.length === 0) throw new Error('Sem questões.');
 
-  // -------- PDF 2: GABARITO --------
-  const htmlGabarito = `
+  const html = `
     <div style="padding: 10px;">
       <div style="text-align: center; margin-bottom: 14px;">
-        <div style="font-size: 16px; font-weight: bold;">GABARITO — ${escapeHtml(titulo)}</div>
+        <div style="font-size: 15px; font-weight: bold;">GABARITO — ${escapeHtml(titulo)}</div>
         ${cabecalho?.professor ? `<div style="font-size: 11px; margin-top: 4px;">Professor(a): ${escapeHtml(cabecalho.professor)}</div>` : ''}
+        ${cabecalho?.turma ? `<div style="font-size: 11px;">Turma: ${escapeHtml(cabecalho.turma)}</div>` : ''}
       </div>
-
       <div style="border-top: 1px solid #000; margin-bottom: 14px;"></div>
-
       ${montarGabaritoQuestoes(questoes)}
     </div>
   `;
 
-  const containerGabarito = criarContainer(htmlGabarito);
+  const container = criarContainer(html);
   try {
-    await gerarPDF(containerGabarito, `${nomeBase}_GABARITO`);
+    await gerarPDF(container, `${slug(titulo)}_GABARITO`);
   } finally {
-    document.body.removeChild(containerGabarito);
+    document.body.removeChild(container);
   }
+}
 
-  return {
-    sucesso: true,
-    arquivos: [`${nomeBase}_PROVA.pdf`, `${nomeBase}_GABARITO.pdf`],
-  };
+// Compatível com chamada anterior
+export async function gerarPdfsDaProva(dados) {
+  await gerarProvaPDF(dados);
+  await new Promise(r => setTimeout(r, 1500));
+  await gerarGabaritoPDF(dados);
+  return { sucesso: true };
 }
