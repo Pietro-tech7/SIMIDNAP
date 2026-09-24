@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
-import LatexText from '../components/LatexText';
 
 const ETAPAS = [
   { value: '', label: 'Todas' },
@@ -33,25 +32,20 @@ const COMPONENTES = [
 
 
 const AdminQuestionBank = () => {
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
-  // -------- Aba ativa: pendentes ou aprovadas --------
   const [aba, setAba] = useState('pendentes');
-
-  // -------- Filtros --------
   const [etapa, setEtapa] = useState('');
   const [componente, setComponente] = useState('');
   const [referencial, setReferencial] = useState('');
   const [busca, setBusca] = useState('');
 
-  // -------- Dados --------
   const [stats, setStats] = useState(null);
   const [questoes, setQuestoes] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [page, setPage] = useState(1);
 
-  // -------- Estados --------
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
@@ -59,9 +53,6 @@ const navigate = useNavigate();
   const [questaoExpandida, setQuestaoExpandida] = useState(null);
   const [processando, setProcessando] = useState(false);
 
-  // ============================================================
-  // CARREGAR STATS
-  // ============================================================
   const carregarStats = async () => {
     try {
       const res = await api.get('/admin/question-bank/stats');
@@ -71,9 +62,6 @@ const navigate = useNavigate();
     }
   };
 
-  // ============================================================
-  // CARREGAR QUESTÕES
-  // ============================================================
   const carregarQuestoes = async () => {
     setLoading(true);
     setErro('');
@@ -84,9 +72,10 @@ const navigate = useNavigate();
       if (referencial) params.referencial = referencial;
       if (busca.trim()) params.busca = busca.trim();
 
-      const endpoint = aba === 'pendentes'
-        ? '/admin/question-bank/pendentes'
-        : '/admin/question-bank/aprovadas';
+      let endpoint;
+      if (aba === 'pendentes') endpoint = '/admin/question-bank/pendentes';
+      else if (aba === 'aprovadas') endpoint = '/admin/question-bank/aprovadas';
+      else endpoint = '/admin/question-bank/rejeitadas';
 
       const res = await api.get(endpoint, { params });
       setQuestoes(res.data.items || []);
@@ -100,9 +89,7 @@ const navigate = useNavigate();
     }
   };
 
-  useEffect(() => {
-    carregarStats();
-  }, []);
+  useEffect(() => { carregarStats(); }, []);
 
   useEffect(() => {
     carregarQuestoes();
@@ -116,124 +103,114 @@ const navigate = useNavigate();
   };
 
   const limparFiltros = () => {
-    setEtapa('');
-    setComponente('');
-    setReferencial('');
-    setBusca('');
+    setEtapa(''); setComponente(''); setReferencial(''); setBusca('');
     setPage(1);
   };
 
-  // ============================================================
-  // SELEÇÃO
-  // ============================================================
   const toggleSelecionada = (id) => {
-    setSelecionadas(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
+    setSelecionadas(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const selecionarTodas = () => {
-    setSelecionadas(questoes.map(q => q.id));
-  };
-
+  const selecionarTodas = () => setSelecionadas(questoes.map(q => q.id));
   const limparSelecao = () => setSelecionadas([]);
 
-  // ============================================================
-  // AÇÕES
-  // ============================================================
+  // ---------- AÇÕES ----------
   const aprovarUma = async (id) => {
-    setProcessando(true);
-    setErro('');
+    setProcessando(true); setErro('');
     try {
       await api.patch(`/admin/question-bank/${id}/aprovar`);
       setSucesso('✅ Questão aprovada!');
-      await carregarQuestoes();
-      await carregarStats();
+      await carregarQuestoes(); await carregarStats();
       setTimeout(() => setSucesso(''), 2500);
     } catch (e) {
       setErro(e?.response?.data?.detail || 'Erro ao aprovar.');
-    } finally {
-      setProcessando(false);
-    }
+    } finally { setProcessando(false); }
   };
 
   const rejeitarUma = async (id) => {
-    if (!window.confirm('Rejeitar esta questão? Ela será marcada como anulada.')) return;
-    setProcessando(true);
-    setErro('');
+    if (!window.confirm('Rejeitar esta questão? Ela vai para a lixeira (30 dias).')) return;
+    setProcessando(true); setErro('');
     try {
       await api.patch(`/admin/question-bank/${id}/rejeitar`);
-      setSucesso('🚫 Questão rejeitada.');
-      await carregarQuestoes();
-      await carregarStats();
+      setSucesso('🚫 Questão enviada para a lixeira.');
+      await carregarQuestoes(); await carregarStats();
       setTimeout(() => setSucesso(''), 2500);
     } catch (e) {
       setErro(e?.response?.data?.detail || 'Erro ao rejeitar.');
-    } finally {
-      setProcessando(false);
-    }
+    } finally { setProcessando(false); }
+  };
+
+  const restaurarUma = async (id) => {
+    setProcessando(true); setErro('');
+    try {
+      await api.patch(`/admin/question-bank/${id}/restaurar`);
+      setSucesso('♻️ Questão restaurada para pendentes.');
+      await carregarQuestoes(); await carregarStats();
+      setTimeout(() => setSucesso(''), 2500);
+    } catch (e) {
+      setErro(e?.response?.data?.detail || 'Erro ao restaurar.');
+    } finally { setProcessando(false); }
   };
 
   const excluirUma = async (id) => {
-    if (!window.confirm('Excluir DEFINITIVAMENTE esta questão? Essa ação não pode ser desfeita.')) return;
-    setProcessando(true);
-    setErro('');
+    if (!window.confirm('Excluir DEFINITIVAMENTE esta questão? Não pode ser desfeito.')) return;
+    setProcessando(true); setErro('');
     try {
       await api.delete(`/admin/question-bank/${id}`);
-      setSucesso('🗑️ Questão excluída.');
-      await carregarQuestoes();
-      await carregarStats();
+      setSucesso('🗑️ Questão excluída permanentemente.');
+      await carregarQuestoes(); await carregarStats();
       setTimeout(() => setSucesso(''), 2500);
     } catch (e) {
       setErro(e?.response?.data?.detail || 'Erro ao excluir.');
-    } finally {
-      setProcessando(false);
-    }
+    } finally { setProcessando(false); }
   };
 
   const aprovarLote = async () => {
     if (selecionadas.length === 0) return;
     if (!window.confirm(`Aprovar ${selecionadas.length} questão(ões)?`)) return;
-    setProcessando(true);
-    setErro('');
+    setProcessando(true); setErro('');
     try {
       await api.patch('/admin/question-bank/aprovar-lote', { ids: selecionadas });
       setSucesso(`✅ ${selecionadas.length} questão(ões) aprovada(s)!`);
-      await carregarQuestoes();
-      await carregarStats();
+      await carregarQuestoes(); await carregarStats();
       setTimeout(() => setSucesso(''), 2500);
     } catch (e) {
       setErro(e?.response?.data?.detail || 'Erro ao aprovar lote.');
-    } finally {
-      setProcessando(false);
-    }
+    } finally { setProcessando(false); }
   };
 
   const rejeitarLote = async () => {
     if (selecionadas.length === 0) return;
-    if (!window.confirm(`Rejeitar ${selecionadas.length} questão(ões)?`)) return;
-    setProcessando(true);
-    setErro('');
+    if (!window.confirm(`Mover ${selecionadas.length} questão(ões) para a lixeira?`)) return;
+    setProcessando(true); setErro('');
     try {
       await api.patch('/admin/question-bank/rejeitar-lote', { ids: selecionadas });
-      setSucesso(`🚫 ${selecionadas.length} questão(ões) rejeitada(s).`);
-      await carregarQuestoes();
-      await carregarStats();
+      setSucesso(`🚫 ${selecionadas.length} questão(ões) movida(s) para a lixeira.`);
+      await carregarQuestoes(); await carregarStats();
       setTimeout(() => setSucesso(''), 2500);
     } catch (e) {
       setErro(e?.response?.data?.detail || 'Erro ao rejeitar lote.');
-    } finally {
-      setProcessando(false);
-    }
+    } finally { setProcessando(false); }
   };
 
-  // ============================================================
-  // RENDER
-  // ============================================================
+  const esvaziarLixeira = async () => {
+    if (!window.confirm('⚠️ Esvaziar TODA a lixeira? Ação irreversível.')) return;
+    if (!window.confirm('Tem CERTEZA? Todas as questões rejeitadas serão excluídas permanentemente.')) return;
+    setProcessando(true); setErro('');
+    try {
+      const res = await api.delete('/admin/question-bank/esvaziar-lixeira');
+      setSucesso(`🗑️ ${res.data.total_removido} questão(ões) excluída(s).`);
+      await carregarQuestoes(); await carregarStats();
+      setTimeout(() => setSucesso(''), 3000);
+    } catch (e) {
+      setErro(e?.response?.data?.detail || 'Erro ao esvaziar lixeira.');
+    } finally { setProcessando(false); }
+  };
+
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto bg-slate-50 min-h-screen">
       {/* Cabeçalho */}
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-3 mb-2">
           <span className="text-3xl">📚</span>
           <div>
@@ -266,36 +243,47 @@ const navigate = useNavigate();
             <p className="text-xs text-slate-500 mt-1">Disponíveis no Motor 8</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <p className="text-xs uppercase tracking-wide text-red-600 font-semibold">🚫 Anuladas</p>
+            <p className="text-xs uppercase tracking-wide text-red-600 font-semibold">🚫 Rejeitadas</p>
             <p className="text-3xl font-bold text-red-700 mt-1">{stats.total_anuladas}</p>
-            <p className="text-xs text-slate-500 mt-1">Rejeitadas</p>
+            <p className="text-xs text-slate-500 mt-1">Na lixeira (auto-delete em 30 dias)</p>
           </div>
         </div>
       )}
 
       {/* Abas */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => { setAba('pendentes'); setPage(1); }}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <button onClick={() => { setAba('pendentes'); setPage(1); }}
           className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-            aba === 'pendentes'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
-          }`}
-        >
+            aba === 'pendentes' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+          }`}>
           ⏳ Pendentes ({stats?.total_pendentes || 0})
         </button>
-        <button
-          onClick={() => { setAba('aprovadas'); setPage(1); }}
+        <button onClick={() => { setAba('aprovadas'); setPage(1); }}
           className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-            aba === 'aprovadas'
-              ? 'bg-green-600 text-white shadow-md'
-              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
-          }`}
-        >
+            aba === 'aprovadas' ? 'bg-green-600 text-white shadow-md' : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+          }`}>
           ✅ Aprovadas ({stats?.total_aprovadas || 0})
         </button>
+        <button onClick={() => { setAba('rejeitadas'); setPage(1); }}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+            aba === 'rejeitadas' ? 'bg-red-600 text-white shadow-md' : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+          }`}>
+          🚫 Rejeitadas ({stats?.total_anuladas || 0})
+        </button>
       </div>
+
+      {/* Botão de esvaziar lixeira */}
+      {aba === 'rejeitadas' && questoes.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex flex-wrap justify-between items-center gap-3">
+          <p className="text-sm text-red-900">
+            ⚠️ As questões na lixeira são excluídas automaticamente após <strong>30 dias</strong>.
+          </p>
+          <button onClick={esvaziarLixeira} disabled={processando}
+            className="bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-semibold px-4 py-2 rounded-lg text-xs">
+            🗑️ Esvaziar lixeira agora
+          </button>
+        </div>
+      )}
 
       {/* Filtros */}
       <form onSubmit={handleBuscar} className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
@@ -340,7 +328,6 @@ const navigate = useNavigate();
         </div>
       </form>
 
-      {/* Mensagens */}
       {erro && <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 mb-4 text-sm">⚠️ {erro}</div>}
       {sucesso && <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-3 mb-4 text-sm">✅ {sucesso}</div>}
 
@@ -351,14 +338,18 @@ const navigate = useNavigate();
             {selecionadas.length} questão(ões) selecionada(s)
           </span>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={aprovarLote} disabled={processando}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold px-4 py-2 rounded-lg text-sm">
-              ✅ Aprovar selecionadas
-            </button>
-            <button onClick={rejeitarLote} disabled={processando}
-              className="bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-semibold px-4 py-2 rounded-lg text-sm">
-              🚫 Rejeitar selecionadas
-            </button>
+            {aba === 'pendentes' && (
+              <>
+                <button onClick={aprovarLote} disabled={processando}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold px-4 py-2 rounded-lg text-sm">
+                  ✅ Aprovar
+                </button>
+                <button onClick={rejeitarLote} disabled={processando}
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-semibold px-4 py-2 rounded-lg text-sm">
+                  🚫 Rejeitar
+                </button>
+              </>
+            )}
             <button onClick={limparSelecao}
               className="bg-white hover:bg-slate-100 text-slate-700 font-medium px-4 py-2 rounded-lg text-sm border border-slate-300">
               Limpar
@@ -373,9 +364,9 @@ const navigate = useNavigate();
       {!loading && questoes.length === 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
           <p className="text-slate-500">
-            {aba === 'pendentes'
-              ? '🎉 Nenhuma questão pendente!'
-              : 'Nenhuma questão aprovada ainda.'}
+            {aba === 'pendentes' && '🎉 Nenhuma questão pendente!'}
+            {aba === 'aprovadas' && 'Nenhuma questão aprovada ainda.'}
+            {aba === 'rejeitadas' && '🗑️ A lixeira está vazia.'}
           </p>
         </div>
       )}
@@ -405,7 +396,6 @@ const navigate = useNavigate();
                     selecionada ? 'border-blue-500 bg-blue-50' : 'border-slate-200'
                   }`}>
                   <div className="p-4">
-                    {/* Cabeçalho da questão */}
                     <div className="flex items-start gap-3 mb-3">
                       <input type="checkbox" checked={selecionada}
                         onChange={() => toggleSelecionada(q.id)}
@@ -443,6 +433,25 @@ const navigate = useNavigate();
                               ✨ IA
                             </span>
                           )}
+                          {q.origem === 'manual' && (
+                            <span className="bg-slate-200 text-slate-800 px-2 py-0.5 rounded font-semibold">
+                              ✍️ Manual
+                            </span>
+                          )}
+                          {q.dificuldade && (
+                            <span className={`px-2 py-0.5 rounded font-semibold ${
+                              q.dificuldade === 'facil' ? 'bg-green-100 text-green-800' :
+                              q.dificuldade === 'media' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {q.dificuldade === 'facil' ? '🟢 Fácil' : q.dificuldade === 'media' ? '🟡 Média' : '🔴 Difícil'}
+                            </span>
+                          )}
+                          {aba === 'rejeitadas' && q.dias_ate_exclusao !== null && q.dias_ate_exclusao !== undefined && (
+                            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded font-semibold">
+                              ⏳ Exclui em {q.dias_ate_exclusao} dia(s)
+                            </span>
+                          )}
                         </div>
 
                         {q.submitted_by_name && (
@@ -467,6 +476,7 @@ const navigate = useNavigate();
                                 {q.alternativas.map((a, i) => (
                                   <div key={i} className="text-sm text-slate-700">
                                     <strong>({a.letra})</strong> {a.texto}
+                                    {a.imagem_url && <img src={a.imagem_url} alt="" className="max-h-16 mt-1 border border-slate-200 rounded" />}
                                   </div>
                                 ))}
                               </div>
@@ -488,7 +498,7 @@ const navigate = useNavigate();
 
                     {/* Ações */}
                     <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
-                      {!q.approved && !q.anulada && (
+                      {aba === 'pendentes' && (
                         <>
                           <button onClick={() => aprovarUma(q.id)} disabled={processando}
                             className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-xs font-semibold px-3 py-1.5 rounded">
@@ -500,20 +510,25 @@ const navigate = useNavigate();
                           </button>
                         </>
                       )}
-                      {q.approved && (
+
+                      {aba === 'aprovadas' && (
                         <span className="text-xs bg-green-100 text-green-800 px-3 py-1.5 rounded font-semibold">
-                          ✅ Aprovada
+                          ✅ Aprovada e disponível no Motor 8
                         </span>
                       )}
-                      {q.anulada && (
-                        <span className="text-xs bg-red-100 text-red-800 px-3 py-1.5 rounded font-semibold">
-                          🚫 Anulada
-                        </span>
+
+                      {aba === 'rejeitadas' && (
+                        <>
+                          <button onClick={() => restaurarUma(q.id)} disabled={processando}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-semibold px-3 py-1.5 rounded">
+                            ♻️ Restaurar
+                          </button>
+                          <button onClick={() => excluirUma(q.id)} disabled={processando}
+                            className="bg-red-700 hover:bg-red-800 disabled:bg-red-300 text-white text-xs font-semibold px-3 py-1.5 rounded">
+                            🗑️ Excluir definitivamente
+                          </button>
+                        </>
                       )}
-                      <button onClick={() => excluirUma(q.id)} disabled={processando}
-                        className="text-xs text-red-600 hover:text-red-800 font-medium px-3 py-1.5 ml-auto">
-                        🗑️ Excluir permanentemente
-                      </button>
                     </div>
                   </div>
                 </div>

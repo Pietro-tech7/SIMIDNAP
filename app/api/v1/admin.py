@@ -823,7 +823,7 @@ def admin_question_bank_rejeitar(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_superuser),
 ):
-    """Rejeita uma questão (marca como anulada, não aparece em lugar nenhum)."""
+    """Rejeita uma questão (move para a lixeira)."""
     q = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id == question_id).first()
     if not q:
         raise HTTPException(status_code=404, detail="Questão não encontrada.")
@@ -832,6 +832,7 @@ def admin_question_bank_rejeitar(
     q.approved = False
     q.approved_by = current_user.id
     q.approved_at = datetime.utcnow()
+    q.trashed_at = datetime.utcnow()
     db.commit()
     db.refresh(q)
     return _montar_question_item(q, db)
@@ -861,14 +862,16 @@ def admin_question_bank_rejeitar_lote(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_superuser),
 ):
-    """Rejeita várias questões de uma vez."""
+    """Rejeita várias questões de uma vez (manda para a lixeira)."""
     qs = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id.in_(data.ids)).all()
     total = 0
+    agora = datetime.utcnow()
     for q in qs:
         q.anulada = True
         q.approved = False
         q.approved_by = current_user.id
-        q.approved_at = datetime.utcnow()
+        q.approved_at = agora
+        q.trashed_at = agora
         total += 1
     db.commit()
     return {"sucesso": True, "total_rejeitado": total}
@@ -929,6 +932,142 @@ def admin_question_bank_excluir(
     db.delete(q)
     db.commit()
     return None
+
+
+# ═══════════════════════════════════════════════════════════════
+# LIXEIRA DE REJEITADAS (Bloco 4.9.3)
+# ═══════════════════════════════════════════════════════════════
+
+DIAS_LIXEIRA = 30  # tempo em dias antes de exclusão permanente
+
+
+def _limpar_lixeira_antiga(db: Session) -> int:
+    """Remove automaticamente questões na lixeira há mais de DIAS_LIXEIRA."""
+    limite = datetime.utcnow() - timedelta(days=DIAS_LIXEIRA)
+    qs = db.query(QuestionBankFundamental).filter(
+        QuestionBankFundamental.anulada == True,
+        QuestionBankFundamental.trashed_at.isnot(None),
+        QuestionBankFundamental.trashed_at < limite,
+    ).all()
+    total = 0
+    for q in qs:
+        db.delete(q)
+        total += 1
+    if total > 0:
+        db.commit()
+        print(f"[Lixeira] {total} questão(ões) excluída(s) permanentemente (> {DIAS_LIXEIRA} dias).")
+    return total
+
+
+def _montar_question_item_com_dias(q: QuestionBankFundamental, db: Session) -> AdminQuestionItem:
+    """Igual ao _montar_question_item, mas adiciona dias_ate_exclusao se estiver na lixeira."""
+    item = _montar_question_item(q, db)
+    if q.anulada and q.trashed_at:
+        dias_passados = (datetime.utcnow() - q.trashed_at).days
+        item.trashed_at = q.trashed_at
+        item.dias_ate_exclusao = max(0, DIAS_LIXEIRA - dias_passados)
+    return item
+
+
+@router.get("/question-bank/rejeitadas", response_model=AdminQuestionListResponse)
+def admin_question_bank_rejeitadas(
+    etapa: Optional[str] = Query(None),
+    componente: Optional[str] = Query(None),
+    referencial: Optional[str] = Query(None),
+    busca: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """
+    Lista questões na lixeira (rejeitadas).
+    Auto-limpa as que passaram de 30 dias.
+    """
+    # Limpeza automática das muito antigas
+    _limpar_lixeira_antiga(db)
+
+    query = db.query(QuestionBankFundamental).filter(
+        QuestionBankFundamental.anulada == True,
+    )
+
+    if etapa:
+        query = query.filter(QuestionBankFundamental.etapa == etapa)
+    if componente:
+        query = query.filter(QuestionBankFundamental.componente == componente)
+    if referencial:
+        query = query.filter(QuestionBankFundamental.referencial == referencial)
+    if busca:
+        termo = f"%{busca.lower()}%"
+        query = query.filter(func.lower(QuestionBankFundamental.enunciado).like(termo))
+
+    total = query.count()
+    total_pages = max(1, math.ceil(total / per_page))
+    offset = (page - 1) * per_page
+
+    itens = (
+        query.order_by(QuestionBankFundamental.trashed_at.desc().nullslast(),
+                       QuestionBankFundamental.created_at.desc())
+        .offset(offset)
+        .limit(per_page)
+        .all()
+    )
+
+    return AdminQuestionListResponse(
+        items=[_montar_question_item_com_dias(q, db) for q in itens],
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+    )
+
+
+@router.patch("/question-bank/{question_id}/restaurar", response_model=AdminQuestionItem)
+def admin_question_bank_restaurar(
+    question_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Restaura uma questão da lixeira (volta para pendentes)."""
+    q = db.query(QuestionBankFundamental).filter(QuestionBankFundamental.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Questão não encontrada.")
+
+    q.anulada = False
+    q.approved = False
+    q.trashed_at = None
+    q.approved_by = None
+    q.approved_at = None
+    db.commit()
+    db.refresh(q)
+    return _montar_question_item(q, db)
+
+
+@router.delete("/question-bank/limpar-lixeira")
+def admin_question_bank_limpar_lixeira(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Força a limpeza da lixeira (remove tudo que passou de 30 dias)."""
+    total = _limpar_lixeira_antiga(db)
+    return {"sucesso": True, "total_removido": total}
+
+
+@router.delete("/question-bank/esvaziar-lixeira")
+def admin_question_bank_esvaziar_lixeira(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Esvazia TODA a lixeira imediatamente (ação perigosa)."""
+    qs = db.query(QuestionBankFundamental).filter(
+        QuestionBankFundamental.anulada == True,
+    ).all()
+    total = 0
+    for q in qs:
+        db.delete(q)
+        total += 1
+    db.commit()
+    return {"sucesso": True, "total_removido": total}
 
 
 # ═══════════════════════════════════════════════════════════════

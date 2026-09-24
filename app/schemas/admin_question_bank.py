@@ -35,6 +35,8 @@ class AdminQuestionItem(BaseModel):
     submitted_by_email: Optional[str] = None
     submitted_by_name: Optional[str] = None
     created_at: datetime
+    trashed_at: Optional[datetime] = None
+    dias_ate_exclusao: Optional[int] = None
 
     class Config:
         from_attributes = True

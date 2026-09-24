@@ -59,6 +59,7 @@ class QuestionBankFundamental(Base):
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
     anulada = Column(Boolean, default=False, nullable=False)
+    trashed_at = Column(DateTime, nullable=True)  # quando foi jogada na lixeira
 
     # ============================================================
     # CONTROLE
