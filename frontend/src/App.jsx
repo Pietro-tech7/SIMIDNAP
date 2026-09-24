@@ -15,6 +15,7 @@ import MeuAluno from './pages/MeuAluno';
 import PraticasExitosas from './pages/PraticasExitosas';
 import BancoQuestoes from './pages/BancoQuestoes';
 import BancoQuestoesFundamental from './pages/BancoQuestoesFundamental';
+import BancoQuestoesIA from './pages/BancoQuestoesIA';
 import MinhaAssinatura from './pages/MinhaAssinatura';
 import Perfil from './pages/Perfil';
 import AdminDashboard from './pages/AdminDashboard';
@@ -88,6 +89,7 @@ function AppRoutes() {
         <Route path="/praticas-exitosas" element={<PraticasExitosas />} />
         <Route path="/banco-questoes" element={<BancoQuestoes />} />
         <Route path="/banco-questoes-fundamental" element={<BancoQuestoesFundamental />} />
+        <Route path="/banco-questoes-ia" element={<BancoQuestoesIA />} />
         <Route path="/minha-assinatura" element={<MinhaAssinatura />} />
         <Route path="/meu-aluno" element={<MeuAluno />} />
         <Route path="/perfil" element={<Perfil />} />

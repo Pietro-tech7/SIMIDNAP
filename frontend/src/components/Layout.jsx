@@ -72,6 +72,7 @@ const Layout = () => {
     { path: '/modulo/praticas_exitosas', label: 'Práticas Exitosas', icon: '🏆' },
     { path: '/banco-questoes', label: 'Banco de Questões ENEM', icon: '📚' },
     { path: '/banco-questoes-fundamental', label: 'Banco de Questões Fundamental', icon: '📖' },
+    { path: '/banco-questoes-ia', label: 'Banco de Questões IA', icon: '✨' },
   ];
 
   const handleLogout = () => {
@@ -97,6 +98,9 @@ const Layout = () => {
     }
     if (path === '/banco-questoes-fundamental') {
       return location.pathname.startsWith('/banco-questoes-fundamental');
+    }
+    if (path === '/banco-questoes-ia') {
+      return location.pathname.startsWith('/banco-questoes-ia');
     }
     return location.pathname === path;
   };
