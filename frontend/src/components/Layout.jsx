@@ -70,7 +70,8 @@ const Layout = () => {
     { path: '/modulo/meu_aluno', label: 'Meu Aluno', icon: '📊' },
     { path: '/modulo/ia_para_professor', label: 'Gerador de Materiais', icon: '📄' },
     { path: '/modulo/praticas_exitosas', label: 'Práticas Exitosas', icon: '🏆' },
-    { path: '/modulo/banco_questoes', label: 'Banco de Questões', icon: '📚' },
+    { path: '/banco-questoes', label: 'Banco de Questões ENEM', icon: '📚' },
+    { path: '/banco-questoes-fundamental', label: 'Banco de Questões Fundamental', icon: '📖' },
   ];
 
   const handleLogout = () => {
