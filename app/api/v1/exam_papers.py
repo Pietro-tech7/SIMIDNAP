@@ -24,7 +24,13 @@ from ...schemas.exam_paper import (
     HabilidadesDisponiveisResponse,
     QuestionListItemExt,
     QuestionSearchExtResponse,
+    ExamPaperCreate,
+    ExamPaperUpdate,
+    ExamPaperOut,
+    ExamPaperListItem,
+    ExamPaperListResponse,
 )
+from ...models.exam_paper import ExamPaper
 
 router = APIRouter(prefix="/question-bank", tags=["question-bank"])
 
@@ -251,3 +257,139 @@ def search_extended(
         per_page=per_page,
         total_pages=total_pages,
     )
+
+
+# ============================================================
+# CRUD DE PROVAS (Bloco 3.2)
+# ============================================================
+@router.post("/exam-papers", response_model=ExamPaperOut, status_code=201)
+def criar_prova(
+    data: ExamPaperCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cria uma nova prova montada."""
+    if data.modo not in ("curado", "ia_gerada"):
+        raise HTTPException(status_code=400, detail="Modo deve ser 'curado' ou 'ia_gerada'.")
+
+    questoes_dict = [q.model_dump(mode="json") for q in data.questoes]
+
+    prova = ExamPaper(
+        user_id=current_user.id,
+        titulo=data.titulo,
+        modo=data.modo,
+        etapa=data.etapa,
+        ano=data.ano,
+        serie=data.serie,
+        componente=data.componente,
+        disciplina_nome=data.disciplina_nome,
+        cabecalho=data.cabecalho.model_dump(exclude_none=True) if data.cabecalho else None,
+        questoes=questoes_dict,
+        num_questoes=len(questoes_dict),
+        gabarito_incluido=data.gabarito_incluido,
+    )
+    db.add(prova)
+    db.commit()
+    db.refresh(prova)
+    return prova
+
+
+@router.get("/exam-papers", response_model=ExamPaperListResponse)
+def listar_provas(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    modo: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lista provas do professor (paginado)."""
+    query = db.query(ExamPaper).filter(ExamPaper.user_id == current_user.id)
+    if modo:
+        query = query.filter(ExamPaper.modo == modo)
+
+    total = query.count()
+    total_pages = max(1, math.ceil(total / per_page))
+    offset = (page - 1) * per_page
+
+    itens = (
+        query.order_by(ExamPaper.created_at.desc())
+        .offset(offset)
+        .limit(per_page)
+        .all()
+    )
+
+    return ExamPaperListResponse(
+        items=[ExamPaperListItem.model_validate(p) for p in itens],
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+    )
+
+
+@router.get("/exam-papers/{paper_id}", response_model=ExamPaperOut)
+def obter_prova(
+    paper_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retorna uma prova completa (só do próprio professor)."""
+    prova = (
+        db.query(ExamPaper)
+        .filter(ExamPaper.id == paper_id, ExamPaper.user_id == current_user.id)
+        .first()
+    )
+    if not prova:
+        raise HTTPException(status_code=404, detail="Prova não encontrada.")
+    return prova
+
+
+@router.put("/exam-papers/{paper_id}", response_model=ExamPaperOut)
+def atualizar_prova(
+    paper_id: str,
+    data: ExamPaperUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Atualiza uma prova existente."""
+    prova = (
+        db.query(ExamPaper)
+        .filter(ExamPaper.id == paper_id, ExamPaper.user_id == current_user.id)
+        .first()
+    )
+    if not prova:
+        raise HTTPException(status_code=404, detail="Prova não encontrada.")
+
+    if data.titulo is not None:
+        prova.titulo = data.titulo
+    if data.cabecalho is not None:
+        prova.cabecalho = data.cabecalho.model_dump(exclude_none=True)
+    if data.questoes is not None:
+        questoes_dict = [q.model_dump(mode="json") for q in data.questoes]
+        prova.questoes = questoes_dict
+        prova.num_questoes = len(questoes_dict)
+    if data.gabarito_incluido is not None:
+        prova.gabarito_incluido = data.gabarito_incluido
+
+    db.commit()
+    db.refresh(prova)
+    return prova
+
+
+@router.delete("/exam-papers/{paper_id}", status_code=204)
+def excluir_prova(
+    paper_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Exclui uma prova (só do próprio professor)."""
+    prova = (
+        db.query(ExamPaper)
+        .filter(ExamPaper.id == paper_id, ExamPaper.user_id == current_user.id)
+        .first()
+    )
+    if not prova:
+        raise HTTPException(status_code=404, detail="Prova não encontrada.")
+    db.delete(prova)
+    db.commit()
+    return None
