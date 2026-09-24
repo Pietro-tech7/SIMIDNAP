@@ -26,6 +26,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminBanners from './pages/AdminBanners';
 import AdminLanding from './pages/AdminLanding';
+import AdminQuestionBank from './pages/AdminQuestionBank';
 import LandingPage from './pages/LandingPage';
 import Termos from './pages/Termos';
 import Privacidade from './pages/Privacidade';
@@ -102,6 +103,7 @@ function AppRoutes() {
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />
         <Route path="/admin/banners" element={<AdminBanners />} />
         <Route path="/admin/landing" element={<AdminLanding />} />
+        <Route path="/admin/question-bank" element={<AdminQuestionBank />} />
         <Route path="/admin/perfil" element={<AdminPerfil />} />
       </Route>
     </Routes>
