@@ -21,6 +21,7 @@ from .models import (  # noqa: F401
     question_bank,
     landing_config,
     landing_asset,
+    curriculo_piaui_skill,
 )
 
 
