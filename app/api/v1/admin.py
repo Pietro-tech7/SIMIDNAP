@@ -4,6 +4,7 @@ from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, timedelta
 import math
+import uuid
 
 from ...core.database import get_db
 from ...models.user import User
@@ -33,8 +34,8 @@ from ...schemas.admin_question_bank import (
     AdminQuestionApprovalRequest,
     AdminQuestionStats,
     AdminQuestionStatsItem,
+    AdminQuestionCreate,
 )
-from ...schemas.admin_question_bank import AdminQuestionCreate
 from ...services.subscription_service import PLANOS
 from ...core.security import decode_token
 
@@ -597,7 +598,7 @@ def get_content_detail(
 
 
 # ═══════════════════════════════════════════════════════════════
-# CURADORIA — BANCO DE QUESTÕES FUNDAMENTAL (NOVO - NÃO MUDA NADA ACIMA)
+# CURADORIA — BANCO DE QUESTÕES FUNDAMENTAL
 # ═══════════════════════════════════════════════════════════════
 
 def _montar_question_item(q: QuestionBankFundamental, db: Session) -> AdminQuestionItem:
@@ -657,7 +658,6 @@ def admin_question_bank_stats(
         QuestionBankFundamental.anulada == True,
     ).count()
 
-    # Por autor (top 20)
     rows_autor = (
         db.query(QuestionBankFundamental.submitted_by, func.count(QuestionBankFundamental.id))
         .filter(QuestionBankFundamental.submitted_by.isnot(None))
@@ -929,3 +929,53 @@ def admin_question_bank_excluir(
     db.delete(q)
     db.commit()
     return None
+
+
+# ═══════════════════════════════════════════════════════════════
+# CRIAÇÃO MANUAL DE QUESTÕES (Bloco 3.5.1) — NOVO
+# ═══════════════════════════════════════════════════════════════
+
+@router.post("/question-bank/criar", response_model=AdminQuestionItem, status_code=201)
+def admin_question_bank_criar(
+    data: AdminQuestionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Cria uma questão manualmente (admin). Já entra aprovada por padrão."""
+    if data.etapa not in ("EI", "EF"):
+        raise HTTPException(status_code=400, detail="Etapa deve ser 'EI' ou 'EF'.")
+    if not data.enunciado or len(data.enunciado.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Enunciado muito curto (mínimo 10 caracteres).")
+
+    nova = QuestionBankFundamental(
+        id=uuid.uuid4(),
+        fonte="SIMIDNAPE_ADMIN",
+        ano=data.ano,
+        etapa=data.etapa,
+        serie=data.serie,
+        componente=data.componente,
+        disciplina=data.disciplina or data.componente,
+        numero=None,
+        tipo=data.tipo,
+        enunciado=data.enunciado.strip(),
+        alternativas=data.alternativas,
+        gabarito=data.gabarito,
+        imagem_url=data.imagem_url,
+        imagens_extras=data.imagens_extras,
+        habilidades=[data.habilidade_codigo] if data.habilidade_codigo else None,
+        habilidade_codigo=data.habilidade_codigo,
+        referencial=data.referencial,
+        descritores=data.descritores,
+        dificuldade=data.dificuldade,
+        origem="manual",
+        submitted_by=current_user.id,
+        approved=data.aprovada,
+        approved_by=current_user.id if data.aprovada else None,
+        approved_at=datetime.utcnow() if data.aprovada else None,
+        anulada=False,
+    )
+
+    db.add(nova)
+    db.commit()
+    db.refresh(nova)
+    return _montar_question_item(nova, db)

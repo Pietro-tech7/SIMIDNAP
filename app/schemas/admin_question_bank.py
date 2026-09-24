@@ -88,7 +88,7 @@ class AdminQuestionStats(BaseModel):
     por_autor: List[AdminQuestionStatsItem]
     por_componente: List[AdminQuestionStatsItem]
     por_referencial: List[AdminQuestionStatsItem]
-    
+
 
 # ============================================================
 # CRIAÇÃO MANUAL DE QUESTÃO (Bloco 3.5.1)
@@ -114,58 +114,3 @@ class AdminQuestionCreate(BaseModel):
 
     # Se True, a questão entra já aprovada (padrão no admin)
     aprovada: bool = Field(True)
-    
-
-# ═══════════════════════════════════════════════════════════════
-# CRIAÇÃO MANUAL DE QUESTÕES (Bloco 3.5.1)
-# ═══════════════════════════════════════════════════════════════
-
-@router.post("/question-bank/criar", response_model=AdminQuestionItem, status_code=201)
-def admin_question_bank_criar(
-    data: AdminQuestionCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
-):
-    """Cria uma questão manualmente (admin). Já entra aprovada por padrão."""
-    if data.etapa not in ("EI", "EF"):
-        raise HTTPException(status_code=400, detail="Etapa deve ser 'EI' ou 'EF'.")
-    if not data.enunciado or len(data.enunciado.strip()) < 10:
-        raise HTTPException(status_code=400, detail="Enunciado muito curto (mínimo 10 caracteres).")
-
-    nova = QuestionBankFundamental(
-        id=uuid.uuid4() if 'uuid' in dir() else None,
-        fonte="SIMIDNAPE_ADMIN",
-        ano=data.ano,
-        etapa=data.etapa,
-        serie=data.serie,
-        componente=data.componente,
-        disciplina=data.disciplina or data.componente,
-        numero=None,
-        tipo=data.tipo,
-        enunciado=data.enunciado.strip(),
-        alternativas=data.alternativas,
-        gabarito=data.gabarito,
-        imagem_url=data.imagem_url,
-        imagens_extras=data.imagens_extras,
-        habilidades=[data.habilidade_codigo] if data.habilidade_codigo else None,
-        habilidade_codigo=data.habilidade_codigo,
-        referencial=data.referencial,
-        descritores=data.descritores,
-        dificuldade=data.dificuldade,
-        origem="manual",
-        submitted_by=current_user.id,
-        approved=data.aprovada,
-        approved_by=current_user.id if data.aprovada else None,
-        approved_at=datetime.utcnow() if data.aprovada else None,
-        anulada=False,
-    )
-
-    # Garante UUID se não foi gerado
-    if nova.id is None:
-        import uuid as _uuid
-        nova.id = _uuid.uuid4()
-
-    db.add(nova)
-    db.commit()
-    db.refresh(nova)
-    return _montar_question_item(nova, db)
