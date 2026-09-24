@@ -6,6 +6,8 @@ import LatexText from '../components/LatexText';
 import EditorCabecalhoProva from '../components/EditorCabecalhoProva';
 import { gerarProvaPDF, gerarGabaritoPDF } from '../utils/gerarPdfProva';
 
+const STORAGE_KEY = 'simidnape_rascunho_prova_ia';
+
 const ETAPAS = [
   { value: 'EF', label: 'Ensino Fundamental' },
   { value: 'EI', label: 'Educação Infantil' },
@@ -51,7 +53,7 @@ const BancoQuestoesIA = () => {
   const [cabecalho, setCabecalho] = useState(null);
 
   const [habilidades, setHabilidades] = useState([
-    { codigo: '', texto: '', descritores: [], nivel_cognitivo: 'Aplicar', quantidade: 2, busca: '' },
+    { codigo: '', texto: '', descritores: [], nivel_cognitivo: 'Aplicar', dificuldade: '', quantidade: 2, busca: '' },
   ]);
 
   const [componentes, setComponentes] = useState([]);
@@ -65,7 +67,90 @@ const BancoQuestoesIA = () => {
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
   const [gerandoPdf, setGerandoPdf] = useState(false);
-  const [jaGerou, setJaGerou] = useState(false);   // rastreia se já gerou nesta sessão
+  const [jaGerou, setJaGerou] = useState(false);
+
+  // ---------- PERSISTÊNCIA ----------
+  const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
+  const [rascunhoSalvo, setRascunhoSalvo] = useState(false);
+
+  // Carrega rascunho na montagem (só uma vez)
+  useEffect(() => {
+    try {
+      const salvo = localStorage.getItem(STORAGE_KEY);
+      if (salvo) {
+        const d = JSON.parse(salvo);
+        const temConteudo = (d.minhasQuestoes?.length > 0) || (d.pool?.length > 0) || (d.titulo?.trim()) || (d.habilidades?.some(h => h.codigo));
+
+        if (temConteudo) {
+          const continuar = window.confirm(
+            `📋 Você tem uma prova em andamento:\n\n"${d.titulo || 'Sem título'}"\n\nDeseja continuar de onde parou?`
+          );
+          if (continuar) {
+            if (d.titulo !== undefined) setTitulo(d.titulo);
+            if (d.metaQuestoes !== undefined) setMetaQuestoes(d.metaQuestoes);
+            if (d.etapa !== undefined) setEtapa(d.etapa);
+            if (d.ano !== undefined) setAno(d.ano);
+            if (d.componente !== undefined) setComponente(d.componente);
+            if (d.referencial !== undefined) setReferencial(d.referencial);
+            if (d.incluirIlustracoes !== undefined) setIncluirIlustracoes(d.incluirIlustracoes);
+            if (d.dificuldadePadrao !== undefined) setDificuldadePadrao(d.dificuldadePadrao);
+            if (d.habilidades !== undefined) setHabilidades(d.habilidades);
+            if (d.pool !== undefined) setPool(d.pool);
+            if (d.minhasQuestoes !== undefined) setMinhasQuestoes(d.minhasQuestoes);
+            if (d.jaGerou !== undefined) setJaGerou(d.jaGerou);
+          } else {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar rascunho:', e);
+    }
+    setRascunhoCarregado(true);
+  }, []);
+
+  // Salva automaticamente a cada mudança
+  useEffect(() => {
+    if (!rascunhoCarregado) return;
+    try {
+      const dados = {
+        titulo, metaQuestoes, etapa, ano, componente, referencial,
+        incluirIlustracoes, dificuldadePadrao, habilidades,
+        pool, minhasQuestoes, jaGerou,
+        _salvo_em: new Date().toISOString(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+      setRascunhoSalvo(true);
+      const timer = setTimeout(() => setRascunhoSalvo(false), 1200);
+      return () => clearTimeout(timer);
+    } catch (e) {
+      console.warn('Erro ao salvar rascunho:', e);
+    }
+  }, [
+    rascunhoCarregado, titulo, metaQuestoes, etapa, ano, componente, referencial,
+    incluirIlustracoes, dificuldadePadrao, habilidades, pool, minhasQuestoes, jaGerou,
+  ]);
+
+  const descartarRascunho = () => {
+    if (!window.confirm('Descartar o rascunho atual? Tudo será perdido.')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    setTitulo('');
+    setMetaQuestoes(10);
+    setEtapa('EF');
+    setAno(2);
+    setComponente('MA');
+    setReferencial('bncc');
+    setIncluirIlustracoes(true);
+    setDificuldadePadrao('');
+    setHabilidades([{ codigo: '', texto: '', descritores: [], nivel_cognitivo: 'Aplicar', dificuldade: '', quantidade: 2, busca: '' }]);
+    setPool([]);
+    setMinhasQuestoes([]);
+    setSelecionadas([]);
+    setJaGerou(false);
+    setErro(''); setSucesso('');
+  };
+
+  // ---------- FIM PERSISTÊNCIA ----------
 
   useEffect(() => {
     api.get(`/bncc/componentes?etapa=${etapa}`)
@@ -101,7 +186,7 @@ const BancoQuestoesIA = () => {
   };
 
   const adicionarHabilidade = () => {
-    setHabilidades(prev => [...prev, { codigo: '', texto: '', descritores: [], nivel_cognitivo: 'Aplicar', quantidade: 1, busca: '' }]);
+    setHabilidades(prev => [...prev, { codigo: '', texto: '', descritores: [], nivel_cognitivo: 'Aplicar', dificuldade: '', quantidade: 1, busca: '' }]);
   };
 
   const removerHabilidade = (index) => {
@@ -265,9 +350,6 @@ const BancoQuestoesIA = () => {
     atualizarIlustracao(localId, 'imagem', b64);
   };
 
-  // ============================================================
-  // GERAR PDF — 3 funções separadas, sempre disponíveis
-  // ============================================================
   const _prepararDados = () => ({
     titulo: titulo.trim(),
     cabecalho,
@@ -298,6 +380,7 @@ const BancoQuestoesIA = () => {
             descritor: q.descritor,
             descritor_texto: q.descritor_texto,
             nivel_cognitivo: q.nivel_cognitivo,
+            dificuldade: q.dificuldade,
             imagem_url: q.ilustracao?.imagem || q.imagem_url || null,
           },
           icone_svg: q.ilustracao?.imagem || null,
@@ -339,6 +422,13 @@ const BancoQuestoesIA = () => {
     }
   };
 
+  const _finalizarComSucesso = (msg) => {
+    setJaGerou(true);
+    setSucesso(msg);
+    // Limpa o rascunho após gerar com sucesso
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
   const gerarSoProva = async () => {
     if (!metaAtingida) { alert(`Faltam ${faltam} questão(ões) para a meta.`); return; }
     setGerandoPdf(true); setErro(''); setSucesso('');
@@ -346,8 +436,7 @@ const BancoQuestoesIA = () => {
       await _salvarProvaNoBackend();
       await _enviarCuradoria();
       await gerarProvaPDF(_prepararDados());
-      setJaGerou(true);
-      setSucesso('✅ PDF da PROVA gerado! Verifique a pasta de Downloads.');
+      _finalizarComSucesso('✅ PDF da PROVA gerado! Verifique a pasta de Downloads.');
     } catch (err) {
       setErro(err?.message || 'Erro ao gerar PDF da prova.');
     } finally {
@@ -360,8 +449,7 @@ const BancoQuestoesIA = () => {
     setGerandoPdf(true); setErro(''); setSucesso('');
     try {
       await gerarGabaritoPDF(_prepararDados());
-      setJaGerou(true);
-      setSucesso('✅ PDF do GABARITO gerado! Verifique a pasta de Downloads.');
+      _finalizarComSucesso('✅ PDF do GABARITO gerado! Verifique a pasta de Downloads.');
     } catch (err) {
       setErro(err?.message || 'Erro ao gerar PDF do gabarito.');
     } finally {
@@ -375,32 +463,21 @@ const BancoQuestoesIA = () => {
 
     const avisos = [];
     try {
-      // 1. Salva + curadoria (uma única vez)
       await _salvarProvaNoBackend();
       await _enviarCuradoria();
 
-      // 2. Gera GABARITO primeiro (arquivo menor)
-      try {
-        await gerarGabaritoPDF(_prepararDados());
-      } catch (e) {
-        avisos.push('Gabarito: ' + (e?.message || 'erro'));
-      }
+      try { await gerarGabaritoPDF(_prepararDados()); }
+      catch (e) { avisos.push('Gabarito: ' + (e?.message || 'erro')); }
 
-      // 3. Delay para o navegador não bloquear múltiplos downloads
       await new Promise(r => setTimeout(r, 1800));
 
-      // 4. Gera PROVA
-      try {
-        await gerarProvaPDF(_prepararDados());
-      } catch (e) {
-        avisos.push('Prova: ' + (e?.message || 'erro'));
-      }
-
-      setJaGerou(true);
+      try { await gerarProvaPDF(_prepararDados()); }
+      catch (e) { avisos.push('Prova: ' + (e?.message || 'erro')); }
 
       if (avisos.length === 0) {
-        setSucesso('✅ PDFs gerados! Verifique a pasta de Downloads.');
+        _finalizarComSucesso('✅ PDFs gerados! Verifique a pasta de Downloads.');
       } else {
+        setJaGerou(true);
         setErro('Alguns PDFs falharam: ' + avisos.join(' | ') + '. Use os botões individuais.');
       }
     } catch (err) {
@@ -414,7 +491,13 @@ const BancoQuestoesIA = () => {
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto">
-      <Link to="/dashboard" className="text-blue-600 text-sm hover:underline">← Voltar</Link>
+      <div className="flex justify-between items-center">
+        <Link to="/dashboard" className="text-blue-600 text-sm hover:underline">← Voltar</Link>
+        <button onClick={descartarRascunho}
+          className="text-xs text-red-600 hover:text-red-800 font-medium">
+          🗑️ Descartar rascunho atual
+        </button>
+      </div>
 
       <div className="mt-6 mb-8 flex items-center gap-3">
         <span className="text-4xl">✨</span>
@@ -423,6 +506,12 @@ const BancoQuestoesIA = () => {
           <p className="text-gray-600">Gere questões inéditas com IA — BNCC, Currículo do Piauí, SAEB e SAEPI.</p>
         </div>
       </div>
+
+      {rascunhoSalvo && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-xs font-semibold z-50">
+          💾 Rascunho salvo
+        </div>
+      )}
 
       {/* PASSO 1 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
@@ -475,7 +564,6 @@ const BancoQuestoesIA = () => {
         </div>
       </div>
 
-      {/* EDITOR DE CABEÇALHO */}
       <EditorCabecalhoProva onChange={setCabecalho} professorNome={user?.full_name || ''} />
 
       {/* PASSO 2 — HABILIDADES */}
@@ -559,8 +647,9 @@ const BancoQuestoesIA = () => {
                     <option value="dificil">🔴 Difícil</option>
                   </select>
                 </div>
+
                 {descritoresDisponiveis().length > 0 && (
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Descritores ({h.descritores?.length || 0} selecionados)
                     </label>
@@ -667,7 +756,7 @@ const BancoQuestoesIA = () => {
 
           {jaGerou && (
             <div className="mt-2 text-xs bg-yellow-50 border border-yellow-300 text-yellow-900 rounded p-2">
-              ℹ️ Os PDFs já foram gerados antes. Verifique a pasta de <strong>Downloads</strong> do seu navegador.
+              ℹ️ Os PDFs já foram gerados antes. Verifique a pasta de <strong>Downloads</strong>.
             </div>
           )}
 
@@ -729,6 +818,17 @@ const BancoQuestoesIA = () => {
                     onChange={() => togglePool(q._localId)}
                     className="mt-1 w-5 h-5 text-teal-600 rounded flex-shrink-0" />
                   <div className="flex-1 min-w-0">
+                    {q.dificuldade && (
+                      <div className="flex flex-wrap gap-2 text-xs mb-2">
+                        <span className={`px-2 py-0.5 rounded font-semibold ${
+                          q.dificuldade === 'facil' ? 'bg-green-100 text-green-800' :
+                          q.dificuldade === 'media' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {q.dificuldade === 'facil' ? '🟢 Fácil' : q.dificuldade === 'media' ? '🟡 Média' : '🔴 Difícil'}
+                        </span>
+                      </div>
+                    )}
                     <div className="text-sm text-gray-800 mb-2"><LatexText text={q.enunciado} /></div>
                     <div className="space-y-0.5 mb-2">
                       {(q.alternativas || []).map((a, ai) => (
@@ -766,6 +866,16 @@ const BancoQuestoesIA = () => {
                     <button onClick={() => removerDaMinhas(q._localId)}
                       className="text-xs text-red-600 hover:text-red-800">🗑️ Remover</button>
                   </div>
+
+                  {q.dificuldade && (
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded font-semibold mb-2 ${
+                      q.dificuldade === 'facil' ? 'bg-green-100 text-green-800' :
+                      q.dificuldade === 'media' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {q.dificuldade === 'facil' ? '🟢 Fácil' : q.dificuldade === 'media' ? '🟡 Média' : '🔴 Difícil'}
+                    </span>
+                  )}
 
                   <div className="text-sm text-gray-800 mb-3"><LatexText text={q.enunciado} /></div>
 
