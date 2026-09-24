@@ -34,6 +34,7 @@ from ...schemas.admin_question_bank import (
     AdminQuestionStats,
     AdminQuestionStatsItem,
 )
+from ...schemas.admin_question_bank import AdminQuestionCreate
 from ...services.subscription_service import PLANOS
 from ...core.security import decode_token
 
