@@ -20,6 +20,7 @@ class HabilidadeRequest(BaseModel):
     descritores: List[str] = Field(default_factory=list, description="Lista de descritores (ex: ['D01','D05'])")
     nivel_cognitivo: Optional[str] = Field("Aplicar", description="Lembrar | Compreender | Aplicar | Analisar | Avaliar | Criar")
     quantidade: int = Field(..., ge=1, le=20, description="Quantas questões gerar para esta habilidade")
+    dificuldade: Optional[str] = Field(None, description="'facil' | 'media' | 'dificil'")
 
 
 class GerarQuestoesIARequest(BaseModel):
@@ -33,6 +34,7 @@ class GerarQuestoesIARequest(BaseModel):
     referencial: str = Field("bncc", description="'bncc' | 'curriculo_piaui' | 'saeb' | 'saepi' | 'ppaic'")
     estado: Optional[str] = Field(None, description="UF do professor (ex: 'PI')")
     incluir_ilustracoes: bool = Field(True)
+    dificuldade_padrao: Optional[str] = Field(None, description="'facil' | 'media' | 'dificil'")
     compartilhar_curadoria: bool = Field(False)
     habilidades: List[HabilidadeRequest] = Field(..., min_items=1, max_items=10)
 

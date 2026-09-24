@@ -47,6 +47,7 @@ const BancoQuestoesIA = () => {
   const [componente, setComponente] = useState('MA');
   const [referencial, setReferencial] = useState('bncc');
   const [incluirIlustracoes, setIncluirIlustracoes] = useState(true);
+  const [dificuldadePadrao, setDificuldadePadrao] = useState('');
   const [cabecalho, setCabecalho] = useState(null);
 
   const [habilidades, setHabilidades] = useState([
@@ -165,12 +166,14 @@ const BancoQuestoesIA = () => {
       estado: user?.estado || null,
       incluir_ilustracoes: incluirIlustracoes,
       compartilhar_curadoria: true,
+      dificuldade_padrao: dificuldadePadrao || null,
       habilidades: habilidades.map(h => ({
         codigo: h.codigo,
         texto: h.texto,
         complemento_pi: h.complemento_pi || null,
         descritores: h.descritores || [],
         nivel_cognitivo: h.nivel_cognitivo,
+        dificuldade: h.dificuldade || null,
         quantidade: Number(h.quantidade),
       })),
     };
@@ -326,6 +329,7 @@ const BancoQuestoesIA = () => {
           habilidade_codigo: q.habilidade_codigo,
           descritor: q.descritor,
           nivel_cognitivo: q.nivel_cognitivo,
+          dificuldade: q.dificuldade || dificuldadePadrao || null,
           imagem_url: q.ilustracao?.imagem || q.imagem_url || null,
         })),
       };
@@ -543,6 +547,18 @@ const BancoQuestoesIA = () => {
                     {NIVEIS_BLOOM.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Dificuldade desta habilidade</label>
+                  <select value={h.dificuldade || ''}
+                    onChange={(e) => atualizarHabilidade(index, 'dificuldade', e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                    <option value="">Usar padrão</option>
+                    <option value="facil">🟢 Fácil</option>
+                    <option value="media">🟡 Média</option>
+                    <option value="dificil">🔴 Difícil</option>
+                  </select>
+                </div>
                 {descritoresDisponiveis().length > 0 && (
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -576,12 +592,32 @@ const BancoQuestoesIA = () => {
       {/* PASSO 3 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">🎨 Passo 3 — Opções</h2>
-        <label className="flex items-center gap-2 cursor-pointer text-sm">
-          <input type="checkbox" checked={incluirIlustracoes}
-            onChange={(e) => setIncluirIlustracoes(e.target.checked)}
-            className="w-4 h-4 text-purple-600 rounded" />
-          Incluir sugestões de ilustrações nas questões
-        </label>
+
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <input type="checkbox" checked={incluirIlustracoes}
+              onChange={(e) => setIncluirIlustracoes(e.target.checked)}
+              className="w-4 h-4 text-purple-600 rounded" />
+            Incluir sugestões de ilustrações nas questões
+          </label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Dificuldade padrão (opcional)
+            </label>
+            <select value={dificuldadePadrao}
+              onChange={(e) => setDificuldadePadrao(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white max-w-xs">
+              <option value="">Não especificar</option>
+              <option value="facil">🟢 Fácil</option>
+              <option value="media">🟡 Média</option>
+              <option value="dificil">🔴 Difícil</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              A IA vai gerar as questões nesse nível (quando não especificado por habilidade).
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* RESUMO E BOTÃO GERAR */}

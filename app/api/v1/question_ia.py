@@ -140,6 +140,8 @@ def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end
             prompt += f"Descritores associados: {', '.join(h.descritores)}\n"
         if h.nivel_cognitivo:
             prompt += f"Nível cognitivo (Bloom): {h.nivel_cognitivo}\n"
+        if h.dificuldade:
+            prompt += f"Dificuldade desejada: {h.dificuldade}\n"
 
     if data.estado and data.estado.upper() == "PI":
         prompt += (
@@ -269,6 +271,7 @@ def gerar_questoes(
         questoes_out.append(QuestaoIA(
             numero=i,
             habilidade_codigo=q.get("habilidade_codigo", ""),
+            dificuldade=(q.get("dificuldade") or data.dificuldade_padrao or None),
             habilidade_texto=q.get("habilidade_texto"),
             descritor=q.get("descritor"),
             descritor_texto=q.get("descritor_texto"),
@@ -363,7 +366,7 @@ def enviar_curadoria(
                 referencial=data.referencial,
                 referencias_extras=None,
                 descritores=[q.get("descritor")] if q.get("descritor") else None,
-                dificuldade=q.get("nivel_cognitivo"),
+                dificuldade=q.get("dificuldade") or data.dificuldade_padrao,
                 origem="gerada_ia",
                 submitted_by=current_user.id,
                 approved=False,

@@ -65,6 +65,7 @@ def _aplicar_filtros(
     referencial: Optional[str],
     habilidade_codigo: Optional[str],
     origem: Optional[str],
+    dificuldade: Optional[str],
     busca: Optional[str],
     aprovadas_apenas: bool,
 ):
@@ -82,6 +83,8 @@ def _aplicar_filtros(
         query = query.filter(QuestionBankFundamental.habilidade_codigo == habilidade_codigo)
     if origem:
         query = query.filter(QuestionBankFundamental.origem == origem)
+    if dificuldade:
+        query = query.filter(QuestionBankFundamental.dificuldade == dificuldade)
     if busca:
         termo = f"%{busca.lower()}%"
         query = query.filter(func.lower(QuestionBankFundamental.enunciado).like(termo))
@@ -190,6 +193,7 @@ def search_extended(
     referencial: Optional[str] = Query(None),
     habilidade_codigo: Optional[str] = Query(None),
     origem: Optional[str] = Query(None),
+    dificuldade: Optional[str] = Query(None),
     busca: Optional[str] = Query(None),
     aprovadas_apenas: bool = Query(True),
     page: int = Query(1, ge=1),
@@ -208,6 +212,7 @@ def search_extended(
         referencial=referencial,
         habilidade_codigo=habilidade_codigo,
         origem=origem,
+        dificuldade=dificuldade,
         busca=busca,
         aprovadas_apenas=aprovadas_apenas,
     )

@@ -41,6 +41,7 @@ const BancoQuestoesFundamental = () => {
   const [referencial, setReferencial] = useState('');
   const [habilidadeCodigo, setHabilidadeCodigo] = useState('');
   const [origem, setOrigem] = useState('');
+  const [dificuldade, setDificuldade] = useState('');
   const [busca, setBusca] = useState('');
 
   const [componentes, setComponentes] = useState([]);
@@ -97,6 +98,7 @@ const BancoQuestoesFundamental = () => {
       if (referencial) params.referencial = referencial;
       if (habilidadeCodigo) params.habilidade_codigo = habilidadeCodigo;
       if (origem) params.origem = origem;
+      if (dificuldade) params.dificuldade = dificuldade;
       if (busca.trim()) params.busca = busca.trim();
 
       const res = await api.get('/question-bank/search', { params });
@@ -116,7 +118,7 @@ const BancoQuestoesFundamental = () => {
 
   const limparFiltros = () => {
     setEtapa(''); setAno(''); setComponente(''); setReferencial('');
-    setHabilidadeCodigo(''); setOrigem(''); setBusca('');
+    setHabilidadeCodigo(''); setOrigem(''); setDificuldade(''); setBusca('');
     setPage(1);
     setTimeout(buscar, 50);
   };
@@ -235,6 +237,20 @@ const BancoQuestoesFundamental = () => {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
             >
               {ORIGENS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Dificuldade</label>
+            <select
+              value={dificuldade}
+              onChange={(e) => setDificuldade(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Todas</option>
+              <option value="facil">🟢 Fácil</option>
+              <option value="media">🟡 Média</option>
+              <option value="dificil">🔴 Difícil</option>
             </select>
           </div>
 
