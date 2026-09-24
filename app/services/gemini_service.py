@@ -894,15 +894,11 @@ class GeminiService:
         antes de fechar as chaves/colchetes). Estratégia: fecha estruturas abertas.
         """
         try:
-            # Encontra o último caractere válido de estrutura
             texto = texto.strip()
-
-            # Remove vírgulas e dois-pontos soltos no final
             texto = texto.rstrip()
             while texto and texto[-1] in (",", ":"):
                 texto = texto[:-1].rstrip()
 
-            # Conta estruturas abertas
             pilha = []
             dentro_string = False
             escapado = False
@@ -926,7 +922,6 @@ class GeminiService:
                 elif char == "]" and pilha and pilha[-1] == "[":
                     pilha.pop()
 
-            # Fecha as estruturas abertas na ordem inversa
             fechamento = ""
             while pilha:
                 abertura = pilha.pop()
@@ -1172,13 +1167,11 @@ class GeminiService:
                         texto = texto[4:]
                 texto = texto.strip()
 
-                # Tenta parsear direto
                 try:
                     resultado = json.loads(texto)
                     print(f"[Gemini] Sucesso: {modelo}")
                     return resultado
                 except json.JSONDecodeError:
-                    # Tenta reparar JSON truncado
                     resultado = self._reparar_json(texto)
                     if resultado is not None:
                         print(f"[Gemini] Sucesso (JSON reparado): {modelo}")
@@ -1277,7 +1270,6 @@ class GeminiService:
             )
             self.controle.registrar_uso()
 
-            # Extrai a imagem dos parts da resposta
             for part in response.candidates[0].content.parts:
                 if part.inline_data:
                     b64 = base64.b64encode(part.inline_data.data).decode("utf-8")
@@ -1289,7 +1281,130 @@ class GeminiService:
             print(f"[Gemini] Erro ao gerar imagem: {e}")
             raise
 
-        
+    # ============================================================
+    # MOTOR 9 — GERAÇÃO DE QUESTÕES EM LOTES (NOVO - NÃO MUDA NADA EXISTENTE)
+    # ============================================================
+    def _parse_questoes_json(self, texto: str) -> List[Dict[str, Any]]:
+        """Parse JSON de questões. Tolerante a vários formatos."""
+        texto = texto.strip()
+
+        # Remove marcações markdown
+        if texto.startswith("```"):
+            partes = texto.split("```")
+            for p in partes:
+                p = p.strip()
+                if p.startswith("json"):
+                    p = p[4:].strip()
+                if p.startswith("{") or p.startswith("["):
+                    texto = p
+                    break
+
+        # Tenta parsear direto
+        try:
+            dados = json.loads(texto)
+        except json.JSONDecodeError:
+            # Tenta reparar JSON truncado
+            dados = self._reparar_json(texto)
+            if dados is None:
+                # Tenta extrair entre primeiro { e último }
+                inicio = texto.find("{")
+                fim = texto.rfind("}")
+                if inicio != -1 and fim != -1 and fim > inicio:
+                    try:
+                        dados = json.loads(texto[inicio:fim+1])
+                    except json.JSONDecodeError:
+                        dados = self._reparar_json(texto[inicio:fim+1])
+                if dados is None:
+                    raise ValueError("Não foi possível parsear a resposta da IA.")
+
+        # Extrai a lista de questões
+        if isinstance(dados, dict) and "questoes" in dados:
+            return dados["questoes"]
+        if isinstance(dados, list):
+            return dados
+        raise ValueError("Estrutura de resposta inesperada.")
+
+    def _gerar_lote(
+        self,
+        prompt_lote: str,
+        system_instruction: str,
+    ) -> List[Dict[str, Any]]:
+        """Gera um lote de questões. Faz fallback entre modelos."""
+        ultimo_erro = None
+        for modelo in MODELOS_CHAT:
+            try:
+                print(f"[Gemini] Gerando lote com {modelo}...")
+                response = self._executar_com_retry(
+                    self.client.models.generate_content,
+                    model=modelo,
+                    contents=prompt_lote,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.6,
+                        max_output_tokens=16384,
+                        response_mime_type="application/json",
+                        thinking_config=_thinking_config(),
+                    ),
+                )
+                self.controle.registrar_uso()
+                texto = response.text
+                return self._parse_questoes_json(texto)
+            except Exception as e:
+                print(f"[Gemini] Falha em {modelo}: {e}")
+                ultimo_erro = e
+                continue
+
+        raise Exception(f"Todos os modelos falharam: {ultimo_erro}")
+
+    def generate_questions_batch(
+        self,
+        system_instruction: str,
+        base_prompt: str,
+        total_questoes: int,
+        batch_size: int = 15,
+    ) -> List[Dict[str, Any]]:
+        """
+        Gera questões em LOTES automáticos para evitar truncamento de JSON.
+
+        Args:
+            system_instruction: instrução do sistema (o "papel" da IA)
+            base_prompt: prompt com todos os dados da prova (sem instrução de lote)
+            total_questoes: total de questões a gerar
+            batch_size: quantas por lote (default 15)
+
+        Returns:
+            Lista consolidada de questões
+        """
+        todas_questoes: List[Dict[str, Any]] = []
+        inicio = 1
+
+        while inicio <= total_questoes:
+            fim = min(inicio + batch_size - 1, total_questoes)
+            qtd = fim - inicio + 1
+
+            prompt_lote = (
+                f"{base_prompt}\n\n"
+                f"═══════════════════════════════════════════════════════════════\n"
+                f"INSTRUÇÃO DE LOTE (LEIA COM ATENÇÃO)\n"
+                f"═══════════════════════════════════════════════════════════════\n"
+                f"Você deve gerar EXATAMENTE {qtd} questão(ões) neste lote, "
+                f"numeradas de {inicio} a {fim}.\n"
+                f"Retorne APENAS o JSON, sem texto adicional.\n"
+            )
+
+            questoes_lote = self._gerar_lote(prompt_lote, system_instruction)
+            todas_questoes.extend(questoes_lote)
+            print(f"[Gemini] Lote {inicio}-{fim}: {len(questoes_lote)} questões geradas")
+
+            inicio = fim + 1
+
+        # Renumera sequencialmente
+        for i, q in enumerate(todas_questoes, start=1):
+            q["numero"] = i
+
+        return todas_questoes
+
+
 # ============================================================
 # INSTÂNCIA GLOBAL + CONSTRUÇÃO NO STARTUP
 # ============================================================
