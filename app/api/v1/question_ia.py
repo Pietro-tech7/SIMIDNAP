@@ -20,6 +20,9 @@ from ...schemas.question_ia import (
     AlternativaIA,
 )
 from ...services.subscription_service import verificar_creditos, consumir_creditos
+from ...models.question_bank_fundamental import QuestionBankFundamental
+from pydantic import BaseModel
+import uuid
 
 router = APIRouter(prefix="/question-ia", tags=["question-ia"])
 
@@ -302,4 +305,80 @@ def gerar_questoes(
             "is_primeiro_lote": is_primeiro_lote,
             "total_solicitado": total_questoes,
         },
+    )
+
+# ============================================================
+# CURADORIA — envia questões aprovadas para o banco comum
+# ============================================================
+class EnviarCuradoriaRequest(BaseModel):
+    etapa: str
+    ano: Optional[int] = None
+    serie: Optional[str] = None
+    componente: str
+    disciplina_nome: Optional[str] = None
+    referencial: Optional[str] = "bncc"
+    estado: Optional[str] = None
+    questoes: List[Dict[str, Any]]
+
+
+class EnviarCuradoriaResponse(BaseModel):
+    sucesso: bool
+    total_enviado: int
+    mensagem: str
+
+
+@router.post("/enviar-curadoria", response_model=EnviarCuradoriaResponse)
+def enviar_curadoria(
+    data: EnviarCuradoriaRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Envia questões para a fila de curadoria (banco comum).
+    As questões são inseridas com approved=False e aguardam aprovação do admin.
+    """
+    if not data.questoes:
+        raise HTTPException(status_code=400, detail="Nenhuma questão para enviar.")
+
+    total = 0
+    for q in data.questoes:
+        try:
+            nova = QuestionBankFundamental(
+                id=uuid.uuid4(),
+                fonte="SIMIDNAPE_IA",
+                ano=data.ano,
+                etapa=data.etapa,
+                serie=data.serie,
+                componente=data.componente,
+                disciplina=data.disciplina_nome or data.componente,
+                numero=q.get("numero"),
+                tipo=q.get("tipo", "multipla_escolha"),
+                enunciado=q.get("enunciado", ""),
+                alternativas=q.get("alternativas", []),
+                gabarito=q.get("gabarito"),
+                imagem_url=q.get("imagem_url"),
+                imagens_extras=None,
+                habilidades=[q.get("habilidade_codigo")] if q.get("habilidade_codigo") else None,
+                habilidade_codigo=q.get("habilidade_codigo"),
+                referencial=data.referencial,
+                referencias_extras=None,
+                descritores=[q.get("descritor")] if q.get("descritor") else None,
+                dificuldade=q.get("nivel_cognitivo"),
+                origem="gerada_ia",
+                submitted_by=current_user.id,
+                approved=False,
+                anulada=False,
+            )
+            db.add(nova)
+            total += 1
+        except Exception as e:
+            print(f"[Curadoria] Erro ao inserir questão: {e}")
+            continue
+
+    db.commit()
+
+    return EnviarCuradoriaResponse(
+        sucesso=True,
+        total_enviado=total,
+        mensagem=f"{total} questão(ões) enviada(s) para curadoria.",
     )
