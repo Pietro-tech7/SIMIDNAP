@@ -2,7 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const STORAGE_KEY = 'simidnape_cabecalho_padrao';
 
+const TIPOS_ESCOLA = [
+  'ESCOLA MUNICIPAL',
+  'ESCOLA ESTADUAL',
+  'CENTRO EDUCACIONAL',
+  'UNIDADE DE ENSINO',
+  'UNIDADE ESCOLAR',
+  'CENTRO DE EDUCAÇÃO INFANTIL',
+  'CRECHE MUNICIPAL',
+  'ESCOLA PARTICULAR',
+  'OUTRO',
+];
+
 const CABECALHO_INICIAL = {
+  tipo_escola: 'ESCOLA MUNICIPAL',
+  nome_escola: '',
   secretaria: '',
   endereco: '',
   cidade_estado: '',
@@ -14,7 +28,6 @@ const CABECALHO_INICIAL = {
   professor: '',
   logo_prefeitura: '',
   logo_escola: '',
-  turno_padrao: 'manha',
 };
 
 // Helper: converte arquivo para base64
@@ -40,7 +53,6 @@ const EditorCabecalhoProva = ({ onChange, professorNome }) => {
       const salvo = localStorage.getItem(STORAGE_KEY);
       if (salvo) {
         const obj = JSON.parse(salvo);
-        // Preenche professor com o nome do usuário se estiver vazio
         if (!obj.professor && professorNome) obj.professor = professorNome;
         setDados({ ...CABECALHO_INICIAL, ...obj });
         onChange?.({ ...CABECALHO_INICIAL, ...obj });
@@ -48,6 +60,8 @@ const EditorCabecalhoProva = ({ onChange, professorNome }) => {
         const inicial = { ...CABECALHO_INICIAL, professor: professorNome };
         setDados(inicial);
         onChange?.(inicial);
+      } else {
+        onChange?.(CABECALHO_INICIAL);
       }
     } catch {}
   }, [professorNome]);
@@ -92,12 +106,18 @@ const EditorCabecalhoProva = ({ onChange, professorNome }) => {
 
   const limparTudo = () => {
     if (!window.confirm('Limpar todos os campos do cabeçalho?')) return;
-    setDados({ ...CABECALHO_INICIAL, professor: professorNome || '' });
-    onChange?.({ ...CABECALHO_INICIAL, professor: professorNome || '' });
+    const vazio = { ...CABECALHO_INICIAL, professor: professorNome || '' };
+    setDados(vazio);
+    onChange?.(vazio);
     localStorage.removeItem(STORAGE_KEY);
     if (prefeituraRef.current) prefeituraRef.current.value = '';
     if (escolaRef.current) escolaRef.current.value = '';
   };
+
+  // Label final da escola (tipo + nome)
+  const labelEscola = dados.tipo_escola === 'OUTRO'
+    ? (dados.nome_escola || '___________')
+    : `${dados.tipo_escola}: ${dados.nome_escola || '___________'}`;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
@@ -127,7 +147,6 @@ const EditorCabecalhoProva = ({ onChange, professorNome }) => {
 
             {/* Linha 1: logos + texto central */}
             <div className="flex items-start gap-3 mb-3">
-              {/* Logo prefeitura */}
               <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center bg-white border border-gray-200 rounded">
                 {dados.logo_prefeitura ? (
                   <img
@@ -140,7 +159,6 @@ const EditorCabecalhoProva = ({ onChange, professorNome }) => {
                 )}
               </div>
 
-              {/* Texto central */}
               <div className="flex-1 text-center text-xs leading-tight">
                 <p className="font-bold text-gray-900">
                   {dados.secretaria || 'SECRETARIA MUNICIPAL DE EDUCAÇÃO'}
@@ -156,7 +174,6 @@ const EditorCabecalhoProva = ({ onChange, professorNome }) => {
                 </p>
               </div>
 
-              {/* Logo escola */}
               <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center bg-white border border-gray-200 rounded">
                 {dados.logo_escola ? (
                   <img
@@ -170,11 +187,10 @@ const EditorCabecalhoProva = ({ onChange, professorNome }) => {
               </div>
             </div>
 
-            {/* Linha 2: nome da escola */}
+            {/* Linha 2: nome da escola + dados */}
             <div className="border-t border-gray-300 pt-2 text-xs">
               <p className="mb-1">
-                <strong>ESCOLA MUNICIPAL:</strong> {dados.diretor && ''}
-                <span className="ml-1 text-gray-400 italic">(o professor preencherá aqui)</span>
+                <strong>{labelEscola}</strong>
               </p>
               <p className="mb-1">
                 <strong>DIRETOR(A):</strong> {dados.diretor || '___________'}
@@ -196,6 +212,41 @@ const EditorCabecalhoProva = ({ onChange, professorNome }) => {
 
           {/* Formulário */}
           <div className="space-y-4">
+            {/* Escola */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-blue-900 mb-3">🏫 Identificação da Escola</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de Escola *
+                  </label>
+                  <select
+                    value={dados.tipo_escola}
+                    onChange={(e) => atualizar('tipo_escola', e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                  >
+                    {TIPOS_ESCOLA.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nome da Escola *
+                  </label>
+                  <input
+                    type="text"
+                    value={dados.nome_escola}
+                    onChange={(e) => atualizar('nome_escola', e.target.value)}
+                    placeholder="Ex: DOMINGOS ALVES DA COSTA, JOÃO PESSOA, etc."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Este nome aparecerá no cabeçalho da prova. Fica aberto para você digitar.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Upload de logos */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -305,7 +356,7 @@ const EditorCabecalhoProva = ({ onChange, professorNome }) => {
               </div>
             </div>
 
-            {/* Campos de nomes - linha 2 */}
+            {/* Campos de nomes */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Diretor(a)</label>
