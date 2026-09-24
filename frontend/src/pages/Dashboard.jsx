@@ -12,7 +12,8 @@ const Dashboard = () => {
     { path: '/modulo/meu_aluno', name: 'Meu Aluno', icon: '📊', desc: 'Observe, acompanhe e intervenha.', gradient: 'from-green-500 to-emerald-500' },
     { path: '/modulo/ia_para_professor', name: 'IA para Professor', icon: '🤖', desc: 'Use IA para resolver tarefas pedagógicas.', gradient: 'from-orange-500 to-amber-500' },
     { path: '/modulo/praticas_exitosas', name: 'Práticas Exitosas', icon: '🏆', desc: 'Crie, melhore ou documente práticas pedagógicas que transformam.', gradient: 'from-teal-500 to-cyan-600' },
-    { path: '/modulo/banco_questoes', name: 'Banco de Questões', icon: '📚', desc: 'Busque questões oficiais do ENEM e monte simulados.', gradient: 'from-blue-600 to-indigo-700' },
+    { path: '/banco-questoes', name: 'Banco de Questões ENEM', icon: '📚', desc: 'Busque questões oficiais do ENEM e monte simulados.', gradient: 'from-blue-600 to-indigo-700' },
+    { path: '/banco-questoes-fundamental', name: 'Banco de Questões Fundamental', icon: '📖', desc: 'Questões para Educação Infantil e Ensino Fundamental — BNCC, Currículo do Piauí, SAEB e SAEPI.', gradient: 'from-amber-500 to-orange-600' },
   ];
 
   const hoje = new Date().toLocaleDateString('pt-BR', {
