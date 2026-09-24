@@ -34,6 +34,7 @@ const COMPONENTES = [
 
 const AdminQuestionBank = () => {
 const navigate = useNavigate();
+
   // -------- Aba ativa: pendentes ou aprovadas --------
   const [aba, setAba] = useState('pendentes');
 
@@ -232,7 +233,7 @@ const navigate = useNavigate();
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto bg-slate-50 min-h-screen">
       {/* Cabeçalho */}
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-3 mb-2">
           <span className="text-3xl">📚</span>
           <div>
