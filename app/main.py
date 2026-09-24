@@ -6,7 +6,9 @@ from .api.v1 import (
     auth, users, lesson_plans, bncc, reflections, materials,
     subscriptions, pedagogical_cases, admin, announcements,
     banners, images, successful_practices, feedback, questions, landing,
+    exam_papers,
 )
+
 from .core.database import engine, Base
 from .models import (  # noqa: F401
     user,
@@ -80,6 +82,7 @@ app.include_router(successful_practices.router, prefix="/api/v1")
 app.include_router(feedback.router, prefix="/api/v1")
 app.include_router(questions.router, prefix="/api/v1")
 app.include_router(landing.router, prefix="/api/v1")
+app.include_router(exam_papers.router, prefix="/api/v1")
 
 
 @app.get("/health")
