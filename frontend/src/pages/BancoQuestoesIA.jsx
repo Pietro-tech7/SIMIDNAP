@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import LatexText from '../components/LatexText';
+import EditorCabecalhoProva from '../components/EditorCabecalhoProva';
 
 const ETAPAS = [
   { value: 'EF', label: 'Ensino Fundamental' },
@@ -23,7 +24,7 @@ const ANOS_EF = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const DESCRITORES_MATEMATICA = ['D01','D02','D03','D04','D05','D06','D07','D08','D09','D10','D11','D12','D13','D14','D15','D16','D17','D18','D19','D20','D21','D22','D23','D24','D25','D26','D27','D28','D29','D30','D31','D32','D33'];
 const DESCRITORES_LP = ['D01','D02','D03','D04','D05','D06','D07','D08','D09','D10','D11','D12','D13','D14','D15','D16','D17','D18','D19','D20','D21'];
 
-const BATCH_SIZE = 4; // Deve ser igual ao backend
+const BATCH_SIZE = 4;
 
 
 const BancoQuestoesIA = () => {
@@ -31,11 +32,13 @@ const BancoQuestoesIA = () => {
 
   // FORM
   const [titulo, setTitulo] = useState('');
+  const [metaQuestoes, setMetaQuestoes] = useState(10);   // NOVO: meta obrigatória
   const [etapa, setEtapa] = useState('EF');
   const [ano, setAno] = useState(2);
   const [componente, setComponente] = useState('MA');
   const [referencial, setReferencial] = useState('bncc');
   const [incluirIlustracoes, setIncluirIlustracoes] = useState(true);
+  const [cabecalho, setCabecalho] = useState(null);       // NOVO
 
   // HABILIDADES
   const [habilidades, setHabilidades] = useState([
@@ -74,9 +77,14 @@ const BancoQuestoesIA = () => {
       .catch(() => setHabilidadesDisponiveis([]));
   }, [etapa, ano, componente, user?.estado]);
 
-  // CUSTO
-  const totalQuestoes = habilidades.reduce((s, h) => s + (Number(h.quantidade) || 0), 0);
-  const custo = totalQuestoes <= 10 ? 1 : totalQuestoes <= 20 ? 2 : totalQuestoes <= 30 ? 3 : totalQuestoes <= 45 ? 4 : 5;
+  // TOTAIS
+  const totalParaGerar = habilidades.reduce((s, h) => s + (Number(h.quantidade) || 0), 0);
+  const custo = totalParaGerar <= 10 ? 1 : totalParaGerar <= 20 ? 2 : totalParaGerar <= 30 ? 3 : totalParaGerar <= 45 ? 4 : 5;
+
+  // Progresso da meta
+  const pctMeta = metaQuestoes > 0 ? Math.min(Math.round((minhasQuestoes.length / metaQuestoes) * 100), 100) : 0;
+  const metaAtingida = metaQuestoes > 0 && minhasQuestoes.length >= metaQuestoes;
+  const faltam = Math.max(0, metaQuestoes - minhasQuestoes.length);
 
   // FILTRAR HABILIDADES
   const filtrarHabilidades = (busca) => {
@@ -136,21 +144,23 @@ const BancoQuestoesIA = () => {
   };
 
   // ============================================================
-  // GERAR EM LOTES SEQUENCIAIS (NOVO)
+  // GERAR EM LOTES SEQUENCIAIS
   // ============================================================
   const gerarQuestoes = async () => {
     setErro(''); setSucesso('');
+
     if (!titulo.trim()) { setErro('Dê um título à prova.'); return; }
+    if (!metaQuestoes || metaQuestoes < 1) { setErro('Defina a quantidade total da prova.'); return; }
+    if (metaQuestoes > 60) { setErro('Máximo de 60 questões por prova.'); return; }
     for (let i = 0; i < habilidades.length; i++) {
       const h = habilidades[i];
       if (!h.codigo) { setErro(`Habilidade ${i + 1}: selecione um código.`); return; }
       if (!h.quantidade || h.quantidade < 1) { setErro(`Habilidade ${i + 1}: quantidade inválida.`); return; }
     }
-    if (totalQuestoes < 1) { setErro('Adicione ao menos 1 questão.'); return; }
-    if (totalQuestoes > 60) { setErro('Máximo de 60 questões por geração.'); return; }
+    if (totalParaGerar < 1) { setErro('Adicione ao menos 1 questão.'); return; }
 
     setGerando(true);
-    setProgresso({ atual: 0, total: totalQuestoes });
+    setProgresso({ atual: 0, total: totalParaGerar });
 
     const payload = {
       titulo: titulo.trim(),
@@ -175,9 +185,8 @@ const BancoQuestoesIA = () => {
     const questoesAcumuladas = [];
 
     try {
-      // Loop de lotes sequenciais
       let batchStart = 1;
-      while (batchStart <= totalQuestoes) {
+      while (batchStart <= totalParaGerar) {
         const res = await api.post(
           `/question-ia/gerar?batch_start=${batchStart}`,
           payload,
@@ -189,9 +198,7 @@ const BancoQuestoesIA = () => {
             _localId: `pool-${Date.now()}-${batchStart + i}`,
           }));
           questoesAcumuladas.push(...novas);
-          setProgresso({ atual: questoesAcumuladas.length, total: totalQuestoes });
-
-          // Adiciona ao pool incrementalmente (feedback visual)
+          setProgresso({ atual: questoesAcumuladas.length, total: totalParaGerar });
           setPool(prev => [...prev, ...novas]);
         } else {
           throw new Error(res.data?.mensagem || 'A IA não retornou questões.');
@@ -200,13 +207,13 @@ const BancoQuestoesIA = () => {
         batchStart += BATCH_SIZE;
       }
 
-      setSucesso(`${questoesAcumuladas.length} questão(ões) gerada(s). Selecione as que deseja manter abaixo.`);
+      setSucesso(`${questoesAcumuladas.length} questão(ões) gerada(s). Selecione as que deseja manter.`);
       window.dispatchEvent(new CustomEvent('subscription-updated'));
     } catch (err) {
       if (err?.response?.status === 402) {
         setErro('Créditos insuficientes. Faça upgrade do seu plano.');
       } else {
-        setErro(err?.response?.data?.detail || err?.message || 'Erro ao gerar questões. Tente novamente.');
+        setErro(err?.response?.data?.detail || err?.message || 'Erro ao gerar questões.');
       }
     } finally {
       setGerando(false);
@@ -214,7 +221,7 @@ const BancoQuestoesIA = () => {
     }
   };
 
-  // SELEÇÃO DO POOL
+  // SELEÇÃO
   const togglePool = (localId) => {
     setSelecionadas(prev =>
       prev.includes(localId) ? prev.filter(x => x !== localId) : [...prev, localId]
@@ -227,6 +234,13 @@ const BancoQuestoesIA = () => {
   const adicionarSelecionadas = () => {
     if (selecionadas.length === 0) { alert('Selecione ao menos 1 questão.'); return; }
     const novas = pool.filter(q => selecionadas.includes(q._localId));
+
+    if (minhasQuestoes.length + novas.length > metaQuestoes) {
+      if (!window.confirm(
+        `Você está adicionando ${novas.length} questão(ões), mas ainda faltam ${faltam} para a meta de ${metaQuestoes}.\n\nDeseja adicionar todas assim mesmo?`
+      )) return;
+    }
+
     setMinhasQuestoes(prev => [...prev, ...novas]);
     setPool(prev => prev.filter(q => !selecionadas.includes(q._localId)));
     setSelecionadas([]);
@@ -249,12 +263,15 @@ const BancoQuestoesIA = () => {
     setMinhasQuestoes(prev => prev.filter(q => q._localId !== localId));
   };
 
+  // GERAR PDF (bloco futuro)
   const gerarPDF = async () => {
-    if (minhasQuestoes.length === 0) { alert('Você ainda não selecionou questões.'); return; }
+    if (!metaAtingida) {
+      alert(`Ainda faltam ${faltam} questão(ões) para atingir a meta de ${metaQuestoes}.`);
+      return;
+    }
     setSucesso('Funcionalidade de PDF será implementada no próximo bloco.');
   };
 
-  // PROGRESSO (%)
   const pctProgresso = progresso.total > 0
     ? Math.round((progresso.atual / progresso.total) * 100)
     : 0;
@@ -273,14 +290,31 @@ const BancoQuestoesIA = () => {
 
       {/* PASSO 1 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">📋 Passo 1 — Identificação</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">📋 Passo 1 — Identificação da prova</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Título da prova *</label>
             <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)}
               placeholder="Ex: Avaliação de Matemática — Maio/2026"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
           </div>
+
+          {/* NOVO: Meta de questões */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Quantidade total da prova *
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="60"
+              value={metaQuestoes}
+              onChange={(e) => setMetaQuestoes(Number(e.target.value) || 0)}
+              className="w-full border-2 border-purple-300 rounded-lg px-3 py-2 text-sm font-semibold text-purple-700"
+            />
+            <p className="text-xs text-gray-500 mt-1">Quantas questões a prova terá no total?</p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Etapa</label>
             <select value={etapa} onChange={(e) => setEtapa(e.target.value)}
@@ -315,6 +349,12 @@ const BancoQuestoesIA = () => {
         </div>
       </div>
 
+      {/* EDITOR DE CABEÇALHO */}
+      <EditorCabecalhoProva
+        onChange={setCabecalho}
+        professorNome={user?.full_name || ''}
+      />
+
       {/* PASSO 2 — HABILIDADES */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">📚 Passo 2 — Habilidades e Descritores</h2>
@@ -332,7 +372,7 @@ const BancoQuestoesIA = () => {
 
               <div className="mb-3">
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  🔍 Busque por código (EF02MA01) ou por texto ("números")
+                  🔍 Buscar por código (EF02MA01) ou por texto ("números")
                 </label>
                 <input type="text" value={h.busca || ''}
                   onChange={(e) => atualizarHabilidade(index, 'busca', e.target.value)}
@@ -425,18 +465,18 @@ const BancoQuestoesIA = () => {
         </label>
       </div>
 
-      {/* RESUMO E BOTÃO */}
+      {/* RESUMO E BOTÃO GERAR */}
       <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-xl p-6 mb-6 text-white">
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-purple-200">Resumo</p>
-            <p className="text-2xl font-bold">{totalQuestoes} questão(ões)</p>
+            <p className="text-xs uppercase tracking-wide text-purple-200">Gerar mais questões</p>
+            <p className="text-2xl font-bold">{totalParaGerar} questão(ões) neste lote</p>
             <p className="text-sm text-purple-100 mt-1">Custo: <strong>{custo} crédito(s)</strong></p>
             <p className="text-xs text-purple-200 mt-1">
               Gerado em lotes de {BATCH_SIZE} para maior confiabilidade
             </p>
           </div>
-          <button onClick={gerarQuestoes} disabled={gerando || totalQuestoes < 1}
+          <button onClick={gerarQuestoes} disabled={gerando || totalParaGerar < 1}
             className="bg-white text-purple-700 hover:bg-purple-50 disabled:bg-purple-300 disabled:text-white font-bold px-6 py-3 rounded-xl transition">
             {gerando ? `✨ Gerando... (${progresso.atual}/${progresso.total})` : '✨ Gerar Questões com IA'}
           </button>
@@ -456,6 +496,40 @@ const BancoQuestoesIA = () => {
           </div>
         )}
       </div>
+
+      {/* BARRA DE PROGRESSO DA META */}
+      {metaQuestoes > 0 && (
+        <div className={`rounded-xl p-5 mb-6 ${metaAtingida ? 'bg-green-50 border-2 border-green-300' : 'bg-blue-50 border border-blue-200'}`}>
+          <div className="flex justify-between items-center mb-2">
+            <span className={`font-semibold ${metaAtingida ? 'text-green-900' : 'text-blue-900'}`}>
+              {metaAtingida ? '✅ Meta atingida!' : `📋 Progresso da prova`}
+            </span>
+            <span className={`text-lg font-bold ${metaAtingida ? 'text-green-700' : 'text-blue-700'}`}>
+              {minhasQuestoes.length} / {metaQuestoes}
+            </span>
+          </div>
+          <div className="w-full bg-white rounded-full h-3 overflow-hidden border border-gray-200">
+            <div
+              className={`h-full transition-all duration-500 ${metaAtingida ? 'bg-green-500' : 'bg-blue-500'}`}
+              style={{ width: `${pctMeta}%` }}
+            />
+          </div>
+          <p className={`text-xs mt-2 ${metaAtingida ? 'text-green-800' : 'text-blue-800'}`}>
+            {metaAtingida
+              ? 'Você já tem todas as questões. Pode gerar o PDF.'
+              : `Faltam ${faltam} questão(ões). Gere mais ou selecione do pool.`}
+          </p>
+
+          {metaAtingida && (
+            <button
+              onClick={gerarPDF}
+              className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition"
+            >
+              📄 Gerar PDF da Prova
+            </button>
+          )}
+        </div>
+      )}
 
       {erro && <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-6 text-sm">⚠️ {erro}</div>}
       {sucesso && <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 mb-6 text-sm">✅ {sucesso}</div>}
@@ -510,11 +584,11 @@ const BancoQuestoesIA = () => {
                     onChange={() => togglePool(q._localId)}
                     className="mt-1 w-5 h-5 text-teal-600 rounded flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap gap-2 text-xs mb-2">
-                      {q.habilidade_codigo && <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono">{q.habilidade_codigo}</span>}
-                      {q.descritor && <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded">{q.descritor}</span>}
-                      {q.nivel_cognitivo && <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{q.nivel_cognitivo}</span>}
-                    </div>
+                    {q.nivel_cognitivo && (
+                      <div className="flex flex-wrap gap-2 text-xs mb-2">
+                        <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{q.nivel_cognitivo}</span>
+                      </div>
+                    )}
                     <div className="text-sm text-gray-800 mb-2"><LatexText text={q.enunciado} /></div>
                     {q.precisa_ilustracao && q.descricao_ilustracao && (
                       <div className="text-xs text-amber-700 bg-amber-50 rounded p-2 mb-2">
@@ -539,29 +613,23 @@ const BancoQuestoesIA = () => {
         </div>
       )}
 
-      {/* MINHAS QUESTÕES */}
+      {/* MINHAS QUESTÕES — SEM código nem descritor */}
       {minhasQuestoes.length > 0 && (
         <div className="mb-8">
           <div className="bg-teal-600 rounded-xl p-4 mb-4 flex flex-wrap justify-between items-center gap-3">
             <div>
               <h2 className="font-bold text-white">✅ Minhas Questões ({minhasQuestoes.length})</h2>
-              <p className="text-xs text-teal-100 mt-0.5">Revise e organize. Quando estiver pronto, gere o PDF.</p>
+              <p className="text-xs text-teal-100 mt-0.5">Revise e organize. Gere o PDF quando atingir a meta.</p>
             </div>
-            <button onClick={gerarPDF}
-              className="bg-white text-teal-700 hover:bg-teal-50 font-bold px-5 py-2 rounded-lg text-sm">
-              📄 Gerar PDF da Prova
-            </button>
           </div>
 
           <div className="space-y-3">
             {minhasQuestoes.map((q, qi) => (
               <div key={q._localId} className="bg-white border-2 border-teal-500 rounded-xl p-4">
                 <div className="flex justify-between items-start mb-3">
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="bg-teal-100 text-teal-800 px-2 py-0.5 rounded font-semibold">Questão {qi + 1}</span>
-                    {q.habilidade_codigo && <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono">{q.habilidade_codigo}</span>}
-                    {q.descritor && <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded">{q.descritor}</span>}
-                  </div>
+                  <span className="bg-teal-100 text-teal-800 px-2 py-0.5 rounded font-semibold text-xs">
+                    Questão {qi + 1}
+                  </span>
                   <button onClick={() => removerDaMinhas(q._localId)}
                     className="text-xs text-red-600 hover:text-red-800">🗑️ Remover</button>
                 </div>
