@@ -10,6 +10,7 @@ const AdminLayout = () => {
   const menuItems = [
     { path: '/admin', label: 'Dashboard', icon: '📊' },
     { path: '/admin/users', label: 'Usuários', icon: '👥' },
+    { path: '/admin/question-bank', label: 'Banco de Questões', icon: '📚' },
     { path: '/admin/announcements', label: 'Recados', icon: '📢' },
     { path: '/admin/banners', label: 'Banners', icon: '🎨' },
     { path: '/admin/landing', label: 'Landing Page', icon: '🖼️' },

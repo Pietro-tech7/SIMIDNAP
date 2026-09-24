@@ -91,8 +91,11 @@ const Layout = () => {
     if (path === '/modulo/praticas_exitosas') {
       return location.pathname === path || location.pathname.startsWith('/praticas-exitosas');
     }
-    if (path === '/modulo/banco_questoes') {
-      return location.pathname === path || location.pathname.startsWith('/banco-questoes');
+    if (path === '/banco-questoes') {
+      return location.pathname === '/banco-questoes' || location.pathname.startsWith('/modulo/banco_questoes');
+    }
+    if (path === '/banco-questoes-fundamental') {
+      return location.pathname.startsWith('/banco-questoes-fundamental');
     }
     return location.pathname === path;
   };

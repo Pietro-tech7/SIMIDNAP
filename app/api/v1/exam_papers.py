@@ -69,6 +69,10 @@ def _aplicar_filtros(
     busca: Optional[str],
     aprovadas_apenas: bool,
 ):
+    # Motor 8 é EXCLUSIVO para Educação Infantil e Ensino Fundamental.
+    # Questões do ENEM pertencem ao Motor 7 — excluímos aqui.
+    query = query.filter(QuestionBank.fonte != "ENEM")
+
     if etapa:
         query = query.filter(QuestionBank.etapa == etapa)
     if ano:
@@ -101,6 +105,7 @@ def stats(
 ):
     """Estatísticas do banco de questões (contagens agregadas)."""
     base = db.query(QuestionBank).filter(QuestionBank.approved == True)
+    base = base.filter(QuestionBank.fonte != "ENEM")
 
     total = base.count()
 
@@ -150,6 +155,7 @@ def habilidades_disponiveis(
     ).filter(
         QuestionBank.approved == True,
         QuestionBank.habilidade_codigo.isnot(None),
+        QuestionBank.fonte != "ENEM",
     )
 
     if etapa:

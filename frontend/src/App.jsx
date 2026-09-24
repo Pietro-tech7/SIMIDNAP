@@ -14,7 +14,7 @@ import GeradorMateriais from './pages/GeradorMateriais';
 import MeuAluno from './pages/MeuAluno';
 import PraticasExitosas from './pages/PraticasExitosas';
 import BancoQuestoes from './pages/BancoQuestoes';
-import ProvasProntas from './pages/ProvasProntas';
+import BancoQuestoesFundamental from './pages/BancoQuestoesFundamental';
 import MinhaAssinatura from './pages/MinhaAssinatura';
 import Perfil from './pages/Perfil';
 import AdminDashboard from './pages/AdminDashboard';
@@ -55,7 +55,6 @@ const SuperuserRoute = ({ children }) => {
   return children;
 };
 
-// Página inicial: se logado vai para dashboard, senão mostra a landing
 const HomeRoute = () => {
   const { user, loading } = useAuth();
   if (loading) {
@@ -72,27 +71,14 @@ const HomeRoute = () => {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Página inicial (landing pública) */}
       <Route path="/" element={<HomeRoute />} />
-
-      {/* Páginas públicas (legais) */}
       <Route path="/termos" element={<Termos />} />
       <Route path="/privacidade" element={<Privacidade />} />
-
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-
-      {/* Login separado do Super Admin */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
-      {/* Área do Professor */}
-      <Route
-        element={
-          <PrivateRoute>
-            <Layout />
-          </PrivateRoute>
-        }
-      >
+      <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/modulo/:modulo" element={<ModuloIntro />} />
         <Route path="/neuroaula" element={<NeuroAula />} />
@@ -101,20 +87,13 @@ function AppRoutes() {
         <Route path="/gerador-materiais" element={<GeradorMateriais />} />
         <Route path="/praticas-exitosas" element={<PraticasExitosas />} />
         <Route path="/banco-questoes" element={<BancoQuestoes />} />
-        <Route path="/provas-prontas" element={<ProvasProntas />} />
+        <Route path="/banco-questoes-fundamental" element={<BancoQuestoesFundamental />} />
         <Route path="/minha-assinatura" element={<MinhaAssinatura />} />
         <Route path="/meu-aluno" element={<MeuAluno />} />
         <Route path="/perfil" element={<Perfil />} />
       </Route>
 
-      {/* Área do Super Admin (layout escuro próprio) */}
-      <Route
-        element={
-          <SuperuserRoute>
-            <AdminLayout />
-          </SuperuserRoute>
-        }
-      >
+      <Route element={<SuperuserRoute><AdminLayout /></SuperuserRoute>}>
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
