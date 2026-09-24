@@ -22,6 +22,7 @@ from .models import (  # noqa: F401
     landing_config,
     landing_asset,
     curriculo_piaui_skill,
+    exam_paper,
 )
 
 
