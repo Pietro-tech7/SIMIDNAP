@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import LatexText from '../components/LatexText';
 
@@ -32,6 +33,7 @@ const COMPONENTES = [
 
 
 const AdminQuestionBank = () => {
+const navigate = useNavigate();
   // -------- Aba ativa: pendentes ou aprovadas --------
   const [aba, setAba] = useState('pendentes');
 
@@ -230,7 +232,7 @@ const AdminQuestionBank = () => {
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto bg-slate-50 min-h-screen">
       {/* Cabeçalho */}
-      <div className="mb-6">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-3 mb-2">
           <span className="text-3xl">📚</span>
           <div>
@@ -240,6 +242,13 @@ const AdminQuestionBank = () => {
             </p>
           </div>
         </div>
+
+        <button
+          onClick={() => navigate('/admin/question-bank/criar')}
+          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-lg text-sm shadow-md transition"
+        >
+          ➕ Nova Questão Manual
+        </button>
       </div>
 
       {/* Stats */}
