@@ -1,21 +1,21 @@
 """
-Rotas do Motor 8 — Banco de Questões Curado.
+Rotas do Motor 8 — Banco de Questões Fundamental (Curado).
 
-Este router é independente do `/questions` (Motor 7). Adiciona filtros
-estendidos e endpoints de estatística/habilidades, sem tocar em nada
-que já existe.
+Este router é INDEPENDENTE do `/questions` (Motor 7 — ENEM).
+Usa a tabela `question_bank_fundamental`, exclusiva para EI + EF.
 
 Prefix: /question-bank
 """
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct
+from sqlalchemy import func
 from typing import Optional, List
 import math
 
 from ...core.database import get_db
 from ...models.user import User
-from ...models.question_bank import QuestionBank
+from ...models.question_bank_fundamental import QuestionBankFundamental
+from ...models.exam_paper import ExamPaper
 from ...core.security import decode_token
 from ...schemas.exam_paper import (
     QuestionStats,
@@ -30,13 +30,12 @@ from ...schemas.exam_paper import (
     ExamPaperListItem,
     ExamPaperListResponse,
 )
-from ...models.exam_paper import ExamPaper
 
 router = APIRouter(prefix="/question-bank", tags=["question-bank"])
 
 
 # ============================================================
-# AUTENTICAÇÃO (mesma lógica dos outros routers)
+# AUTENTICAÇÃO
 # ============================================================
 def get_current_user(authorization: str = Header(...), db: Session = Depends(get_db)):
     if not authorization.startswith("Bearer "):
@@ -69,29 +68,26 @@ def _aplicar_filtros(
     busca: Optional[str],
     aprovadas_apenas: bool,
 ):
-    # Motor 8 é EXCLUSIVO para Educação Infantil e Ensino Fundamental.
-    # Questões do ENEM pertencem ao Motor 7 — excluímos aqui.
-    query = query.filter(QuestionBank.fonte != "ENEM")
-
     if etapa:
-        query = query.filter(QuestionBank.etapa == etapa)
+        query = query.filter(QuestionBankFundamental.etapa == etapa)
     if ano:
-        query = query.filter(QuestionBank.ano == ano)
+        query = query.filter(QuestionBankFundamental.ano == ano)
     if serie:
-        query = query.filter(QuestionBank.serie == serie)
+        query = query.filter(QuestionBankFundamental.serie == serie)
     if componente:
-        query = query.filter(QuestionBank.disciplina.ilike(f"%{componente}%"))
+        query = query.filter(QuestionBankFundamental.componente == componente)
     if referencial:
-        query = query.filter(QuestionBank.referencial == referencial)
+        query = query.filter(QuestionBankFundamental.referencial == referencial)
     if habilidade_codigo:
-        query = query.filter(QuestionBank.habilidade_codigo == habilidade_codigo)
+        query = query.filter(QuestionBankFundamental.habilidade_codigo == habilidade_codigo)
     if origem:
-        query = query.filter(QuestionBank.origem == origem)
+        query = query.filter(QuestionBankFundamental.origem == origem)
     if busca:
         termo = f"%{busca.lower()}%"
-        query = query.filter(func.lower(QuestionBank.enunciado).like(termo))
+        query = query.filter(func.lower(QuestionBankFundamental.enunciado).like(termo))
     if aprovadas_apenas:
-        query = query.filter(QuestionBank.approved == True)
+        query = query.filter(QuestionBankFundamental.approved == True)
+    query = query.filter(QuestionBankFundamental.anulada == False)
     return query
 
 
@@ -103,16 +99,17 @@ def stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Estatísticas do banco de questões (contagens agregadas)."""
-    base = db.query(QuestionBank).filter(QuestionBank.approved == True)
-    base = base.filter(QuestionBank.fonte != "ENEM")
-
+    """Estatísticas do banco de questões (Motor 8)."""
+    base = db.query(QuestionBankFundamental).filter(
+        QuestionBankFundamental.approved == True,
+        QuestionBankFundamental.anulada == False,
+    )
     total = base.count()
 
     def agrupar(campo):
         rows = (
-            db.query(campo, func.count(QuestionBank.id))
-            .filter(QuestionBank.approved == True)
+            db.query(campo, func.count(QuestionBankFundamental.id))
+            .filter(QuestionBankFundamental.approved == True)
             .filter(campo.isnot(None))
             .group_by(campo)
             .all()
@@ -121,11 +118,11 @@ def stats(
 
     return QuestionStats(
         total=total,
-        por_componente=agrupar(QuestionBank.disciplina),
-        por_ano=agrupar(QuestionBank.ano),
-        por_etapa=agrupar(QuestionBank.etapa),
-        por_referencial=agrupar(QuestionBank.referencial),
-        por_origem=agrupar(QuestionBank.origem),
+        por_componente=agrupar(QuestionBankFundamental.componente),
+        por_ano=agrupar(QuestionBankFundamental.ano),
+        por_etapa=agrupar(QuestionBankFundamental.etapa),
+        por_referencial=agrupar(QuestionBankFundamental.referencial),
+        por_origem=agrupar(QuestionBankFundamental.origem),
     )
 
 
@@ -141,38 +138,34 @@ def habilidades_disponiveis(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Lista habilidades (códigos) que possuem questões no banco.
-    Útil para o professor filtrar por habilidade específica.
-    """
+    """Lista habilidades (códigos) que possuem questões no banco (Motor 8)."""
     query = db.query(
-        QuestionBank.habilidade_codigo,
-        func.count(QuestionBank.id).label("qtd"),
-        func.max(QuestionBank.referencial).label("ref"),
-        func.max(QuestionBank.componente).label("comp"),
-        func.max(QuestionBank.ano).label("ano_max"),
-        func.max(QuestionBank.etapa).label("etapa_max"),
+        QuestionBankFundamental.habilidade_codigo,
+        func.count(QuestionBankFundamental.id).label("qtd"),
+        func.max(QuestionBankFundamental.referencial).label("ref"),
+        func.max(QuestionBankFundamental.componente).label("comp"),
+        func.max(QuestionBankFundamental.ano).label("ano_max"),
+        func.max(QuestionBankFundamental.etapa).label("etapa_max"),
     ).filter(
-        QuestionBank.approved == True,
-        QuestionBank.habilidade_codigo.isnot(None),
-        QuestionBank.fonte != "ENEM",
+        QuestionBankFundamental.approved == True,
+        QuestionBankFundamental.anulada == False,
+        QuestionBankFundamental.habilidade_codigo.isnot(None),
     )
 
     if etapa:
-        query = query.filter(QuestionBank.etapa == etapa)
+        query = query.filter(QuestionBankFundamental.etapa == etapa)
     if ano:
-        query = query.filter(QuestionBank.ano == ano)
+        query = query.filter(QuestionBankFundamental.ano == ano)
     if componente:
-        query = query.filter(QuestionBank.disciplina.ilike(f"%{componente}%"))
+        query = query.filter(QuestionBankFundamental.componente == componente)
 
-    query = query.group_by(QuestionBank.habilidade_codigo)
-
+    query = query.group_by(QuestionBankFundamental.habilidade_codigo)
     rows = query.limit(limit).all()
 
     items = [
         HabilidadeDisponivel(
             codigo=r[0],
-            texto=None,  # o texto é preenchido pelo frontend se necessário (via BNCC API)
+            texto=None,
             componente=r[3],
             ano=r[4],
             etapa=r[5],
@@ -204,11 +197,8 @@ def search_extended(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Busca questões com filtros estendidos (Motor 8).
-    Retorna resultados paginados com preview do enunciado.
-    """
-    query = db.query(QuestionBank)
+    """Busca questões com filtros (Motor 8)."""
+    query = db.query(QuestionBankFundamental)
     query = _aplicar_filtros(
         query,
         etapa=etapa,
@@ -227,7 +217,7 @@ def search_extended(
     offset = (page - 1) * per_page
 
     itens_raw = (
-        query.order_by(QuestionBank.created_at.desc())
+        query.order_by(QuestionBankFundamental.created_at.desc())
         .offset(offset)
         .limit(per_page)
         .all()
@@ -242,11 +232,11 @@ def search_extended(
 
         itens.append(QuestionListItemExt(
             id=q.id,
-            fonte=q.fonte,
+            fonte=q.fonte or "",
             ano=q.ano,
             etapa=q.etapa,
             serie=q.serie,
-            componente=q.componente if hasattr(q, "componente") else None,
+            componente=q.componente,
             disciplina=q.disciplina,
             habilidade_codigo=q.habilidade_codigo,
             referencial=q.referencial,
@@ -266,7 +256,7 @@ def search_extended(
 
 
 # ============================================================
-# CRUD DE PROVAS (Bloco 3.2)
+# CRUD DE PROVAS
 # ============================================================
 @router.post("/exam-papers", response_model=ExamPaperOut, status_code=201)
 def criar_prova(
@@ -274,7 +264,6 @@ def criar_prova(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cria uma nova prova montada."""
     if data.modo not in ("curado", "ia_gerada"):
         raise HTTPException(status_code=400, detail="Modo deve ser 'curado' ou 'ia_gerada'.")
 
@@ -308,7 +297,6 @@ def listar_provas(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Lista provas do professor (paginado)."""
     query = db.query(ExamPaper).filter(ExamPaper.user_id == current_user.id)
     if modo:
         query = query.filter(ExamPaper.modo == modo)
@@ -339,7 +327,6 @@ def obter_prova(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Retorna uma prova completa (só do próprio professor)."""
     prova = (
         db.query(ExamPaper)
         .filter(ExamPaper.id == paper_id, ExamPaper.user_id == current_user.id)
@@ -357,7 +344,6 @@ def atualizar_prova(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Atualiza uma prova existente."""
     prova = (
         db.query(ExamPaper)
         .filter(ExamPaper.id == paper_id, ExamPaper.user_id == current_user.id)
@@ -388,7 +374,6 @@ def excluir_prova(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Exclui uma prova (só do próprio professor)."""
     prova = (
         db.query(ExamPaper)
         .filter(ExamPaper.id == paper_id, ExamPaper.user_id == current_user.id)
