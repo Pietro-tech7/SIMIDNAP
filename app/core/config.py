@@ -5,8 +5,13 @@ load_dotenv()
 
 
 class Settings:
-    # Banco de dados
-    DATABASE_URL: str = os.getenv("DATABASE_URL")
+    # Banco de dados — força o driver psycopg v3
+    _raw_url: str = os.getenv("DATABASE_URL", "")
+    DATABASE_URL: str = (
+        _raw_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        if _raw_url.startswith("postgresql://")
+        else _raw_url
+    )
 
     # Autenticação
     SECRET_KEY: str = os.getenv("SECRET_KEY")
