@@ -192,17 +192,17 @@ const BancoQuestoesIA = () => {
       .catch(() => setUnidadesTematicas([]));
   }, [componente, etapa, ano]);
 
-  // Carrega habilidades quando componente/ano/etapa mudam (complementar)
+  // Carrega habilidades quando componente/ano/etapa mudam
   useEffect(() => {
     if (!componente) { setHabilidadesDisponiveis([]); return; }
-    const params = { etapa, componente };
+    const params = { componente };
+    if (etapa) params.etapa = etapa;
     if (etapa === 'EF' && ano) params.ano = ano;
-    if (user?.estado) params.estado = user.estado;
 
-    api.get('/bncc/habilidades', { params })
-      .then(res => setHabilidadesDisponiveis(res.data || []))
+    api.get('/bncc-estrutura/habilidades', { params })
+      .then(res => setHabilidadesDisponiveis(res.data?.habilidades || []))
       .catch(() => setHabilidadesDisponiveis([]));
-  }, [etapa, ano, componente, user?.estado]);
+  }, [etapa, ano, componente]);
 
   const totalParaGerar = habilidades.reduce((s, h) => s + (Number(h.quantidade) || 0), 0);
   const custo = totalParaGerar <= 10 ? 1 : totalParaGerar <= 20 ? 2 : totalParaGerar <= 30 ? 3 : totalParaGerar <= 45 ? 4 : 5;
@@ -701,54 +701,106 @@ const BancoQuestoesIA = () => {
               )}
 
               {/* 3. Habilidade (só aparece após escolher objeto) */}
-              {h.objeto_conhecimento && (
-                <>
-                  <div className="mb-3">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      🔍 Buscar habilidade por código ou texto
-                    </label>
-                    <input type="text" value={h.busca || ''}
-                      onChange={(e) => atualizarHabilidade(index, 'busca', e.target.value)}
-                      placeholder="Digite para filtrar (ex: EF02MA01 ou 'números')"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white" />
-                  </div>
+              {h.objeto_conhecimento && (() => {
+                // Filtra habilidades deste objeto
+                const doObjeto = habilidadesDisponiveis.filter(hab => {
+                  const matchUnidade = !h.unidade_tematica || hab.unidade_tematica === h.unidade_tematica;
+                  const matchObjeto = !h.objeto_conhecimento || hab.objeto_conhecimento === h.objeto_conhecimento;
+                  return matchUnidade && matchObjeto;
+                });
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <div>
+                // Filtro local pela busca (opcional)
+                const termo = (h.busca || '').toLowerCase().trim();
+                const comBusca = termo
+                  ? doObjeto.filter(hab =>
+                      (hab.codigo || '').toLowerCase().includes(termo) ||
+                      (hab.texto || '').toLowerCase().includes(termo)
+                    )
+                  : doObjeto;
+
+                return (
+                  <>
+                    {/* Campo de busca (opcional) */}
+                    <div className="mb-3">
                       <label className="block text-xs font-medium text-gray-700 mb-1">
-                        ✨ Habilidade *
+                        🔍 Buscar habilidade (opcional)
                       </label>
-                      <select value={h.codigo}
-                        onChange={(e) => atualizarHabilidade(index, 'codigo', e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-                        <option value="">Selecione a habilidade...</option>
-                        {habilidadesDisponiveis
-                          .filter(hab => {
-                            // Filtra pela unidade e objeto escolhidos
-                            const matchUnidade = !h.unidade_tematica || hab.unidade_tematica === h.unidade_tematica;
-                            const matchObjeto = !h.objeto_conhecimento || hab.objeto_conhecimento === h.objeto_conhecimento;
-                            const matchBusca = !h.busca || (
-                              (hab.codigo || '').toLowerCase().includes((h.busca || '').toLowerCase()) ||
-                              (hab.texto || '').toLowerCase().includes((h.busca || '').toLowerCase())
-                            );
-                            return matchUnidade && matchObjeto && matchBusca;
-                          })
-                          .map(hab => (
+                      <input
+                        type="text"
+                        value={h.busca || ''}
+                        onChange={(e) => atualizarHabilidade(index, 'busca', e.target.value)}
+                        placeholder="Digite o código (EF02MA01) ou palavra-chave..."
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                      />
+
+                      {/* Lista de sugestões (só quando digitar) */}
+                      {termo && (
+                        <div className="mt-1 max-h-48 overflow-y-auto border border-blue-200 rounded-lg bg-blue-50">
+                          {comBusca.length === 0 ? (
+                            <div className="p-3 text-xs text-gray-500 italic">
+                              Nenhuma habilidade corresponde a "{h.busca}"
+                            </div>
+                          ) : (
+                            comBusca.slice(0, 20).map(hab => (
+                              <button
+                                key={hab.codigo}
+                                type="button"
+                                onClick={() => {
+                                  atualizarHabilidade(index, 'codigo', hab.codigo);
+                                  atualizarHabilidade(index, 'busca', '');
+                                }}
+                                className="w-full text-left px-3 py-2 text-xs hover:bg-blue-100 border-b border-blue-100 last:border-0 transition"
+                              >
+                                <strong className="font-mono text-blue-700">{hab.codigo}</strong>
+                                <span className="text-gray-700 ml-2">
+                                  {(hab.texto || '').slice(0, 80)}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dropdown de habilidades (independente da busca) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          ✨ Habilidade * ({doObjeto.length} disponíveis)
+                        </label>
+                        <select
+                          value={h.codigo}
+                          onChange={(e) => atualizarHabilidade(index, 'codigo', e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                        >
+                          <option value="">Clique aqui para escolher...</option>
+                          {doObjeto.map(hab => (
                             <option key={hab.codigo} value={hab.codigo}>
                               {hab.codigo} — {(hab.texto || '').slice(0, 60)}
                             </option>
                           ))}
-                      </select>
+                        </select>
+                        {doObjeto.length === 0 && (
+                          <p className="text-xs text-amber-700 mt-1">
+                            ⚠️ Nenhuma habilidade cadastrada para este objeto ainda.
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Quantidade *</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={h.quantidade}
+                          onChange={(e) => atualizarHabilidade(index, 'quantidade', e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Quantidade *</label>
-                      <input type="number" min="1" max="20" value={h.quantidade}
-                        onChange={(e) => atualizarHabilidade(index, 'quantidade', e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                    </div>
-                  </div>
-                </>
-              )}
+                  </>
+                );
+              })()}
 
               {/* Info da habilidade escolhida */}
               {h.texto && (
