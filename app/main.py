@@ -26,6 +26,7 @@ from .models import (  # noqa: F401
     curriculo_piaui_skill,
     exam_paper,
     question_bank_fundamental,
+    bncc_estrutura,
 )
 
 
