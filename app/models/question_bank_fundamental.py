@@ -18,12 +18,21 @@ class QuestionBankFundamental(Base):
     # ============================================================
     # IDENTIFICAÇÃO DA PROVA
     # ============================================================
-    fonte = Column(String, nullable=True, index=True)         # "SAEB" | "SAEPI" | "PIAUI" | "SIMIDNAPE" | "IA"
+    fonte = Column(String, nullable=True, index=True)         # "SAEB" | "SAEPI" | "PIAUI" | "SIMIDNAPE" | "IA" | "SIMIDNAPE_ADMIN"
     ano = Column(Integer, nullable=True, index=True)          # 1 a 9 (ou NULL para EI)
     etapa = Column(String(2), nullable=False, index=True)     # "EI" | "EF"
     serie = Column(String(50), nullable=True, index=True)     # "1º ano", "5º ano"
     componente = Column(String(10), nullable=True, index=True)  # "MA", "LP", "HI", etc.
     disciplina = Column(String(100), nullable=True, index=True)  # "Matemática"
+
+    # ============================================================
+    # ESTRUTURA CURRICULAR (NOVO — Bloco C)
+    # ============================================================
+    unidade_tematica = Column(String(200), nullable=True, index=True)
+    # Ex: 'Números', 'Geometria', 'Identidades e alteridades'
+
+    objeto_conhecimento = Column(String(300), nullable=True, index=True)
+    # Ex: 'Sistema de numeração decimal', 'O eu, o outro e o nós'
 
     # ============================================================
     # IDENTIFICAÇÃO DA QUESTÃO
@@ -55,7 +64,7 @@ class QuestionBankFundamental(Base):
     # ============================================================
     origem = Column(String(20), nullable=False, default="manual", index=True)  # "manual" | "importada" | "gerada_ia" | "colaborador"
     submitted_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    approved = Column(Boolean, nullable=False, default=True, index=True)  # admin pode criar já aprovado
+    approved = Column(Boolean, nullable=False, default=True, index=True)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
     anulada = Column(Boolean, default=False, nullable=False)
@@ -74,4 +83,6 @@ class QuestionBankFundamental(Base):
         Index("ix_qbf_componente", "componente"),
         Index("ix_qbf_referencial", "referencial"),
         Index("ix_qbf_approved_origem", "approved", "origem"),
+        Index("ix_qbf_unidade", "componente", "ano", "unidade_tematica"),
+        Index("ix_qbf_objeto", "componente", "ano", "unidade_tematica", "objeto_conhecimento"),
     )
