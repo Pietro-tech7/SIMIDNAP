@@ -53,11 +53,23 @@ const BancoQuestoesIA = () => {
   const [cabecalho, setCabecalho] = useState(null);
 
   const [habilidades, setHabilidades] = useState([
-    { codigo: '', texto: '', descritores: [], nivel_cognitivo: 'Aplicar', dificuldade: '', quantidade: 2, busca: '' },
+    {
+      unidade_tematica: '',
+      objeto_conhecimento: '',
+      codigo: '',
+      texto: '',
+      descritores: [],
+      nivel_cognitivo: 'Aplicar',
+      dificuldade: '',
+      quantidade: 2,
+      busca: '',
+    },
   ]);
 
   const [componentes, setComponentes] = useState([]);
   const [habilidadesDisponiveis, setHabilidadesDisponiveis] = useState([]);
+  const [unidadesTematicas, setUnidadesTematicas] = useState([]);
+  const [objetosPorUnidade, setObjetosPorUnidade] = useState({});
 
   const [gerando, setGerando] = useState(false);
   const [progresso, setProgresso] = useState({ atual: 0, total: 0 });
@@ -142,7 +154,17 @@ const BancoQuestoesIA = () => {
     setReferencial('bncc');
     setIncluirIlustracoes(true);
     setDificuldadePadrao('');
-    setHabilidades([{ codigo: '', texto: '', descritores: [], nivel_cognitivo: 'Aplicar', dificuldade: '', quantidade: 2, busca: '' }]);
+    setHabilidades([{
+      unidade_tematica: '',
+      objeto_conhecimento: '',
+      codigo: '',
+      texto: '',
+      descritores: [],
+      nivel_cognitivo: 'Aplicar',
+      dificuldade: '',
+      quantidade: 2,
+      busca: '',
+    }]);
     setPool([]);
     setMinhasQuestoes([]);
     setSelecionadas([]);
@@ -158,6 +180,19 @@ const BancoQuestoesIA = () => {
       .catch(() => setComponentes([]));
   }, [etapa]);
 
+  // Carrega unidades temáticas quando componente/ano/etapa mudam
+  useEffect(() => {
+    if (!componente) { setUnidadesTematicas([]); return; }
+    const params = { componente };
+    if (etapa) params.etapa = etapa;
+    if (etapa === 'EF' && ano) params.ano = ano;
+
+    api.get('/bncc-estrutura/unidades-tematicas', { params })
+      .then(res => setUnidadesTematicas(res.data?.unidades || []))
+      .catch(() => setUnidadesTematicas([]));
+  }, [componente, etapa, ano]);
+
+  // Carrega habilidades quando componente/ano/etapa mudam (complementar)
   useEffect(() => {
     if (!componente) { setHabilidadesDisponiveis([]); return; }
     const params = { etapa, componente };
@@ -186,7 +221,17 @@ const BancoQuestoesIA = () => {
   };
 
   const adicionarHabilidade = () => {
-    setHabilidades(prev => [...prev, { codigo: '', texto: '', descritores: [], nivel_cognitivo: 'Aplicar', dificuldade: '', quantidade: 1, busca: '' }]);
+    setHabilidades(prev => [...prev, {
+      unidade_tematica: '',
+      objeto_conhecimento: '',
+      codigo: '',
+      texto: '',
+      descritores: [],
+      nivel_cognitivo: 'Aplicar',
+      dificuldade: '',
+      quantidade: 1,
+      busca: '',
+    }]);
   };
 
   const removerHabilidade = (index) => {
@@ -198,6 +243,26 @@ const BancoQuestoesIA = () => {
     setHabilidades(prev => prev.map((h, i) => {
       if (i !== index) return h;
       const nova = { ...h, [campo]: valor };
+
+      // Quando escolhe unidade, carrega os objetos
+      if (campo === 'unidade_tematica') {
+        nova.objeto_conhecimento = '';
+        nova.codigo = '';
+        nova.texto = '';
+        nova.complemento_pi = null;
+        nova.descritores = [];
+        carregarObjetos(valor);
+      }
+
+      // Quando escolhe objeto, limpa a habilidade
+      if (campo === 'objeto_conhecimento') {
+        nova.codigo = '';
+        nova.texto = '';
+        nova.complemento_pi = null;
+        nova.descritores = [];
+      }
+
+      // Quando escolhe código, preenche o texto
       if (campo === 'codigo') {
         const hab = habilidadesDisponiveis.find(x => x.codigo === valor);
         if (hab) {
@@ -205,6 +270,7 @@ const BancoQuestoesIA = () => {
           nova.complemento_pi = (hab.complementos_pi && hab.complementos_pi[0]?.texto) || null;
         }
       }
+
       return nova;
     }));
   };
@@ -218,6 +284,23 @@ const BancoQuestoesIA = () => {
         descritores: lista.includes(descritor) ? lista.filter(d => d !== descritor) : [...lista, descritor],
       };
     }));
+  };
+
+  // Carrega objetos de conhecimento de uma unidade (com cache por unidade)
+  const carregarObjetos = async (unidade) => {
+    if (!unidade) return;
+    if (objetosPorUnidade[unidade]) return; // já está em cache
+
+    try {
+      const params = { componente, unidade_tematica: unidade };
+      if (etapa) params.etapa = etapa;
+      if (etapa === 'EF' && ano) params.ano = ano;
+
+      const res = await api.get('/bncc-estrutura/objetos-conhecimento', { params });
+      setObjetosPorUnidade(prev => ({ ...prev, [unidade]: res.data?.objetos || [] }));
+    } catch {
+      setObjetosPorUnidade(prev => ({ ...prev, [unidade]: [] }));
+    }
   };
 
   const descritoresDisponiveis = () => {
@@ -257,6 +340,8 @@ const BancoQuestoesIA = () => {
         texto: h.texto,
         complemento_pi: h.complemento_pi || null,
         descritores: h.descritores || [],
+        unidade_tematica: h.unidade_tematica || null,
+        objeto_conhecimento: h.objeto_conhecimento || null,
         nivel_cognitivo: h.nivel_cognitivo,
         dificuldade: h.dificuldade || null,
         quantidade: Number(h.quantidade),
@@ -410,6 +495,8 @@ const BancoQuestoesIA = () => {
           alternativas: q.alternativas,
           gabarito: q.gabarito,
           habilidade_codigo: q.habilidade_codigo,
+          unidade_tematica: q.unidade_tematica,
+          objeto_conhecimento: q.objeto_conhecimento,
           descritor: q.descritor,
           nivel_cognitivo: q.nivel_cognitivo,
           dificuldade: q.dificuldade || dificuldadePadrao || null,
@@ -581,40 +668,89 @@ const BancoQuestoesIA = () => {
                 )}
               </div>
 
+              {/* 1. Unidade Temática */}
               <div className="mb-3">
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  🔍 Buscar por código (EF02MA01) ou por texto ("números")
+                  📖 Unidade Temática ({unidadesTematicas.length} disponíveis)
                 </label>
-                <input type="text" value={h.busca || ''}
-                  onChange={(e) => atualizarHabilidade(index, 'busca', e.target.value)}
-                  placeholder="Digite para filtrar as habilidades..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white" />
+                <select value={h.unidade_tematica || ''}
+                  onChange={(e) => atualizarHabilidade(index, 'unidade_tematica', e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                  <option value="">Selecione a unidade temática...</option>
+                  {unidadesTematicas.map(u => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                <div>
+              {/* 2. Objeto de Conhecimento */}
+              {h.unidade_tematica && (
+                <div className="mb-3">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Código da habilidade * ({filtrarHabilidades(h.busca).length} disponíveis)
+                    🎯 Objeto de Conhecimento ({(objetosPorUnidade[h.unidade_tematica] || []).length} disponíveis)
                   </label>
-                  <select value={h.codigo}
-                    onChange={(e) => atualizarHabilidade(index, 'codigo', e.target.value)}
+                  <select value={h.objeto_conhecimento || ''}
+                    onChange={(e) => atualizarHabilidade(index, 'objeto_conhecimento', e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-                    <option value="">Selecione...</option>
-                    {filtrarHabilidades(h.busca).map(hab => (
-                      <option key={hab.codigo} value={hab.codigo}>
-                        {hab.codigo} — {(hab.texto || '').slice(0, 60)}
-                      </option>
+                    <option value="">Selecione o objeto de conhecimento...</option>
+                    {(objetosPorUnidade[h.unidade_tematica] || []).map(o => (
+                      <option key={o} value={o}>{o}</option>
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Quantidade *</label>
-                  <input type="number" min="1" max="20" value={h.quantidade}
-                    onChange={(e) => atualizarHabilidade(index, 'quantidade', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                </div>
-              </div>
+              )}
 
+              {/* 3. Habilidade (só aparece após escolher objeto) */}
+              {h.objeto_conhecimento && (
+                <>
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      🔍 Buscar habilidade por código ou texto
+                    </label>
+                    <input type="text" value={h.busca || ''}
+                      onChange={(e) => atualizarHabilidade(index, 'busca', e.target.value)}
+                      placeholder="Digite para filtrar (ex: EF02MA01 ou 'números')"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        ✨ Habilidade *
+                      </label>
+                      <select value={h.codigo}
+                        onChange={(e) => atualizarHabilidade(index, 'codigo', e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                        <option value="">Selecione a habilidade...</option>
+                        {habilidadesDisponiveis
+                          .filter(hab => {
+                            // Filtra pela unidade e objeto escolhidos
+                            const matchUnidade = !h.unidade_tematica || hab.unidade_tematica === h.unidade_tematica;
+                            const matchObjeto = !h.objeto_conhecimento || hab.objeto_conhecimento === h.objeto_conhecimento;
+                            const matchBusca = !h.busca || (
+                              (hab.codigo || '').toLowerCase().includes((h.busca || '').toLowerCase()) ||
+                              (hab.texto || '').toLowerCase().includes((h.busca || '').toLowerCase())
+                            );
+                            return matchUnidade && matchObjeto && matchBusca;
+                          })
+                          .map(hab => (
+                            <option key={hab.codigo} value={hab.codigo}>
+                              {hab.codigo} — {(hab.texto || '').slice(0, 60)}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Quantidade *</label>
+                      <input type="number" min="1" max="20" value={h.quantidade}
+                        onChange={(e) => atualizarHabilidade(index, 'quantidade', e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Info da habilidade escolhida */}
               {h.texto && (
                 <div className="text-xs text-gray-600 bg-white rounded p-2 mb-3 border border-gray-100">
                   <strong>Texto:</strong> {h.texto}
@@ -626,46 +762,49 @@ const BancoQuestoesIA = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Nível cognitivo (Bloom)</label>
-                  <select value={h.nivel_cognitivo}
-                    onChange={(e) => atualizarHabilidade(index, 'nivel_cognitivo', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-                    {NIVEIS_BLOOM.map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Dificuldade desta habilidade</label>
-                  <select value={h.dificuldade || ''}
-                    onChange={(e) => atualizarHabilidade(index, 'dificuldade', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-                    <option value="">Usar padrão</option>
-                    <option value="facil">🟢 Fácil</option>
-                    <option value="media">🟡 Média</option>
-                    <option value="dificil">🔴 Difícil</option>
-                  </select>
-                </div>
-
-                {descritoresDisponiveis().length > 0 && (
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Descritores ({h.descritores?.length || 0} selecionados)
-                    </label>
-                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
-                      {descritoresDisponiveis().map(d => (
-                        <button key={d} type="button" onClick={() => toggleDescritor(index, d)}
-                          className={`text-xs px-2 py-0.5 rounded font-mono ${
-                            h.descritores?.includes(d)
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}>{d}</button>
-                      ))}
-                    </div>
+              {/* 4. Bloom + Dificuldade */}
+              {h.codigo && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Nível cognitivo (Bloom)</label>
+                    <select value={h.nivel_cognitivo}
+                      onChange={(e) => atualizarHabilidade(index, 'nivel_cognitivo', e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                      {NIVEIS_BLOOM.map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
                   </div>
-                )}
-              </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Dificuldade desta habilidade</label>
+                    <select value={h.dificuldade || ''}
+                      onChange={(e) => atualizarHabilidade(index, 'dificuldade', e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                      <option value="">Usar padrão</option>
+                      <option value="facil">🟢 Fácil</option>
+                      <option value="media">🟡 Média</option>
+                      <option value="dificil">🔴 Difícil</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. Descritores (só se a habilidade os tiver) */}
+              {h.codigo && descritoresDisponiveis().length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Descritores ({h.descritores?.length || 0} selecionados)
+                  </label>
+                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                    {descritoresDisponiveis().map(d => (
+                      <button key={d} type="button" onClick={() => toggleDescritor(index, d)}
+                        className={`text-xs px-2 py-0.5 rounded font-mono ${
+                          h.descritores?.includes(d)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}>{d}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
