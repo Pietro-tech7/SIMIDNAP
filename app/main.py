@@ -27,6 +27,7 @@ from .models import (  # noqa: F401
     exam_paper,
     question_bank_fundamental,
     bncc_estrutura,
+    descritor,
 )
 
 
