@@ -24,8 +24,7 @@ const REFERENCIAIS = [
 const NIVEIS_BLOOM = ['Lembrar', 'Compreender', 'Aplicar', 'Analisar', 'Avaliar', 'Criar'];
 const ANOS_EF = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-const DESCRITORES_MATEMATICA = ['D01','D02','D03','D04','D05','D06','D07','D08','D09','D10','D11','D12','D13','D14','D15','D16','D17','D18','D19','D20','D21','D22','D23','D24','D25','D26','D27','D28','D29','D30','D31','D32','D33'];
-const DESCRITORES_LP = ['D01','D02','D03','D04','D05','D06','D07','D08','D09','D10','D11','D12','D13','D14','D15','D16','D17','D18','D19','D20','D21'];
+// Descritores agora são carregados dinamicamente do backend
 
 const BATCH_SIZE = 4;
 
@@ -70,6 +69,7 @@ const BancoQuestoesIA = () => {
   const [habilidadesDisponiveis, setHabilidadesDisponiveis] = useState([]);
   const [unidadesTematicas, setUnidadesTematicas] = useState([]);
   const [objetosPorUnidade, setObjetosPorUnidade] = useState({});
+  const [descritoresDinamicos, setDescritoresDinamicos] = useState([]);
 
   const [gerando, setGerando] = useState(false);
   const [progresso, setProgresso] = useState({ atual: 0, total: 0 });
@@ -192,7 +192,7 @@ const BancoQuestoesIA = () => {
       .catch(() => setUnidadesTematicas([]));
   }, [componente, etapa, ano]);
 
-  // Carrega habilidades quando componente/ano/etapa mudam
+    // Carrega habilidades quando componente/ano/etapa mudam
   useEffect(() => {
     if (!componente) { setHabilidadesDisponiveis([]); return; }
     const params = { componente };
@@ -203,6 +203,17 @@ const BancoQuestoesIA = () => {
       .then(res => setHabilidadesDisponiveis(res.data?.habilidades || []))
       .catch(() => setHabilidadesDisponiveis([]));
   }, [etapa, ano, componente]);
+
+  // Carrega descritores dinâmicos quando componente/ano mudam
+  useEffect(() => {
+    if (!componente) { setDescritoresDinamicos([]); return; }
+    const params = { componente };
+    if (etapa === 'EF' && ano) params.ano = ano;
+
+    api.get('/bncc-estrutura/descritores', { params })
+      .then(res => setDescritoresDinamicos(res.data?.descritores || []))
+      .catch(() => setDescritoresDinamicos([]));
+  }, [componente, etapa, ano]);
 
   const totalParaGerar = habilidades.reduce((s, h) => s + (Number(h.quantidade) || 0), 0);
   const custo = totalParaGerar <= 10 ? 1 : totalParaGerar <= 20 ? 2 : totalParaGerar <= 30 ? 3 : totalParaGerar <= 45 ? 4 : 5;
@@ -304,9 +315,7 @@ const BancoQuestoesIA = () => {
   };
 
   const descritoresDisponiveis = () => {
-    if (componente === 'MA') return DESCRITORES_MATEMATICA;
-    if (componente === 'LP') return DESCRITORES_LP;
-    return [];
+    return descritoresDinamicos;
   };
 
   const gerarQuestoes = async () => {
@@ -841,19 +850,57 @@ const BancoQuestoesIA = () => {
 
               {/* 5. Descritores (só se a habilidade os tiver) */}
               {h.codigo && descritoresDisponiveis().length > 0 && (
-                <div>
+                <div className="mt-3 pt-3 border-t border-gray-200">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Descritores ({h.descritores?.length || 0} selecionados)
+                    📊 Descritores SAEB/SAEPI ({h.descritores?.length || 0} selecionados)
                   </label>
-                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
-                    {descritoresDisponiveis().map(d => (
-                      <button key={d} type="button" onClick={() => toggleDescritor(index, d)}
-                        className={`text-xs px-2 py-0.5 rounded font-mono ${
-                          h.descritores?.includes(d)
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}>{d}</button>
-                    ))}
+                  <p className="text-[10px] text-gray-500 mb-2">
+                    Clique nos descritores que deseja avaliar nesta questão.
+                  </p>
+                  <div className="space-y-1 max-h-64 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                    {descritoresDisponiveis().map(d => {
+                      const codigo = d.codigo || d;
+                      const texto = d.texto || '';
+                      const tema = d.tema || '';
+                      const selecionado = h.descritores?.includes(codigo);
+
+                      return (
+                        <button
+                          key={codigo}
+                          type="button"
+                          onClick={() => toggleDescritor(index, codigo)}
+                          className={`w-full text-left px-3 py-2 rounded-lg border-2 transition ${
+                            selecionado
+                              ? 'bg-blue-50 border-blue-500'
+                              : 'bg-white border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={selecionado}
+                              readOnly
+                              className="mt-0.5 w-4 h-4 text-blue-600 rounded flex-shrink-0 pointer-events-none"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap gap-1.5 items-center mb-1">
+                                <span className="font-mono font-bold text-xs text-blue-700">
+                                  {codigo}
+                                </span>
+                                {tema && (
+                                  <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                                    {tema}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-700 leading-snug">
+                                {texto}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
