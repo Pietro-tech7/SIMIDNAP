@@ -1,18 +1,12 @@
 """
 Importa toda a estrutura curricular da BNCC para a tabela `bncc_estrutura`.
 
-Fontes:
-- Educação Infantil: objetivos de aprendizagem (via `objetivos_ei`)
-- Ensino Fundamental: habilidades (via `habilidades_ef`)
-- Ensino Médio: (não importado nesta fase)
+Correções aplicadas:
+- Deduplicação antes do INSERT (a biblioteca retorna a mesma habilidade em vários anos)
+- Educação Infantil agora usa o código do campo de experiência como componente
+- NULLs convertidos para string vazia (Postgres não detecta unicidade com NULLs)
 
-Cada linha representa:
-  Componente → Unidade Temática → Objeto de Conhecimento → Habilidade
-
-Descritores: marcados heuristicamente (MA, LP, e CI/HI/GE do 9º ano).
-Os descritores reais serão adicionados em bloco posterior.
-
-Rodar UMA VEZ. Idempotente (usa ON CONFLICT DO UPDATE).
+Rodar UMA VEZ. Idempotente.
 """
 import os
 import time
@@ -23,7 +17,7 @@ import bncc
 
 
 # ============================================================
-# MAPA DE COMPONENTES (nome → código)
+# MAPA DE COMPONENTES DO ENSINO FUNDAMENTAL
 # ============================================================
 MAPA_COMPONENTES = {
     "Matemática": "MA",
@@ -38,23 +32,22 @@ MAPA_COMPONENTES = {
     "Computação": "CO",
 }
 
-# Componentes do EF que vamos importar
 COMPONENTES_EF = ["MA", "LP", "CI", "GE", "HI", "AR", "EF", "ER", "LI"]
 
-# Campos de experiência da EI
-CAMPOS_EI = ["EO", "CG", "TS", "EF", "ET"]
+# (codigo_bncc_esperado_pela_lib, codigo_db, nome)
+CAMPOS_EI = [
+    ("EO", "EI_EO", "O eu, o outro e o nós"),
+    ("CG", "EI_CG", "Corpo, gestos e movimentos"),
+    ("TS", "EI_TS", "Traços, sons, cores e formas"),
+    ("EF", "EI_EF", "Escuta, fala, pensamento e imaginação"),
+    ("ET", "EI_ET", "Espaços, tempos, quantidades, relações e transformações"),
+]
 
 
 # ============================================================
 # HEURÍSTICA DE DESCRITORES
 # ============================================================
-def tem_descritor(componente: str, ano: int | None) -> str:
-    """
-    Retorna 'S' ou 'N' conforme o componente/ano tenham descritores.
-    - MA, LP: sempre têm
-    - CI, HI, GE: só no 9º ano
-    - Outros: não têm
-    """
+def tem_descritor(componente: str, ano) -> str:
     if componente in ("MA", "LP"):
         return "S"
     if componente in ("CI", "HI", "GE") and ano == 9:
@@ -63,10 +56,10 @@ def tem_descritor(componente: str, ano: int | None) -> str:
 
 
 # ============================================================
-# NORMALIZAÇÃO DE UMA HABILIDADE
+# NORMALIZAÇÃO
 # ============================================================
-def normalizar_habilidade(item: dict) -> dict | None:
-    """Extrai campos relevantes de uma habilidade retornada pela biblioteca."""
+def normalizar_habilidade(item: dict, force_componente: str = None) -> dict | None:
+    """Extrai campos relevantes de uma habilidade. Retorna None se inválida."""
     codigo = item.get("codigo")
     texto = item.get("texto")
     etapa = item.get("etapa")
@@ -78,12 +71,15 @@ def normalizar_habilidade(item: dict) -> dict | None:
     ano = anos[0] if anos else None
 
     # Componente
-    componente_nome = (item.get("componente") or {}).get("nome", "")
-    componente = MAPA_COMPONENTES.get(componente_nome)
-    if not componente:
-        return None
+    if force_componente:
+        componente = force_componente
+    else:
+        componente_nome = (item.get("componente") or {}).get("nome", "")
+        componente = MAPA_COMPONENTES.get(componente_nome)
+        if not componente:
+            return None
 
-    # Organização (Unidade Temática OU Campo de Prática)
+    # Organização
     org = item.get("organizacao") or {}
     tipo_org = org.get("tipo")
     nomes = org.get("nomes") or {}
@@ -94,15 +90,12 @@ def normalizar_habilidade(item: dict) -> dict | None:
     if tipo_org == "unidade_tematica":
         unidade = nomes.get("unidade_tematica")
     elif tipo_org == "campo_pratica":
-        # Em LP, o "campo de atuação" faz o papel de unidade temática
         campos = nomes.get("campos_atuacao") or []
         unidade = " / ".join(campos) if campos else None
-        # Guarda a prática de linguagem junto do objeto
         pratica = nomes.get("pratica_linguagem")
         if pratica:
             prefixo_objeto = f"[{pratica}] "
     else:
-        # Formato desconhecido — tenta pegar qualquer chave de nomes
         for k, v in nomes.items():
             if isinstance(v, str):
                 unidade = v
@@ -113,25 +106,25 @@ def normalizar_habilidade(item: dict) -> dict | None:
     objetos_nomes = [o.get("nome") for o in objetos if o.get("nome")]
     objeto = " | ".join(objetos_nomes) if objetos_nomes else None
 
-    # Adiciona prefixo da prática de linguagem (se houver)
     if prefixo_objeto and objeto:
         objeto = f"{prefixo_objeto}{objeto}"
     elif prefixo_objeto:
         objeto = prefixo_objeto.strip()
 
-    # Trunca strings para caber no banco (VARCHAR(200) e VARCHAR(300))
+    # Trunca
     if unidade and len(unidade) > 200:
         unidade = unidade[:197] + "..."
     if objeto and len(objeto) > 300:
         objeto = objeto[:297] + "..."
 
+    # Converte None → "" para o INSERT não quebrar a unicidade
     return {
         "id": str(uuid.uuid4()),
         "etapa": etapa,
         "ano": ano,
         "componente": componente,
-        "unidade_tematica": unidade,
-        "objeto_conhecimento": objeto,
+        "unidade_tematica": unidade or "",
+        "objeto_conhecimento": objeto or "",
         "habilidade_codigo": codigo,
         "habilidade_texto": texto,
         "descritores_relacionados": None,
@@ -142,10 +135,9 @@ def normalizar_habilidade(item: dict) -> dict | None:
 
 
 # ============================================================
-# IMPORTAÇÃO
+# IMPORTAÇÃO POR ETAPA
 # ============================================================
 def importar_ef() -> list:
-    """Importa todas as habilidades do Ensino Fundamental."""
     todos = []
     for componente in COMPONENTES_EF:
         print(f"\n[EF] Processando componente: {componente}")
@@ -162,36 +154,53 @@ def importar_ef() -> list:
                     todos.append(norm)
 
             print(f"  Ano {ano}: {len(lista)} habilidade(s)")
-
     return todos
 
 
 def importar_ei() -> list:
-    """Importa os objetivos de aprendizagem da Educação Infantil."""
     todos = []
     print("\n[EI] Processando Educação Infantil")
-    for campo in CAMPOS_EI:
+    for codigo_lib, codigo_db, _nome in CAMPOS_EI:
         try:
-            lista = bncc.objetivos_ei(campo=campo) or []
+            lista = bncc.objetivos_ei(campo=codigo_lib) or []
         except Exception as e:
-            print(f"  Campo {campo}: erro -> {e}")
+            print(f"  Campo {codigo_lib}: erro -> {e}")
             continue
 
         for item in lista:
-            norm = normalizar_habilidade(item)
+            norm = normalizar_habilidade(item, force_componente=codigo_db)
             if norm:
-                # Em EI, o campo de experiência vai como unidade temática
                 norm["etapa"] = "EI"
                 norm["ano"] = None
                 todos.append(norm)
 
-        print(f"  Campo {campo}: {len(lista)} objetivo(s)")
-
+        print(f"  Campo {codigo_lib} (salvo como {codigo_db}): {len(lista)} objetivo(s)")
     return todos
 
 
 # ============================================================
-# INSERÇÃO NO BANCO
+# DEDUPLICAÇÃO
+# ============================================================
+def deduplicar(registros: list) -> list:
+    """Remove duplicatas pela chave única da tabela."""
+    vistos = set()
+    saida = []
+    for r in registros:
+        chave = (
+            r["referencial"],
+            r["habilidade_codigo"],
+            r["unidade_tematica"],
+            r["objeto_conhecimento"],
+        )
+        if chave in vistos:
+            continue
+        vistos.add(chave)
+        saida.append(r)
+    return saida
+
+
+# ============================================================
+# INSERÇÃO
 # ============================================================
 def inserir_no_banco(registros: list):
     url = os.getenv("DATABASE_URL")
@@ -226,7 +235,7 @@ def inserir_no_banco(registros: list):
             for r in registros
         ]
 
-        # Insere em lotes de 200
+        # Insere em lotes
         lote = 200
         total = 0
         for i in range(0, len(valores), lote):
@@ -236,7 +245,7 @@ def inserir_no_banco(registros: list):
 
         conn.commit()
 
-        # Contagem final
+        # Estatísticas
         cur.execute("SELECT COUNT(*) FROM bncc_estrutura")
         total_banco = cur.fetchone()[0]
 
@@ -248,10 +257,22 @@ def inserir_no_banco(registros: list):
         """)
         por_comp = cur.fetchall()
 
+        cur.execute("""
+            SELECT COUNT(*) FROM bncc_estrutura WHERE tem_descritor = 'S'
+        """)
+        com_descritor = cur.fetchone()[0]
+
+        cur.execute("""
+            SELECT COUNT(*) FROM bncc_estrutura WHERE tem_descritor = 'N'
+        """)
+        sem_descritor = cur.fetchone()[0]
+
         cur.close()
 
         print(f"\n✅ Total inserido nesta execução: {total}")
         print(f"✅ Total na tabela bncc_estrutura: {total_banco}")
+        print(f"   Com descritor: {com_descritor}")
+        print(f"   Sem descritor: {sem_descritor}")
         print("\nDistribuição por componente:")
         for comp, qtd in por_comp:
             print(f"  {comp:5} → {qtd}")
@@ -270,23 +291,23 @@ def main():
     print("  IMPORTAÇÃO DA ESTRUTURA CURRICULAR BNCC")
     print("=" * 60)
 
-    # Importa EF
     registros_ef = importar_ef()
-    print(f"\n📊 Total EF: {len(registros_ef)} habilidades")
+    print(f"\n📊 Total EF (bruto): {len(registros_ef)} habilidades")
 
-    # Importa EI
     registros_ei = importar_ei()
-    print(f"📊 Total EI: {len(registros_ei)} objetivos")
+    print(f"📊 Total EI (bruto): {len(registros_ei)} objetivos")
 
-    # Consolida
     todos = registros_ef + registros_ei
-    print(f"\n📊 TOTAL GERAL: {len(todos)} registros")
+    print(f"\n📊 TOTAL BRUTO: {len(todos)} registros")
+
+    # Deduplica
+    todos = deduplicar(todos)
+    print(f"📊 Após deduplicação: {len(todos)} registros únicos")
 
     if not todos:
         print("\n⚠️ Nenhum registro para importar.")
         return
 
-    # Insere no banco
     print("\n💾 Inserindo no banco...")
     inserir_no_banco(todos)
 
