@@ -15,6 +15,9 @@ from ...models.material import Material
 from ...models.pedagogical_case import PedagogicalCase
 from ...models.successful_practice import SuccessfulPractice
 from ...models.question_bank_fundamental import QuestionBankFundamental
+from ...models.descritor import Descritor
+from ...models.habilidade_descritor import HabilidadeDescritor
+from ...models.bncc_estrutura import BnccEstrutura
 from ...schemas.admin import (
     AdminUserOut,
     AdminUserUpdate,
@@ -36,6 +39,15 @@ from ...schemas.admin_question_bank import (
     AdminQuestionStatsItem,
     AdminQuestionCreate,
 )
+from ...schemas.admin_correlacao import (
+    CorrelacaoItem,
+    DescritorComCorrelacoes,
+    CorrelacaoListResponse,
+    CorrelacaoStats,
+    AprovarCorrelacaoRequest,
+    CorrelacaoManualCreate,
+)
+
 from ...services.subscription_service import PLANOS
 from ...core.security import decode_token
 
@@ -1127,3 +1139,237 @@ def admin_question_bank_criar(
     db.commit()
     db.refresh(nova)
     return _montar_question_item(nova, db)
+
+
+# ═══════════════════════════════════════════════════════════════
+# CORRELAÇÕES HABILIDADE ↔ DESCRITOR (Bloco C.8)
+# ═══════════════════════════════════════════════════════════════
+
+@router.get("/correlacoes/stats", response_model=CorrelacaoStats)
+def admin_correlacoes_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Estatísticas das correlações."""
+    total_descritores = db.query(Descritor).filter(Descritor.ativo == True).count()
+    total_corr = db.query(HabilidadeDescritor).count()
+    revisadas = db.query(HabilidadeDescritor).filter(HabilidadeDescritor.revisado == True).count()
+    pendentes = total_corr - revisadas
+
+    # Por confiança
+    por_conf = (
+        db.query(HabilidadeDescritor.confianca, func.count(HabilidadeDescritor.id))
+        .group_by(HabilidadeDescritor.confianca)
+        .all()
+    )
+
+    # Por componente (via join)
+    por_comp_rows = (
+        db.query(Descritor.componente, func.count(HabilidadeDescritor.id))
+        .join(HabilidadeDescritor, HabilidadeDescritor.descritor_id == Descritor.id)
+        .group_by(Descritor.componente)
+        .all()
+    )
+
+    return CorrelacaoStats(
+        total_descritores=total_descritores,
+        total_correlacoes=total_corr,
+        correlacoes_revisadas=revisadas,
+        correlacoes_pendentes=pendentes,
+        por_confianca={str(c): int(q) for c, q in por_conf},
+        por_componente={str(c): int(q) for c, q in por_comp_rows},
+    )
+
+
+@router.get("/correlacoes/por-descritor", response_model=CorrelacaoListResponse)
+def admin_correlacoes_por_descritor(
+    fonte: Optional[str] = Query(None),
+    componente: Optional[str] = Query(None),
+    ano: Optional[int] = Query(None),
+    confianca: Optional[str] = Query(None),
+    revisado: Optional[bool] = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(current_user_superuser_dep := get_current_superuser),
+):
+    """Lista descritores com suas correlações."""
+    # Filtra descritores
+    q = db.query(Descritor).filter(Descritor.ativo == True)
+    if fonte:
+        q = q.filter(Descritor.fonte == fonte)
+    if componente:
+        q = q.filter(Descritor.componente == componente)
+    if ano:
+        q = q.filter(Descritor.ano == ano)
+
+    total = q.count()
+    total_pages = max(1, math.ceil(total / per_page))
+    offset = (page - 1) * per_page
+
+    descritores = (
+        q.order_by(Descritor.fonte, Descritor.componente, Descritor.ano, Descritor.codigo)
+        .offset(offset)
+        .limit(per_page)
+        .all()
+    )
+
+    itens = []
+    for d in descritores:
+        # Correlações deste descritor
+        corr_query = db.query(HabilidadeDescritor).filter(
+            HabilidadeDescritor.descritor_id == d.id
+        )
+        if confianca:
+            corr_query = corr_query.filter(HabilidadeDescritor.confianca == confianca)
+        if revisado is not None:
+            corr_query = corr_query.filter(HabilidadeDescritor.revisado == revisado)
+
+        corrs = corr_query.order_by(HabilidadeDescritor.confianca.desc()).all()
+
+        correlacoes_lista = []
+        for c in corrs:
+            skill = (
+                db.query(BnccEstrutura)
+                .filter(BnccEstrutura.habilidade_codigo == c.habilidade_codigo)
+                .first()
+            )
+            correlacoes_lista.append(
+                CorrelacaoItem(
+                    id=c.id,
+                    habilidade_codigo=c.habilidade_codigo,
+                    habilidade_texto=skill.habilidade_texto if skill else None,
+                    unidade_tematica=skill.unidade_tematica if skill else None,
+                    objeto_conhecimento=skill.objeto_conhecimento if skill else None,
+                    confianca=c.confianca,
+                    revisado=c.revisado,
+                )
+            )
+
+        itens.append(
+            DescritorComCorrelacoes(
+                descritor_id=d.id,
+                fonte=d.fonte,
+                componente=d.componente,
+                ano=d.ano,
+                codigo=d.codigo,
+                texto=d.texto,
+                tema=d.tema,
+                correlacoes=correlacoes_lista,
+            )
+        )
+
+    return CorrelacaoListResponse(
+        items=itens,
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+    )
+
+
+@router.patch("/correlacoes/{correlacao_id}/aprovar", response_model=CorrelacaoItem)
+def admin_correlacao_aprovar(
+    correlacao_id: str,
+    data: AprovarCorrelacaoRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Marca uma correlação como revisada (aprovada pelo admin)."""
+    c = db.query(HabilidadeDescritor).filter(HabilidadeDescritor.id == correlacao_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Correlação não encontrada.")
+
+    c.revisado = True
+    c.fonte_correlacao = "manual"
+    if data.confianca:
+        c.confianca = data.confianca
+
+    db.commit()
+    db.refresh(c)
+
+    skill = (
+        db.query(BnccEstrutura)
+        .filter(BnccEstrutura.habilidade_codigo == c.habilidade_codigo)
+        .first()
+    )
+
+    return CorrelacaoItem(
+        id=c.id,
+        habilidade_codigo=c.habilidade_codigo,
+        habilidade_texto=skill.habilidade_texto if skill else None,
+        unidade_tematica=skill.unidade_tematica if skill else None,
+        objeto_conhecimento=skill.objeto_conhecimento if skill else None,
+        confianca=c.confianca,
+        revisado=c.revisado,
+    )
+
+
+@router.delete("/correlacoes/{correlacao_id}", status_code=204)
+def admin_correlacao_excluir(
+    correlacao_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Exclui uma correlação (remove a ligação)."""
+    c = db.query(HabilidadeDescritor).filter(HabilidadeDescritor.id == correlacao_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Correlação não encontrada.")
+    db.delete(c)
+    db.commit()
+    return None
+
+
+@router.post("/correlacoes/manual", response_model=CorrelacaoItem, status_code=201)
+def admin_correlacao_criar(
+    data: CorrelacaoManualCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Cria uma correlação manual entre habilidade e descritor."""
+    # Verifica se já existe
+    existente = (
+        db.query(HabilidadeDescritor)
+        .filter(
+            HabilidadeDescritor.habilidade_codigo == data.habilidade_codigo,
+            HabilidadeDescritor.descritor_id == data.descritor_id,
+        )
+        .first()
+    )
+    if existente:
+        raise HTTPException(status_code=400, detail="Esta correlação já existe.")
+
+    # Verifica se descritor existe
+    desc = db.query(Descritor).filter(Descritor.id == data.descritor_id).first()
+    if not desc:
+        raise HTTPException(status_code=404, detail="Descritor não encontrado.")
+
+    # Verifica se habilidade existe
+    skill = (
+        db.query(BnccEstrutura)
+        .filter(BnccEstrutura.habilidade_codigo == data.habilidade_codigo)
+        .first()
+    )
+    if not skill:
+        raise HTTPException(status_code=404, detail="Habilidade não encontrada.")
+
+    nova = HabilidadeDescritor(
+        habilidade_codigo=data.habilidade_codigo,
+        descritor_id=data.descritor_id,
+        confianca=data.confianca,
+        fonte_correlacao="manual",
+        revisado=True,
+    )
+    db.add(nova)
+    db.commit()
+    db.refresh(nova)
+
+    return CorrelacaoItem(
+        id=nova.id,
+        habilidade_codigo=nova.habilidade_codigo,
+        habilidade_texto=skill.habilidade_texto,
+        unidade_tematica=skill.unidade_tematica,
+        objeto_conhecimento=skill.objeto_conhecimento,
+        confianca=nova.confianca,
+        revisado=nova.revisado,
+    )
