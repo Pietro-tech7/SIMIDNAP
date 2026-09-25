@@ -291,6 +291,91 @@ def listar_descritores(
     }
 
 # ============================================================
+# 4.7) HABILIDADE COMPLETA (complementos + descritores correlacionados)
+# ============================================================
+@router.get("/habilidade-completa/{codigo}")
+def habilidade_completa(
+    codigo: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retorna TODAS as informações de uma habilidade em uma única chamada:
+      - Dados da BNCC (texto, unidade, objeto)
+      - Complemento do Currículo do Piauí (se existir)
+      - Descritores correlacionados (com texto completo)
+    """
+    from ...models.descritor import Descritor
+    from ...models.habilidade_descritor import HabilidadeDescritor
+    from ...models.curriculo_piaui_skill import CurriculoPiauiSkill
+
+    # 1. Busca a habilidade na BNCC
+    skill = (
+        db.query(BnccEstrutura)
+        .filter(BnccEstrutura.habilidade_codigo == codigo)
+        .first()
+    )
+    if not skill:
+        raise HTTPException(status_code=404, detail="Habilidade não encontrada.")
+
+    # 2. Complementos do Piauí (se existirem)
+    complementos_pi = []
+    try:
+        comps = (
+            db.query(CurriculoPiauiSkill)
+            .filter(CurriculoPiauiSkill.codigo_bncc == codigo)
+            .all()
+        )
+        complementos_pi = [
+            {
+                "codigo": c.codigo,
+                "texto": c.texto,
+                "ordem": c.ordem,
+            }
+            for c in comps
+        ]
+    except Exception as e:
+        print(f"[HabilidadeCompleta] Erro ao buscar complementos PI: {e}")
+
+    # 3. Descritores correlacionados (com texto completo)
+    descritores = []
+    try:
+        correlacoes = (
+            db.query(HabilidadeDescritor)
+            .filter(HabilidadeDescritor.habilidade_codigo == codigo)
+            .all()
+        )
+        for c in correlacoes:
+            desc = db.query(Descritor).filter(Descritor.id == c.descritor_id).first()
+            if desc and desc.ativo:
+                descritores.append({
+                    "id": str(c.id),
+                    "codigo": desc.codigo,
+                    "texto": desc.texto,
+                    "tema": desc.tema,
+                    "fonte": desc.fonte,
+                    "ano": desc.ano,
+                    "confianca": c.confianca,
+                    "revisado": c.revisado,
+                })
+        descritores.sort(key=lambda d: (d["fonte"], d["codigo"]))
+    except Exception as e:
+        print(f"[HabilidadeCompleta] Erro ao buscar descritores: {e}")
+
+    return {
+        "codigo": skill.habilidade_codigo,
+        "texto": skill.habilidade_texto,
+        "etapa": skill.etapa,
+        "ano": skill.ano,
+        "componente": skill.componente,
+        "unidade_tematica": skill.unidade_tematica,
+        "objeto_conhecimento": skill.objeto_conhecimento,
+        "tem_descritor": skill.tem_descritor == "S",
+        "complementos_pi": complementos_pi,
+        "descritores": descritores,
+    }
+
+# ============================================================
 # 5) ESTATÍSTICAS (para debug)
 # ============================================================
 @router.get("/stats")
