@@ -1,4 +1,5 @@
 import { gerarPDF } from './pdf';
+import { buscarIcone, carregarIconeComoDataURL } from './icones';
 
 // ============================================================
 // HELPERS
@@ -40,7 +41,7 @@ function criarContainer(htmlConteudo) {
 
 
 // ============================================================
-// CABEÇALHO (com tabela para alinhamento perfeito)
+// CABEÇALHO
 // ============================================================
 function montarCabecalho(cabecalho) {
   if (!cabecalho) return '';
@@ -51,7 +52,6 @@ function montarCabecalho(cabecalho) {
 
   return `
     <div style="margin-bottom: 14px;">
-      <!-- Linha 1: logos próximas do texto central -->
       <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
         <div style="width: 70px; height: 70px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
           ${cabecalho.logo_prefeitura ? `<img src="${cabecalho.logo_prefeitura}" style="max-width: 70px; max-height: 70px; object-fit: contain;" />` : ''}
@@ -67,7 +67,6 @@ function montarCabecalho(cabecalho) {
         </div>
       </div>
 
-      <!-- Linha 2: dados em tabela -->
       <table style="width: 100%; font-size: 10px; border-top: 1px solid #000; padding-top: 6px; border-collapse: collapse;">
         <tbody>
           ${nomeEscola ? `<tr><td colspan="2" style="padding: 3px 0; font-weight: bold;">${escapeHtml(labelEscola)}</td></tr>` : ''}
@@ -107,9 +106,9 @@ function montarCabecalho(cabecalho) {
 
 
 // ============================================================
-// ILUSTRAÇÃO — sem nenhuma mensagem
+// ILUSTRAÇÃO — com busca automática de SVG
 // ============================================================
-function montarIlustracao(questao) {
+async function montarIlustracao(questao) {
   const ilust = questao.ilustracao || { tipo: 'automatica', imagem: null };
   const tipo = ilust.tipo;
 
@@ -123,18 +122,16 @@ function montarIlustracao(questao) {
         </div>
       `;
     }
-    return ''; // sem imagem, sem nada
+    return '';
   }
 
   if (tipo === 'espaco') {
-    // Área reservada em branco, sem texto
     return `
       <div style="margin: 12px 0; border: 1px dashed #d1d5db; height: 100px;"></div>
     `;
   }
 
   if (tipo === 'automatica') {
-    // Se tiver ícone (futuro, Bloco 4.5), mostra. Se não tiver, NÃO mostra nada.
     if (ilust.imagem) {
       return `
         <div style="margin: 12px 0; text-align: center;">
@@ -142,7 +139,22 @@ function montarIlustracao(questao) {
         </div>
       `;
     }
-    return ''; // sem SVG ainda, deixa em branco (sem mensagens)
+
+    if (questao.descricao_ilustracao) {
+      const caminho = buscarIcone(questao.descricao_ilustracao);
+      if (caminho) {
+        const dataUrl = await carregarIconeComoDataURL(caminho);
+        if (dataUrl) {
+          return `
+            <div style="margin: 12px 0; text-align: center;">
+              <img src="${dataUrl}" style="max-width: 160px; max-height: 120px; object-fit: contain;" />
+            </div>
+          `;
+        }
+      }
+    }
+
+    return '';
   }
 
   return '';
@@ -150,25 +162,32 @@ function montarIlustracao(questao) {
 
 
 // ============================================================
-// QUESTÕES (PDF da Prova)
+// QUESTÕES (async — precisa resolver os ícones)
 // ============================================================
-function montarQuestoes(questoes) {
-  return questoes.map((q, idx) => `
-    <div style="margin-bottom: 22px; page-break-inside: avoid;">
-      <div style="font-weight: bold; margin-bottom: 6px; font-size: 12px;">
-        ${idx + 1}) ${escapeHtml(q.enunciado)}
+async function montarQuestoes(questoes) {
+  const blocos = [];
+  for (let idx = 0; idx < questoes.length; idx++) {
+    const q = questoes[idx];
+    const ilustracaoHtml = await montarIlustracao(q);
+
+    blocos.push(`
+      <div style="margin-bottom: 22px; page-break-inside: avoid;">
+        <div style="font-weight: bold; margin-bottom: 6px; font-size: 12px;">
+          ${idx + 1}) ${escapeHtml(q.enunciado)}
+        </div>
+        ${q.imagem_url ? `<div style="margin: 8px 0; text-align: center;"><img src="${q.imagem_url}" style="max-width: 100%; max-height: 250px;" /></div>` : ''}
+        ${ilustracaoHtml}
+        <div style="margin-top: 8px; font-size: 11px; line-height: 1.7;">
+          ${(q.alternativas || []).map(a => `
+            <div style="margin-bottom: 2px;">
+              <strong>(${escapeHtml(a.letra)})</strong> ${escapeHtml(a.texto)}
+            </div>
+          `).join('')}
+        </div>
       </div>
-      ${q.imagem_url ? `<div style="margin: 8px 0; text-align: center;"><img src="${q.imagem_url}" style="max-width: 100%; max-height: 250px;" /></div>` : ''}
-      ${montarIlustracao(q)}
-      <div style="margin-top: 8px; font-size: 11px; line-height: 1.7;">
-        ${(q.alternativas || []).map(a => `
-          <div style="margin-bottom: 2px;">
-            <strong>(${escapeHtml(a.letra)})</strong> ${escapeHtml(a.texto)}
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
+    `);
+  }
+  return blocos.join('');
 }
 
 
@@ -194,10 +213,12 @@ function montarGabaritoQuestoes(questoes) {
 
 
 // ============================================================
-// FUNÇÕES PÚBLICAS (prova e gabarito SEPARADAS)
+// FUNÇÕES PÚBLICAS
 // ============================================================
 export async function gerarProvaPDF({ titulo, cabecalho, questoes }) {
   if (!questoes || questoes.length === 0) throw new Error('Sem questões.');
+
+  const questoesHtml = await montarQuestoes(questoes);
 
   const html = `
     <div style="padding: 10px;">
@@ -205,7 +226,7 @@ export async function gerarProvaPDF({ titulo, cabecalho, questoes }) {
       <div style="text-align: center; margin: 14px 0 18px; font-weight: bold; font-size: 13px; text-transform: uppercase;">
         ${escapeHtml(titulo)}
       </div>
-      ${montarQuestoes(questoes)}
+      ${questoesHtml}
     </div>
   `;
 
@@ -240,7 +261,6 @@ export async function gerarGabaritoPDF({ titulo, cabecalho, questoes }) {
   }
 }
 
-// Compatível com chamada anterior
 export async function gerarPdfsDaProva(dados) {
   await gerarProvaPDF(dados);
   await new Promise(r => setTimeout(r, 1500));
