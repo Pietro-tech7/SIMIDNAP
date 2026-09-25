@@ -68,6 +68,9 @@ def _aplicar_filtros(
     dificuldade: Optional[str],
     busca: Optional[str],
     aprovadas_apenas: bool,
+    unidade_tematica: Optional[str] = None,
+    objeto_conhecimento: Optional[str] = None,
+    descritor: Optional[str] = None,
 ):
     if etapa:
         query = query.filter(QuestionBankFundamental.etapa == etapa)
@@ -77,10 +80,16 @@ def _aplicar_filtros(
         query = query.filter(QuestionBankFundamental.serie == serie)
     if componente:
         query = query.filter(QuestionBankFundamental.componente == componente)
+    if unidade_tematica:
+        query = query.filter(QuestionBankFundamental.unidade_tematica == unidade_tematica)
+    if objeto_conhecimento:
+        query = query.filter(QuestionBankFundamental.objeto_conhecimento == objeto_conhecimento)
     if referencial:
         query = query.filter(QuestionBankFundamental.referencial == referencial)
     if habilidade_codigo:
         query = query.filter(QuestionBankFundamental.habilidade_codigo == habilidade_codigo)
+    if descritor:
+        query = query.filter(QuestionBankFundamental.descritores.contains([descritor]))
     if origem:
         query = query.filter(QuestionBankFundamental.origem == origem)
     if dificuldade:
@@ -90,7 +99,6 @@ def _aplicar_filtros(
         query = query.filter(func.lower(QuestionBankFundamental.enunciado).like(termo))
     if aprovadas_apenas:
         query = query.filter(QuestionBankFundamental.approved == True)
-    query = query.filter(QuestionBankFundamental.anulada == False)
     return query
 
 
@@ -196,6 +204,9 @@ def search_extended(
     dificuldade: Optional[str] = Query(None),
     busca: Optional[str] = Query(None),
     aprovadas_apenas: bool = Query(True),
+    unidade_tematica: Optional[str] = Query(None),
+    objeto_conhecimento: Optional[str] = Query(None),
+    descritor: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -215,7 +226,11 @@ def search_extended(
         dificuldade=dificuldade,
         busca=busca,
         aprovadas_apenas=aprovadas_apenas,
+        unidade_tematica=unidade_tematica,
+        objeto_conhecimento=objeto_conhecimento,
+        descritor=descritor,
     )
+    # ... o resto da função (contagem, paginação, etc.) permanece igual
 
     total = query.count()
     total_pages = max(1, math.ceil(total / per_page))

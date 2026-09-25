@@ -46,6 +46,13 @@ const BancoQuestoesFundamental = () => {
 
   const [componentes, setComponentes] = useState([]);
   const [habilidadesDisponiveis, setHabilidadesDisponiveis] = useState([]);
+  const [unidadesTematicas, setUnidadesTematicas] = useState([]);
+  const [objetosPorUnidade, setObjetosPorUnidade] = useState({});
+  const [descritoresDisponiveis, setDescritoresDisponiveis] = useState([]);
+
+  const [unidadeTematica, setUnidadeTematica] = useState('');
+  const [objetoConhecimento, setObjetoConhecimento] = useState('');
+  const [descritor, setDescritor] = useState('');
 
   const [resultados, setResultados] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -81,6 +88,29 @@ const BancoQuestoesFundamental = () => {
       .catch(() => setHabilidadesDisponiveis([]));
   }, [etapa, componente, ano]);
 
+  // Carrega unidades temáticas quando componente/etapa/ano mudam
+  useEffect(() => {
+    if (!componente) { setUnidadesTematicas([]); return; }
+    const params = { componente };
+    if (etapa) params.etapa = etapa;
+    if (etapa === 'EF' && ano) params.ano = ano;
+
+    api.get('/bncc-estrutura/unidades-tematicas', { params })
+      .then(res => setUnidadesTematicas(res.data?.unidades || []))
+      .catch(() => setUnidadesTematicas([]));
+  }, [componente, etapa, ano]);
+
+  // Carrega descritores quando componente/ano mudam
+  useEffect(() => {
+    if (!componente) { setDescritoresDisponiveis([]); return; }
+    const params = { componente };
+    if (etapa === 'EF' && ano) params.ano = ano;
+
+    api.get('/bncc-estrutura/descritores', { params })
+      .then(res => setDescritoresDisponiveis(res.data?.descritores || []))
+      .catch(() => setDescritoresDisponiveis([]));
+  }, [componente, etapa, ano]);
+
   // Busca
   useEffect(() => {
     buscar();
@@ -96,7 +126,10 @@ const BancoQuestoesFundamental = () => {
       if (ano) params.ano = ano;
       if (componente) params.componente = componente;
       if (referencial) params.referencial = referencial;
+      if (unidadeTematica) params.unidade_tematica = unidadeTematica;
+      if (objetoConhecimento) params.objeto_conhecimento = objetoConhecimento;
       if (habilidadeCodigo) params.habilidade_codigo = habilidadeCodigo;
+      if (descritor) params.descritor = descritor;
       if (origem) params.origem = origem;
       if (dificuldade) params.dificuldade = dificuldade;
       if (busca.trim()) params.busca = busca.trim();
@@ -116,9 +149,36 @@ const BancoQuestoesFundamental = () => {
     buscar();
   };
 
+  const carregarObjetos = async (unidade) => {
+    if (!unidade || objetosPorUnidade[unidade]) return;
+    try {
+      const params = { componente, unidade_tematica: unidade };
+      if (etapa) params.etapa = etapa;
+      if (etapa === 'EF' && ano) params.ano = ano;
+      const res = await api.get('/bncc-estrutura/objetos-conhecimento', { params });
+      setObjetosPorUnidade(prev => ({ ...prev, [unidade]: res.data?.objetos || [] }));
+    } catch {
+      setObjetosPorUnidade(prev => ({ ...prev, [unidade]: [] }));
+    }
+  };
+
+  const handleUnidadeChange = (e) => {
+    const u = e.target.value;
+    setUnidadeTematica(u);
+    setObjetoConhecimento('');
+    setHabilidadeCodigo('');
+    if (u) carregarObjetos(u);
+  };
+
+  const handleObjetoChange = (e) => {
+    setObjetoConhecimento(e.target.value);
+    setHabilidadeCodigo('');
+  };
+
   const limparFiltros = () => {
     setEtapa(''); setAno(''); setComponente(''); setReferencial('');
     setHabilidadeCodigo(''); setOrigem(''); setDificuldade(''); setBusca('');
+    setUnidadeTematica(''); setObjetoConhecimento(''); setDescritor('');
     setPage(1);
     setTimeout(buscar, 50);
   };
@@ -240,6 +300,63 @@ const BancoQuestoesFundamental = () => {
             </select>
           </div>
 
+          {/* Unidade Temática */}
+          {unidadesTematicas.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Unidade Temática ({unidadesTematicas.length})
+              </label>
+              <select
+                value={unidadeTematica}
+                onChange={handleUnidadeChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Todas</option>
+                {unidadesTematicas.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Objeto de Conhecimento */}
+          {unidadeTematica && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Objeto de Conhecimento
+              </label>
+              <select
+                value={objetoConhecimento}
+                onChange={handleObjetoChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Todos</option>
+                {(objetosPorUnidade[unidadeTematica] || []).map(o => (
+                  <option key={o} value={o}>{o.length > 80 ? o.slice(0, 77) + '...' : o}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Descritor */}
+          {descritoresDisponiveis.length > 0 && (
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Descritor ({descritoresDisponiveis.length} disponíveis)
+              </label>
+              <select
+                value={descritor}
+                onChange={(e) => setDescritor(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Todos</option>
+                {descritoresDisponiveis.map(d => (
+                  <option key={d.codigo} value={d.codigo}>
+                    {d.codigo} — {d.texto?.slice(0, 90)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Dificuldade</label>
             <select
@@ -257,7 +374,11 @@ const BancoQuestoesFundamental = () => {
           {habilidadesDisponiveis.length > 0 && (
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Habilidade ({habilidadesDisponiveis.length} disponíveis)
+                Habilidade ({habilidadesDisponiveis.filter(h => {
+                  const matchUnidade = !unidadeTematica || h.unidade_tematica === unidadeTematica;
+                  const matchObjeto = !objetoConhecimento || h.objeto_conhecimento === objetoConhecimento;
+                  return matchUnidade && matchObjeto;
+                }).length} disponíveis)
               </label>
               <select
                 value={habilidadeCodigo}
@@ -265,11 +386,17 @@ const BancoQuestoesFundamental = () => {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               >
                 <option value="">Todas</option>
-                {habilidadesDisponiveis.map(h => (
-                  <option key={h.codigo} value={h.codigo}>
-                    {h.codigo} — {h.total_questoes} questão(ões)
-                  </option>
-                ))}
+                {habilidadesDisponiveis
+                  .filter(h => {
+                    const matchUnidade = !unidadeTematica || h.unidade_tematica === unidadeTematica;
+                    const matchObjeto = !objetoConhecimento || h.objeto_conhecimento === objetoConhecimento;
+                    return matchUnidade && matchObjeto;
+                  })
+                  .map(h => (
+                    <option key={h.codigo} value={h.codigo}>
+                      {h.codigo} — {h.total_questoes} questão(ões)
+                    </option>
+                  ))}
               </select>
             </div>
           )}

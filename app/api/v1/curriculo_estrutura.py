@@ -246,6 +246,49 @@ def estrutura_completa(
         "estrutura": resultado,
     }
 
+# ============================================================
+# 4.5) DESCRITORES (para o filtro do Motor 8)
+# ============================================================
+@router.get("/descritores")
+def listar_descritores(
+    componente: str = Query(..., description="MA, LP, CI, HI, GE"),
+    ano: Optional[int] = Query(None),
+    fonte: Optional[str] = Query(None, description="'saeb' | 'saepi'"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lista os descritores disponíveis para um componente/ano.
+    Retorna: [{codigo, texto, tema, fonte, ano}, ...]
+    """
+    from ...models.descritor import Descritor
+
+    query = db.query(Descritor).filter(
+        Descritor.componente == componente,
+        Descritor.ativo == True,
+    )
+    if ano is not None:
+        query = query.filter(Descritor.ano == ano)
+    if fonte:
+        query = query.filter(Descritor.fonte == fonte)
+
+    registros = query.order_by(Descritor.codigo).all()
+
+    return {
+        "componente": componente,
+        "ano": ano,
+        "total": len(registros),
+        "descritores": [
+            {
+                "codigo": d.codigo,
+                "texto": d.texto,
+                "tema": d.tema,
+                "fonte": d.fonte,
+                "ano": d.ano,
+            }
+            for d in registros
+        ],
+    }
 
 # ============================================================
 # 5) ESTATÍSTICAS (para debug)
