@@ -28,6 +28,7 @@ from .models import (  # noqa: F401
     question_bank_fundamental,
     bncc_estrutura,
     descritor,
+    habilidade_descritor,
 )
 
 
