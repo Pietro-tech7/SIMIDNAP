@@ -138,6 +138,10 @@ def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end
             prompt += f"Complemento do Currículo do Piauí: {h.complemento_pi}\n"
         if h.descritores:
             prompt += f"Descritores associados: {', '.join(h.descritores)}\n"
+        if h.unidade_tematica:
+            prompt += f"Unidade Temática (BNCC): {h.unidade_tematica}\n"
+        if h.objeto_conhecimento:
+            prompt += f"Objeto de Conhecimento (BNCC): {h.objeto_conhecimento}\n"
         if h.nivel_cognitivo:
             prompt += f"Nível cognitivo (Bloom): {h.nivel_cognitivo}\n"
         if h.dificuldade:
@@ -271,8 +275,9 @@ def gerar_questoes(
         questoes_out.append(QuestaoIA(
             numero=i,
             habilidade_codigo=q.get("habilidade_codigo", ""),
-            dificuldade=(q.get("dificuldade") or data.dificuldade_padrao or None),
             habilidade_texto=q.get("habilidade_texto"),
+            unidade_tematica=q.get("unidade_tematica"),
+            objeto_conhecimento=q.get("objeto_conhecimento"),
             descritor=q.get("descritor"),
             descritor_texto=q.get("descritor_texto"),
             nivel_cognitivo=q.get("nivel_cognitivo"),
@@ -354,6 +359,8 @@ def enviar_curadoria(
                 serie=data.serie,
                 componente=data.componente,
                 disciplina=data.disciplina_nome or data.componente,
+                unidade_tematica=q.get("unidade_tematica"),
+                objeto_conhecimento=q.get("objeto_conhecimento"),
                 numero=q.get("numero"),
                 tipo=q.get("tipo", "multipla_escolha"),
                 enunciado=q.get("enunciado", ""),

@@ -1,7 +1,5 @@
 """
 Schemas do Motor 9 — Banco de Questões IA.
-
-100% NOVO. Não substitui nem altera nada existente.
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
@@ -13,14 +11,16 @@ from datetime import datetime
 # REQUISIÇÃO
 # ============================================================
 class HabilidadeRequest(BaseModel):
-    """Uma habilidade selecionada pelo professor, com descritores e nível cognitivo."""
+    """Uma habilidade selecionada pelo professor."""
     codigo: str = Field(..., description="Código da habilidade (ex: EF02MA01)")
     texto: Optional[str] = Field(None, description="Texto da habilidade (opcional)")
     complemento_pi: Optional[str] = Field(None, description="Complemento do Currículo do Piauí (opcional)")
+    unidade_tematica: Optional[str] = Field(None, description="Unidade Temática da BNCC")
+    objeto_conhecimento: Optional[str] = Field(None, description="Objeto de Conhecimento da BNCC")
     descritores: List[str] = Field(default_factory=list, description="Lista de descritores (ex: ['D01','D05'])")
     nivel_cognitivo: Optional[str] = Field("Aplicar", description="Lembrar | Compreender | Aplicar | Analisar | Avaliar | Criar")
-    quantidade: int = Field(..., ge=1, le=20, description="Quantas questões gerar para esta habilidade")
     dificuldade: Optional[str] = Field(None, description="'facil' | 'media' | 'dificil'")
+    quantidade: int = Field(..., ge=1, le=20, description="Quantas questões gerar para esta habilidade")
 
 
 class GerarQuestoesIARequest(BaseModel):
@@ -34,8 +34,8 @@ class GerarQuestoesIARequest(BaseModel):
     referencial: str = Field("bncc", description="'bncc' | 'curriculo_piaui' | 'saeb' | 'saepi' | 'ppaic'")
     estado: Optional[str] = Field(None, description="UF do professor (ex: 'PI')")
     incluir_ilustracoes: bool = Field(True)
-    dificuldade_padrao: Optional[str] = Field(None, description="'facil' | 'media' | 'dificil'")
     compartilhar_curadoria: bool = Field(False)
+    dificuldade_padrao: Optional[str] = Field(None, description="'facil' | 'media' | 'dificil'")
     habilidades: List[HabilidadeRequest] = Field(..., min_items=1, max_items=10)
 
 
@@ -51,9 +51,12 @@ class QuestaoIA(BaseModel):
     numero: int
     habilidade_codigo: str
     habilidade_texto: Optional[str] = None
+    unidade_tematica: Optional[str] = None
+    objeto_conhecimento: Optional[str] = None
     descritor: Optional[str] = None
     descritor_texto: Optional[str] = None
     nivel_cognitivo: Optional[str] = None
+    dificuldade: Optional[str] = None
     tipo: str = "multipla_escolha"
     enunciado: str
     alternativas: List[AlternativaIA] = Field(default_factory=list)
