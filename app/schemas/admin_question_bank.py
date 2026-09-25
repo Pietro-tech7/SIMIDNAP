@@ -1,6 +1,5 @@
 """
 Schemas do Painel Admin de Curadoria do Banco de Questões Fundamental.
-100% NOVO. Não altera nada existente.
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
@@ -19,6 +18,8 @@ class AdminQuestionItem(BaseModel):
     serie: Optional[str] = None
     componente: Optional[str] = None
     disciplina: Optional[str] = None
+    unidade_tematica: Optional[str] = None           # NOVO
+    objeto_conhecimento: Optional[str] = None        # NOVO
     numero: Optional[int] = None
     tipo: Optional[str] = None
     enunciado: str
@@ -64,8 +65,11 @@ class AdminQuestionUpdate(BaseModel):
     serie: Optional[str] = None
     componente: Optional[str] = None
     disciplina: Optional[str] = None
+    unidade_tematica: Optional[str] = None           # NOVO
+    objeto_conhecimento: Optional[str] = None        # NOVO
     imagem_url: Optional[str] = None
     descritores: Optional[List[str]] = None
+    dificuldade: Optional[str] = None
 
 
 # ============================================================
@@ -93,15 +97,16 @@ class AdminQuestionStats(BaseModel):
 
 
 # ============================================================
-# CRIAÇÃO MANUAL DE QUESTÃO (Bloco 3.5.1)
+# CRIAÇÃO MANUAL
 # ============================================================
 class AdminQuestionCreate(BaseModel):
-    """Payload para criar uma questão manualmente pelo admin."""
     etapa: str = Field(..., description="'EI' ou 'EF'")
     ano: Optional[int] = Field(None, ge=1, le=9)
     serie: Optional[str] = Field(None, max_length=50)
     componente: str = Field(..., max_length=10)
     disciplina: Optional[str] = Field(None, max_length=100)
+    unidade_tematica: Optional[str] = Field(None, max_length=200)   # NOVO
+    objeto_conhecimento: Optional[str] = Field(None, max_length=300) # NOVO
     referencial: Optional[str] = Field("bncc", max_length=30)
     habilidade_codigo: Optional[str] = Field(None, max_length=50)
     descritores: Optional[List[str]] = None
@@ -114,5 +119,4 @@ class AdminQuestionCreate(BaseModel):
     imagem_url: Optional[str] = None
     imagens_extras: Optional[List[str]] = None
 
-    # Se True, a questão entra já aprovada (padrão no admin)
     aprovada: bool = Field(True)

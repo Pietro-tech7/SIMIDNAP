@@ -619,6 +619,8 @@ def _montar_question_item(q: QuestionBankFundamental, db: Session) -> AdminQuest
         serie=q.serie,
         componente=q.componente,
         disciplina=q.disciplina,
+        unidade_tematica=q.unidade_tematica,
+        objeto_conhecimento=q.objeto_conhecimento,
         numero=q.numero,
         tipo=q.tipo,
         enunciado=q.enunciado,
@@ -909,6 +911,12 @@ def admin_question_bank_editar(
         q.componente = data.componente
     if data.disciplina is not None:
         q.disciplina = data.disciplina
+    if data.unidade_tematica is not None:
+        q.unidade_tematica = data.unidade_tematica
+    if data.objeto_conhecimento is not None:
+        q.objeto_conhecimento = data.objeto_conhecimento
+    if data.dificuldade is not None:
+        q.dificuldade = data.dificuldade
     if data.imagem_url is not None:
         q.imagem_url = data.imagem_url
     if data.descritores is not None:
@@ -1087,13 +1095,14 @@ def admin_question_bank_criar(
         raise HTTPException(status_code=400, detail="Enunciado muito curto (mínimo 10 caracteres).")
 
     nova = QuestionBankFundamental(
-        id=uuid.uuid4(),
         fonte="SIMIDNAPE_ADMIN",
         ano=data.ano,
         etapa=data.etapa,
         serie=data.serie,
         componente=data.componente,
         disciplina=data.disciplina or data.componente,
+        unidade_tematica=data.unidade_tematica,
+        objeto_conhecimento=data.objeto_conhecimento,
         numero=None,
         tipo=data.tipo,
         enunciado=data.enunciado.strip(),
