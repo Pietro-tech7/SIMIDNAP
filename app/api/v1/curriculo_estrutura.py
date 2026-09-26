@@ -376,6 +376,70 @@ def habilidade_completa(
     }
 
 # ============================================================
+# 4.6) DESCRITORES (para o Motor 8, 9 e Curadoria)
+# ============================================================
+@router.get("/descritores")
+def listar_descritores(
+    componente: str = Query(..., description="MA, LP, CI, HI, GE"),
+    ano: Optional[int] = Query(None),
+    fonte: Optional[str] = Query(None, description="'saeb' | 'saepi'"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lista os descritores disponíveis para um componente/ano.
+
+    Importante:
+      - MA e LP: possuem descritores SAEB e SAEPI por ano.
+      - CI, HI, GE: NÃO possuem descritores tradicionais (usam habilidades BNCC).
+        Neste caso, retorna lista vazia com aviso.
+    """
+    from ...models.descritor import Descritor
+
+    # CI, HI, GE não têm descritores tradicionais
+    if componente in ("CI", "HI", "GE"):
+        return {
+            "componente": componente,
+            "ano": ano,
+            "total": 0,
+            "usa_bncc_diretamente": True,
+            "descritores": [],
+            "aviso": (
+                "Este componente usa as habilidades da BNCC diretamente, "
+                "sem descritores SAEB/SAEPI tradicionais. "
+                "Consulte o campo 'Habilidade' para escolher a aprendizagem."
+            ),
+        }
+
+    query = db.query(Descritor).filter(
+        Descritor.componente == componente,
+        Descritor.ativo == True,
+    )
+    if ano is not None:
+        query = query.filter(Descritor.ano == ano)
+    if fonte:
+        query = query.filter(Descritor.fonte == fonte)
+
+    registros = query.order_by(Descritor.ano, Descritor.codigo).all()
+
+    return {
+        "componente": componente,
+        "ano": ano,
+        "total": len(registros),
+        "usa_bncc_diretamente": False,
+        "descritores": [
+            {
+                "codigo": d.codigo,
+                "texto": d.texto,
+                "tema": d.tema,
+                "fonte": d.fonte,
+                "ano": d.ano,
+            }
+            for d in registros
+        ],
+    }
+
+# ============================================================
 # 5) ESTATÍSTICAS (para debug)
 # ============================================================
 @router.get("/stats")
