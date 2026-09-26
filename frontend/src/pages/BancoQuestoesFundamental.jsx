@@ -7,7 +7,6 @@ import LatexText from '../components/LatexText';
 // COMPONENTES AUXILIARES
 // ============================================================
 const REFERENCIAIS = [
-  { value: '', label: 'Todos' },
   { value: 'bncc', label: 'BNCC' },
   { value: 'curriculo_piaui', label: 'Currículo do Piauí' },
   { value: 'saeb', label: 'SAEB' },
@@ -38,7 +37,7 @@ const BancoQuestoesFundamental = () => {
   const [etapa, setEtapa] = useState('');
   const [ano, setAno] = useState('');
   const [componente, setComponente] = useState('');
-  const [referencial, setReferencial] = useState('');
+  const [referenciais, setReferenciais] = useState([]);
   const [habilidadeCodigo, setHabilidadeCodigo] = useState('');
   const [origem, setOrigem] = useState('');
   const [dificuldade, setDificuldade] = useState('');
@@ -125,7 +124,7 @@ const BancoQuestoesFundamental = () => {
       if (etapa) params.etapa = etapa;
       if (ano) params.ano = ano;
       if (componente) params.componente = componente;
-      if (referencial) params.referencial = referencial;
+      if (referenciais.length > 0) params.referenciais = referenciais.join(',');
       if (unidadeTematica) params.unidade_tematica = unidadeTematica;
       if (objetoConhecimento) params.objeto_conhecimento = objetoConhecimento;
       if (habilidadeCodigo) params.habilidade_codigo = habilidadeCodigo;
@@ -176,7 +175,7 @@ const BancoQuestoesFundamental = () => {
   };
 
   const limparFiltros = () => {
-    setEtapa(''); setAno(''); setComponente(''); setReferencial('');
+    setEtapa(''); setAno(''); setComponente(''); setReferenciais([]);
     setHabilidadeCodigo(''); setOrigem(''); setDificuldade(''); setBusca('');
     setUnidadeTematica(''); setObjetoConhecimento(''); setDescritor('');
     setPage(1);
@@ -278,15 +277,38 @@ const BancoQuestoesFundamental = () => {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Referencial</label>
-            <select
-              value={referencial}
-              onChange={(e) => setReferencial(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              {REFERENCIAIS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Referenciais</label>
+            <div className="flex flex-wrap gap-2">
+              {REFERENCIAIS.map(r => {
+                const ativo = referenciais.includes(r.value);
+                return (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => {
+                      setReferenciais(prev =>
+                        prev.includes(r.value)
+                          ? prev.filter(x => x !== r.value)
+                          : [...prev, r.value]
+                      );
+                    }}
+                    className={`px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition ${
+                      ativo
+                        ? 'bg-blue-50 border-blue-500 text-blue-900'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {ativo ? '✓ ' : ''}{r.label}
+                  </button>
+                );
+              })}
+            </div>
+            {referenciais.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                {referenciais.length} referencial(is) ativo(s): {referenciais.map(r => r.toUpperCase()).join(', ')}
+              </p>
+            )}
           </div>
 
           <div>

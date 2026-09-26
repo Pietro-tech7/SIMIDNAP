@@ -8,7 +8,7 @@ Prefix: /question-bank
 """
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from typing import Optional, List
 import math
 
@@ -71,6 +71,7 @@ def _aplicar_filtros(
     unidade_tematica: Optional[str] = None,
     objeto_conhecimento: Optional[str] = None,
     descritor: Optional[str] = None,
+    referenciais: Optional[str] = None,
 ):
     if etapa:
         query = query.filter(QuestionBankFundamental.etapa == etapa)
@@ -84,8 +85,19 @@ def _aplicar_filtros(
         query = query.filter(QuestionBankFundamental.unidade_tematica == unidade_tematica)
     if objeto_conhecimento:
         query = query.filter(QuestionBankFundamental.objeto_conhecimento == objeto_conhecimento)
-    if referencial:
-        query = query.filter(QuestionBankFundamental.referencial == referencial)
+    # Filtro de referenciais: aceita lista separada por vírgula
+    refs_list = None
+    if referenciais:
+        refs_list = [r.strip() for r in referenciais.split(",") if r.strip()]
+    elif referencial:
+        refs_list = [referencial]
+
+    if refs_list:
+        conditions = []
+        for ref in refs_list:
+            conditions.append(QuestionBankFundamental.referencial == ref)
+            conditions.append(QuestionBankFundamental.referencias_extras.contains([ref]))
+        query = query.filter(or_(*conditions))
     if habilidade_codigo:
         query = query.filter(QuestionBankFundamental.habilidade_codigo == habilidade_codigo)
     if descritor:
@@ -199,6 +211,7 @@ def search_extended(
     serie: Optional[str] = Query(None),
     componente: Optional[str] = Query(None),
     referencial: Optional[str] = Query(None),
+    referenciais: Optional[str] = Query(None, description="Lista separada por vírgula (ex: 'bncc,saeb')"),
     habilidade_codigo: Optional[str] = Query(None),
     origem: Optional[str] = Query(None),
     dificuldade: Optional[str] = Query(None),
@@ -229,6 +242,7 @@ def search_extended(
         unidade_tematica=unidade_tematica,
         objeto_conhecimento=objeto_conhecimento,
         descritor=descritor,
+        referenciais=referenciais,
     )
     # ... o resto da função (contagem, paginação, etc.) permanece igual
 
