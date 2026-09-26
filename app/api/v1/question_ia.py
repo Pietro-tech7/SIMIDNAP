@@ -115,19 +115,24 @@ def montar_system_instruction() -> str:
     )
 
 
-# ============================================================
-# PROMPT BASE
-# ============================================================
-def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end: int) -> str:
-    prompt = "DADOS DA PROVA:\n"
-    prompt += f"Título: {data.titulo}\n"
-    prompt += f"Etapa: {data.etapa}\n"
-    if data.ano:
-        prompt += f"Ano: {data.ano}º ano\n"
-    if data.serie:
-        prompt += f"Série/Turma: {data.serie}\n"
-    prompt += f"Componente: {data.disciplina_nome or data.componente}\n"
-    prompt += f"Referencial principal: {data.referencial}\n"
+    # Referenciais ativos (multi-seleção com retrocompatibilidade)
+    refs = data.referenciais if data.referenciais else [data.referencial]
+    refs = [r for r in refs if r]
+
+    INSTRUCOES_REFERENCIAL = {
+        "bncc": "BNCC — Use as habilidades oficiais como base principal da questão.",
+        "curriculo_piaui": "Currículo do Piauí — Considere os complementos regionais (.NPI) e o contexto local do Piauí.",
+        "saeb": "SAEB — Gere a questão no estilo da avaliação SAEB, utilizando os descritores indicados.",
+        "saepi": "SAEPI — Gere a questão no estilo da avaliação SAEPI, utilizando os descritores indicados.",
+        "ppaic": "PPAIC — Priorize o contexto de alfabetização na idade certa (1º e 2º ano).",
+    }
+
+    prompt += "\nREFERENCIAIS ATIVOS PARA ESTA PROVA:\n"
+    for r in refs:
+        instr = INSTRUCOES_REFERENCIAL.get(r)
+        if instr:
+            prompt += f"• {instr}\n"
+    prompt += "\n"
 
     prompt += "\nHABILIDADES, DESCRITORES E NÍVEL COGNITIVO:\n"
     for i, h in enumerate(data.habilidades, start=1):
@@ -325,6 +330,7 @@ class EnviarCuradoriaRequest(BaseModel):
     componente: str
     disciplina_nome: Optional[str] = None
     referencial: Optional[str] = "bncc"
+    referenciais: Optional[List[str]] = None  # NOVO: multi-seleção
     estado: Optional[str] = None
     questoes: List[Dict[str, Any]]
 
@@ -348,6 +354,12 @@ def enviar_curadoria(
     if not data.questoes:
         raise HTTPException(status_code=400, detail="Nenhuma questão para enviar.")
 
+    # Normaliza referenciais (multi-seleção com retrocompatibilidade)
+    refs = data.referenciais if data.referenciais else ([data.referencial] if data.referencial else ["bncc"])
+    refs = [r for r in refs if r]
+    referencial_principal = refs[0] if refs else "bncc"
+    referencias_extras = refs[1:] if len(refs) > 1 else None
+
     total = 0
     for q in data.questoes:
         try:
@@ -370,8 +382,8 @@ def enviar_curadoria(
                 imagens_extras=None,
                 habilidades=[q.get("habilidade_codigo")] if q.get("habilidade_codigo") else None,
                 habilidade_codigo=q.get("habilidade_codigo"),
-                referencial=data.referencial,
-                referencias_extras=None,
+                referencial=referencial_principal,
+                referencias_extras=referencias_extras,
                 descritores=[q.get("descritor")] if q.get("descritor") else None,
                 dificuldade=q.get("dificuldade") or data.dificuldade_padrao,
                 origem="gerada_ia",

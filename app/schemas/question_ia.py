@@ -31,7 +31,17 @@ class GerarQuestoesIARequest(BaseModel):
     serie: Optional[str] = Field(None, max_length=50)
     componente: str = Field(..., description="MA, LP, HI, GE, CI, AR, EF, ER, LI, CO")
     disciplina_nome: Optional[str] = Field(None, max_length=100)
+
+    # Campo antigo (retrocompatibilidade) — string única
     referencial: str = Field("bncc", description="'bncc' | 'curriculo_piaui' | 'saeb' | 'saepi' | 'ppaic'")
+
+    # NOVO: multi-seleção de referenciais
+    referenciais: Optional[List[str]] = Field(
+        None,
+        description="Lista de referenciais ativos (ex: ['bncc', 'saeb', 'curriculo_piaui']). "
+                    "Se não informado, usa o campo `referencial`.",
+    )
+
     estado: Optional[str] = Field(None, description="UF do professor (ex: 'PI')")
     incluir_ilustracoes: bool = Field(True)
     compartilhar_curadoria: bool = Field(False)
