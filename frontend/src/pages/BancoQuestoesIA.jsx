@@ -991,7 +991,7 @@ const BancoQuestoesIA = () => {
                     if (descsFiltrados.length === 0) {
                       return (
                         <div className="text-xs text-amber-800 bg-amber-50 rounded p-3 border border-amber-200">
-                          ℹ️ Nenhum descritor SAEB/SAEPI/Curriculo Piaui correlacionado encontrado para esta habilidade.
+                          ℹ️ Nenhum descritor SAEB/SAEPI correlacionado encontrado para esta habilidade.
                           Você pode gerar as questões mesmo assim — a IA vai usar a habilidade BNCC como referência.
                         </div>
                       );
