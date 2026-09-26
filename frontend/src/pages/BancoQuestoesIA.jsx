@@ -58,6 +58,7 @@ const BancoQuestoesIA = () => {
       texto: '',
       descritores: [],
       descritoresCorrelacionados: [],
+      complementosPi: [],
       carregandoDescritores: false,
       nivel_cognitivo: 'Aplicar',
       dificuldade: '',
@@ -166,6 +167,7 @@ const BancoQuestoesIA = () => {
       texto: '',
       descritores: [],
       descritoresCorrelacionados: [],
+      complementosPi: [],
       carregandoDescritores: false,
       nivel_cognitivo: 'Aplicar',
       dificuldade: '',
@@ -198,6 +200,7 @@ const BancoQuestoesIA = () => {
       texto: '',
       descritores: [],
       descritoresCorrelacionados: [],
+      complementosPi: [],
       carregandoDescritores: false,
       nivel_cognitivo: 'Aplicar',
       dificuldade: '',
@@ -264,6 +267,7 @@ const BancoQuestoesIA = () => {
       texto: '',
       descritores: [],
       descritoresCorrelacionados: [],
+      complementosPi: [],
       carregandoDescritores: false,
       nivel_cognitivo: 'Aplicar',
       dificuldade: '',
@@ -354,7 +358,7 @@ const BancoQuestoesIA = () => {
   const carregarDescritoresDaHabilidade = async (index, codigoHabilidade) => {
     if (!codigoHabilidade) {
       setHabilidades(prev => prev.map((h, i) =>
-        i === index ? { ...h, descritoresCorrelacionados: [], carregandoDescritores: false } : h
+        i === index ? { ...h, descritoresCorrelacionados: [], complementosPi: [], carregandoDescritores: false } : h
       ));
       return;
     }
@@ -366,13 +370,14 @@ const BancoQuestoesIA = () => {
     try {
       const res = await api.get(`/bncc-estrutura/habilidade-completa/${codigoHabilidade}`);
       const descs = res.data?.descritores || [];
+      const compsPi = res.data?.complementos_pi || [];
       setHabilidades(prev => prev.map((h, i) =>
-        i === index ? { ...h, descritoresCorrelacionados: descs, carregandoDescritores: false } : h
+        i === index ? { ...h, descritoresCorrelacionados: descs, complementosPi: compsPi, carregandoDescritores: false } : h
       ));
     } catch (e) {
       console.warn('Erro ao carregar descritores correlacionados:', e);
       setHabilidades(prev => prev.map((h, i) =>
-        i === index ? { ...h, descritoresCorrelacionados: [], carregandoDescritores: false } : h
+        i === index ? { ...h, descritoresCorrelacionados: [], complementosPi: [], carregandoDescritores: false } : h
       ));
     }
   };
@@ -949,96 +954,126 @@ const BancoQuestoesIA = () => {
 
               {h.codigo && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
-                  <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-                    <label className="block text-xs font-medium text-gray-700">
-                      📊 Descritores correlacionados ({h.descritores?.length || 0} selecionados)
-                    </label>
-                    <span className="text-[10px] text-gray-500">
-                      {(h.descritoresCorrelacionados || []).length} disponíveis para esta habilidade
-                    </span>
-                  </div>
-
-                  {h.carregandoDescritores && (
-                    <div className="text-xs text-gray-500 italic p-3 bg-gray-50 rounded border border-gray-200">
-                      ⏳ Carregando descritores correlacionados...
-                    </div>
-                  )}
-
-                  {!h.carregandoDescritores && (h.descritoresCorrelacionados || []).length === 0 && (
-                    <div className="text-xs text-amber-800 bg-amber-50 rounded p-3 border border-amber-200">
-                      ℹ️ Nenhum descritor SAEB/SAEPI correlacionado encontrado para esta habilidade.
-                      Você pode gerar as questões mesmo assim — a IA vai usar a habilidade BNCC como referência.
-                    </div>
-                  )}
-
-                  {!h.carregandoDescritores && (h.descritoresCorrelacionados || []).length > 0 && (
-                    <>
-                      <p className="text-[10px] text-gray-500 mb-2">
-                        Clique nos descritores que deseja avaliar nesta questão.
-                      </p>
-                      <div className="space-y-1 max-h-64 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
-                        {h.descritoresCorrelacionados.map(d => {
-                          const codigoD = d.codigo;
-                          const texto = d.texto || '';
-                          const tema = d.tema || '';
-                          const fonte = d.fonte || '';
-                          const confianca = d.confianca || '';
-                          const selecionado = h.descritores?.includes(codigoD);
-
-                          return (
-                            <button
-                              key={codigoD + (fonte || '')}
-                              type="button"
-                              onClick={() => toggleDescritor(index, codigoD)}
-                              className={`w-full text-left px-3 py-2 rounded-lg border-2 transition ${
-                                selecionado
-                                  ? 'bg-blue-50 border-blue-500'
-                                  : 'bg-white border-gray-200 hover:border-gray-300'
-                              }`}
-                            >
-                              <div className="flex items-start gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={selecionado}
-                                  readOnly
-                                  className="mt-0.5 w-4 h-4 text-blue-600 rounded flex-shrink-0 pointer-events-none"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex flex-wrap gap-1.5 items-center mb-1">
-                                    <span className="font-mono font-bold text-xs text-blue-700">
-                                      {codigoD}
-                                    </span>
-                                    {tema && (
-                                      <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
-                                        {tema}
-                                      </span>
-                                    )}
-                                    {fonte && (
-                                      <span className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-semibold uppercase">
-                                        {fonte}
-                                      </span>
-                                    )}
-                                    {confianca && (
-                                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
-                                        confianca === 'alta' ? 'bg-green-100 text-green-800' :
-                                        confianca === 'media' ? 'bg-yellow-100 text-yellow-800' :
-                                        'bg-slate-100 text-slate-600'
-                                      }`}>
-                                        {confianca}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-gray-700 leading-snug">
-                                    {texto}
-                                  </p>
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
+                  {/* Complemento do Currículo do Piauí — só aparece se "Currículo do Piauí" estiver marcado */}
+                  {referenciais.includes('curriculo_piaui') && (h.complementosPi || []).length > 0 && (
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        📌 Complemento do Currículo do Piauí
+                      </label>
+                      <div className="space-y-1">
+                        {(h.complementosPi || []).map((c, ci) => (
+                          <div key={ci} className="text-xs bg-amber-50 border border-amber-200 rounded p-2 text-amber-900">
+                            {c.codigo && <strong className="font-mono mr-2">{c.codigo}</strong>}
+                            {c.texto}
+                          </div>
+                        ))}
                       </div>
-                    </>
+                    </div>
                   )}
+
+                  {/* Descritores SAEB/SAEPI — filtrados pelos referenciais marcados */}
+                  {(referenciais.includes('saeb') || referenciais.includes('saepi')) && (() => {
+                    const descsFiltrados = (h.descritoresCorrelacionados || []).filter(d => {
+                      if (d.fonte === 'saeb' && referenciais.includes('saeb')) return true;
+                      if (d.fonte === 'saepi' && referenciais.includes('saepi')) return true;
+                      return false;
+                    });
+
+                    if (h.carregandoDescritores) {
+                      return (
+                        <div className="text-xs text-gray-500 italic p-3 bg-gray-50 rounded border border-gray-200">
+                          ⏳ Carregando descritores correlacionados...
+                        </div>
+                      );
+                    }
+
+                    // Sem correlação para os referenciais marcados
+                    if (descsFiltrados.length === 0) {
+                      return (
+                        <div className="text-xs text-amber-800 bg-amber-50 rounded p-3 border border-amber-200">
+                          ℹ️ Nenhum descritor SAEB/SAEPI/Curriculo Piaui correlacionado encontrado para esta habilidade.
+                          Você pode gerar as questões mesmo assim — a IA vai usar a habilidade BNCC como referência.
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
+                          <label className="block text-xs font-medium text-gray-700">
+                            📊 Descritores correlacionados ({h.descritores?.length || 0} selecionados)
+                          </label>
+                          <span className="text-[10px] text-gray-500">
+                            {descsFiltrados.length} disponíveis para esta habilidade
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mb-2">
+                          Clique nos descritores que deseja avaliar nesta questão.
+                        </p>
+                        <div className="space-y-1 max-h-64 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                          {descsFiltrados.map(d => {
+                            const codigoD = d.codigo;
+                            const texto = d.texto || '';
+                            const tema = d.tema || '';
+                            const fonte = d.fonte || '';
+                            const confianca = d.confianca || '';
+                            const selecionado = h.descritores?.includes(codigoD);
+
+                            return (
+                              <button
+                                key={codigoD + (fonte || '')}
+                                type="button"
+                                onClick={() => toggleDescritor(index, codigoD)}
+                                className={`w-full text-left px-3 py-2 rounded-lg border-2 transition ${
+                                  selecionado
+                                    ? 'bg-blue-50 border-blue-500'
+                                    : 'bg-white border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={selecionado}
+                                    readOnly
+                                    className="mt-0.5 w-4 h-4 text-blue-600 rounded flex-shrink-0 pointer-events-none"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap gap-1.5 items-center mb-1">
+                                      <span className="font-mono font-bold text-xs text-blue-700">
+                                        {codigoD}
+                                      </span>
+                                      {tema && (
+                                        <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                                          {tema}
+                                        </span>
+                                      )}
+                                      {fonte && (
+                                        <span className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-semibold uppercase">
+                                          {fonte}
+                                        </span>
+                                      )}
+                                      {confianca && (
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                                          confianca === 'alta' ? 'bg-green-100 text-green-800' :
+                                          confianca === 'media' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-slate-100 text-slate-600'
+                                        }`}>
+                                          {confianca}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-700 leading-snug">
+                                      {texto}
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
