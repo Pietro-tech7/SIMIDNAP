@@ -79,6 +79,8 @@ const BancoQuestoesIA = () => {
   const [sucesso, setSucesso] = useState('');
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [jaGerou, setJaGerou] = useState(false);
+  const [listaCompletaAberta, setListaCompletaAberta] = useState(null);
+  const [buscaCompleta, setBuscaCompleta] = useState('');
 
   const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
   const [rascunhoSalvo, setRascunhoSalvo] = useState(false);
@@ -269,6 +271,29 @@ const BancoQuestoesIA = () => {
 
       return nova;
     }));
+  };
+
+  // Terceiro caminho: escolher direto da lista completa do componente.
+  // Ao escolher, preenche Unidade + Objeto + Código + Texto de uma vez.
+  const selecionarDaListaCompleta = (index, hab) => {
+    setHabilidades(prev => prev.map((h, i) => {
+      if (i !== index) return h;
+      return {
+        ...h,
+        codigo: hab.codigo || '',
+        texto: hab.texto || '',
+        complemento_pi: hab.complemento_pi || null,
+        unidade_tematica: hab.unidade_tematica || '',
+        objeto_conhecimento: hab.objeto_conhecimento || '',
+      };
+    }));
+
+    if (hab.unidade_tematica && !objetosPorUnidade[hab.unidade_tematica]) {
+      carregarObjetos(hab.unidade_tematica);
+    }
+
+    setListaCompletaAberta(null);
+    setBuscaCompleta('');
   };
 
   const toggleDescritor = (index, descritor) => {
@@ -703,6 +728,92 @@ const BancoQuestoesIA = () => {
                   <button type="button" onClick={() => removerHabilidade(index)}
                     className="text-xs text-red-600 hover:text-red-800 font-medium">🗑️ Remover</button>
                 )}
+              </div>
+
+              {/* Terceiro caminho — lista completa do componente */}
+              <div className="mb-3 bg-purple-50 border border-purple-200 rounded-lg p-3">
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-purple-900">
+                      📋 Atalho: ver todas as habilidades do componente
+                    </p>
+                    <p className="text-[10px] text-purple-700 mt-0.5">
+                      Use quando já souber o código (ex: EF02MA01) ou quiser explorar sem passar pela cascata.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (listaCompletaAberta === index) {
+                        setListaCompletaAberta(null);
+                        setBuscaCompleta('');
+                      } else {
+                        setBuscaCompleta('');
+                        setListaCompletaAberta(index);
+                      }
+                    }}
+                    className="text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium px-3 py-1.5 rounded-lg flex-shrink-0"
+                  >
+                    {listaCompletaAberta === index
+                      ? '✖ Fechar lista'
+                      : `🔍 Ver ${habilidadesDisponiveis.length} habilidades`}
+                  </button>
+                </div>
+
+                {listaCompletaAberta === index && (() => {
+                  const termo = buscaCompleta.toLowerCase().trim();
+                  const filtradas = termo
+                    ? habilidadesDisponiveis.filter(x =>
+                        (x.codigo || '').toLowerCase().includes(termo) ||
+                        (x.texto || '').toLowerCase().includes(termo)
+                      )
+                    : habilidadesDisponiveis;
+
+                  return (
+                    <div className="mt-3">
+                      <input
+                        type="text"
+                        value={buscaCompleta}
+                        onChange={(e) => setBuscaCompleta(e.target.value)}
+                        placeholder="Filtre por código (EF02MA01) ou palavra-chave..."
+                        className="w-full border border-purple-300 rounded-lg px-3 py-2 text-sm bg-white mb-2"
+                      />
+                      <div className="max-h-64 overflow-y-auto border border-purple-200 rounded-lg bg-white divide-y divide-purple-100">
+                        {filtradas.length === 0 ? (
+                          <div className="p-3 text-xs text-gray-500 italic">
+                            Nenhuma habilidade corresponde a "{buscaCompleta}"
+                          </div>
+                        ) : (
+                          filtradas.slice(0, 200).map(hab => (
+                            <button
+                              key={hab.codigo}
+                              type="button"
+                              onClick={() => selecionarDaListaCompleta(index, hab)}
+                              className="w-full text-left px-3 py-2 text-xs hover:bg-purple-50 transition"
+                            >
+                              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                <strong className="font-mono text-purple-700">{hab.codigo}</strong>
+                                {hab.unidade_tematica && (
+                                  <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                                    {hab.unidade_tematica}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-gray-700">
+                                {(hab.texto || '').slice(0, 120)}
+                              </span>
+                            </button>
+                          ))
+                        )}
+                        {filtradas.length > 200 && (
+                          <div className="p-2 text-[10px] text-gray-500 italic bg-slate-50">
+                            Mostrando 200 de {filtradas.length}. Refine a busca para ver mais.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="mb-3">
