@@ -115,7 +115,22 @@ def montar_system_instruction() -> str:
     )
 
 
+# ============================================================
+# PROMPT BASE
+# ============================================================
+def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end: int) -> str:
+    prompt = "DADOS DA PROVA:\n"
+    prompt += f"Título: {data.titulo}\n"
+    prompt += f"Etapa: {data.etapa}\n"
+    if data.ano:
+        prompt += f"Ano: {data.ano}º ano\n"
+    if data.serie:
+        prompt += f"Série/Turma: {data.serie}\n"
+    prompt += f"Componente: {data.disciplina_nome or data.componente}\n"
+
+    # ----------------------------------------------------------
     # Referenciais ativos (multi-seleção com retrocompatibilidade)
+    # ----------------------------------------------------------
     refs = data.referenciais if data.referenciais else [data.referencial]
     refs = [r for r in refs if r]
 
@@ -252,7 +267,7 @@ def gerar_questoes(
             system_instruction=montar_system_instruction(),
             base_prompt=montar_prompt_base(data, batch_start, batch_end),
             total_questoes=batch_end - batch_start + 1,
-            batch_size=batch_end - batch_start + 1,  # já é o lote exato
+            batch_size=batch_end - batch_start + 1,
         )
     except Exception as e:
         print(f"[Motor 9] Erro ao gerar lote {batch_start}-{batch_end}: {e}")
@@ -320,6 +335,7 @@ def gerar_questoes(
         },
     )
 
+
 # ============================================================
 # CURADORIA — envia questões aprovadas para o banco comum
 # ============================================================
@@ -330,8 +346,9 @@ class EnviarCuradoriaRequest(BaseModel):
     componente: str
     disciplina_nome: Optional[str] = None
     referencial: Optional[str] = "bncc"
-    referenciais: Optional[List[str]] = None  # NOVO: multi-seleção
+    referenciais: Optional[List[str]] = None
     estado: Optional[str] = None
+    dificuldade_padrao: Optional[str] = None
     questoes: List[Dict[str, Any]]
 
 
