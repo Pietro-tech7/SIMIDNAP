@@ -913,7 +913,7 @@ const BancoQuestoesIA = () => {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div className="mb-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           ✨ Habilidade * ({doObjeto.length} disponíveis)
@@ -936,17 +936,6 @@ const BancoQuestoesIA = () => {
                           </p>
                         )}
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Quantidade *</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="20"
-                          value={h.quantidade}
-                          onChange={(e) => atualizarHabilidade(index, 'quantidade', e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        />
-                      </div>
                     </div>
                   </>
                 );
@@ -963,31 +952,7 @@ const BancoQuestoesIA = () => {
                 </div>
               )}
 
-              {h.codigo && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Nível cognitivo (Bloom)</label>
-                    <select value={h.nivel_cognitivo}
-                      onChange={(e) => atualizarHabilidade(index, 'nivel_cognitivo', e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-                      {NIVEIS_BLOOM.map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Dificuldade desta habilidade</label>
-                    <select value={h.dificuldade || ''}
-                      onChange={(e) => atualizarHabilidade(index, 'dificuldade', e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-                      <option value="">Usar padrão</option>
-                      <option value="facil">🟢 Fácil</option>
-                      <option value="media">🟡 Média</option>
-                      <option value="dificil">🔴 Difícil</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-                {h.codigo && usaBnccDiretamente && (
+              {h.codigo && usaBnccDiretamente && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
                     <p className="font-semibold mb-0.5">ℹ️ Este componente não usa descritores tradicionais</p>
@@ -1048,6 +1013,46 @@ const BancoQuestoesIA = () => {
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {h.codigo && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">
+                    ⚙️ Ajustes finais desta habilidade
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Nível cognitivo (Bloom)</label>
+                      <select value={h.nivel_cognitivo}
+                        onChange={(e) => atualizarHabilidade(index, 'nivel_cognitivo', e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                        {NIVEIS_BLOOM.map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Dificuldade</label>
+                      <select value={h.dificuldade || ''}
+                        onChange={(e) => atualizarHabilidade(index, 'dificuldade', e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                        <option value="">Usar padrão</option>
+                        <option value="facil">🟢 Fácil</option>
+                        <option value="media">🟡 Média</option>
+                        <option value="dificil">🔴 Difícil</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Quantidade *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={h.quantidade}
+                        onChange={(e) => atualizarHabilidade(index, 'quantidade', e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
