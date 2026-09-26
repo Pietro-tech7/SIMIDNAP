@@ -69,6 +69,8 @@ const BancoQuestoesIA = () => {
   const [unidadesTematicas, setUnidadesTematicas] = useState([]);
   const [objetosPorUnidade, setObjetosPorUnidade] = useState({});
   const [descritoresDinamicos, setDescritoresDinamicos] = useState([]);
+  const [usaBnccDiretamente, setUsaBnccDiretamente] = useState(false);
+  const [avisoDescritores, setAvisoDescritores] = useState('');
 
   const [gerando, setGerando] = useState(false);
   const [progresso, setProgresso] = useState({ atual: 0, total: 0 });
@@ -210,8 +212,16 @@ const BancoQuestoesIA = () => {
     if (etapa === 'EF' && ano) params.ano = ano;
 
     api.get('/bncc-estrutura/descritores', { params })
-      .then(res => setDescritoresDinamicos(res.data?.descritores || []))
-      .catch(() => setDescritoresDinamicos([]));
+      .then(res => {
+        setDescritoresDinamicos(res.data?.descritores || []);
+        setUsaBnccDiretamente(Boolean(res.data?.usa_bncc_diretamente));
+        setAvisoDescritores(res.data?.aviso || '');
+      })
+      .catch(() => {
+        setDescritoresDinamicos([]);
+        setUsaBnccDiretamente(false);
+        setAvisoDescritores('');
+      });
   }, [componente, etapa, ano]);
 
   const totalParaGerar = habilidades.reduce((s, h) => s + (Number(h.quantidade) || 0), 0);
@@ -977,7 +987,16 @@ const BancoQuestoesIA = () => {
                 </div>
               )}
 
-              {h.codigo && descritoresDisponiveis().length > 0 && (
+                {h.codigo && usaBnccDiretamente && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
+                    <p className="font-semibold mb-0.5">ℹ️ Este componente não usa descritores tradicionais</p>
+                    <p>{avisoDescritores || 'Este componente usa as habilidades da BNCC diretamente, sem descritores SAEB/SAEPI tradicionais.'}</p>
+                  </div>
+                </div>
+              )}
+
+              {h.codigo && !usaBnccDiretamente && descritoresDisponiveis().length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     📊 Descritores SAEB/SAEPI ({h.descritores?.length || 0} selecionados)
