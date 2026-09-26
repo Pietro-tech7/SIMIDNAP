@@ -24,8 +24,6 @@ const REFERENCIAIS = [
 const NIVEIS_BLOOM = ['Lembrar', 'Compreender', 'Aplicar', 'Analisar', 'Avaliar', 'Criar'];
 const ANOS_EF = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-// Descritores agora são carregados dinamicamente do backend
-
 const BATCH_SIZE = 4;
 
 function arquivoParaBase64(file) {
@@ -47,6 +45,7 @@ const BancoQuestoesIA = () => {
   const [ano, setAno] = useState(2);
   const [componente, setComponente] = useState('MA');
   const [referencial, setReferencial] = useState('bncc');
+  const [referenciais, setReferenciais] = useState(['bncc']);
   const [incluirIlustracoes, setIncluirIlustracoes] = useState(true);
   const [dificuldadePadrao, setDificuldadePadrao] = useState('');
   const [cabecalho, setCabecalho] = useState(null);
@@ -81,11 +80,10 @@ const BancoQuestoesIA = () => {
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [jaGerou, setJaGerou] = useState(false);
 
-  // ---------- PERSISTÊNCIA ----------
   const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
   const [rascunhoSalvo, setRascunhoSalvo] = useState(false);
 
-  // Carrega rascunho na montagem (só uma vez)
+  // Carrega rascunho na montagem
   useEffect(() => {
     try {
       const salvo = localStorage.getItem(STORAGE_KEY);
@@ -104,6 +102,7 @@ const BancoQuestoesIA = () => {
             if (d.ano !== undefined) setAno(d.ano);
             if (d.componente !== undefined) setComponente(d.componente);
             if (d.referencial !== undefined) setReferencial(d.referencial);
+            if (d.referenciais !== undefined) setReferenciais(d.referenciais);
             if (d.incluirIlustracoes !== undefined) setIncluirIlustracoes(d.incluirIlustracoes);
             if (d.dificuldadePadrao !== undefined) setDificuldadePadrao(d.dificuldadePadrao);
             if (d.habilidades !== undefined) setHabilidades(d.habilidades);
@@ -121,12 +120,13 @@ const BancoQuestoesIA = () => {
     setRascunhoCarregado(true);
   }, []);
 
-  // Salva automaticamente a cada mudança
+  // Salva automaticamente
   useEffect(() => {
     if (!rascunhoCarregado) return;
     try {
       const dados = {
         titulo, metaQuestoes, etapa, ano, componente, referencial,
+        referenciais,
         incluirIlustracoes, dificuldadePadrao, habilidades,
         pool, minhasQuestoes, jaGerou,
         _salvo_em: new Date().toISOString(),
@@ -140,6 +140,7 @@ const BancoQuestoesIA = () => {
     }
   }, [
     rascunhoCarregado, titulo, metaQuestoes, etapa, ano, componente, referencial,
+    referenciais,
     incluirIlustracoes, dificuldadePadrao, habilidades, pool, minhasQuestoes, jaGerou,
   ]);
 
@@ -152,6 +153,7 @@ const BancoQuestoesIA = () => {
     setAno(2);
     setComponente('MA');
     setReferencial('bncc');
+    setReferenciais(['bncc']);
     setIncluirIlustracoes(true);
     setDificuldadePadrao('');
     setHabilidades([{
@@ -172,15 +174,12 @@ const BancoQuestoesIA = () => {
     setErro(''); setSucesso('');
   };
 
-  // ---------- FIM PERSISTÊNCIA ----------
-
   useEffect(() => {
     api.get(`/bncc/componentes?etapa=${etapa}`)
       .then(res => setComponentes(res.data || []))
       .catch(() => setComponentes([]));
   }, [etapa]);
 
-  // Carrega unidades temáticas quando componente/ano/etapa mudam
   useEffect(() => {
     if (!componente) { setUnidadesTematicas([]); return; }
     const params = { componente };
@@ -192,7 +191,6 @@ const BancoQuestoesIA = () => {
       .catch(() => setUnidadesTematicas([]));
   }, [componente, etapa, ano]);
 
-    // Carrega habilidades quando componente/ano/etapa mudam
   useEffect(() => {
     if (!componente) { setHabilidadesDisponiveis([]); return; }
     const params = { componente };
@@ -204,7 +202,6 @@ const BancoQuestoesIA = () => {
       .catch(() => setHabilidadesDisponiveis([]));
   }, [etapa, ano, componente]);
 
-  // Carrega descritores dinâmicos quando componente/ano mudam
   useEffect(() => {
     if (!componente) { setDescritoresDinamicos([]); return; }
     const params = { componente };
@@ -221,15 +218,6 @@ const BancoQuestoesIA = () => {
   const pctMeta = metaQuestoes > 0 ? Math.min(Math.round((minhasQuestoes.length / metaQuestoes) * 100), 100) : 0;
   const metaAtingida = metaQuestoes > 0 && minhasQuestoes.length >= metaQuestoes;
   const faltam = Math.max(0, metaQuestoes - minhasQuestoes.length);
-
-  const filtrarHabilidades = (busca) => {
-    if (!busca || !busca.trim()) return habilidadesDisponiveis;
-    const termo = busca.toLowerCase().trim();
-    return habilidadesDisponiveis.filter(h =>
-      (h.codigo || '').toLowerCase().includes(termo) ||
-      (h.texto || '').toLowerCase().includes(termo)
-    );
-  };
 
   const adicionarHabilidade = () => {
     setHabilidades(prev => [...prev, {
@@ -255,7 +243,6 @@ const BancoQuestoesIA = () => {
       if (i !== index) return h;
       const nova = { ...h, [campo]: valor };
 
-      // Quando escolhe unidade, carrega os objetos
       if (campo === 'unidade_tematica') {
         nova.objeto_conhecimento = '';
         nova.codigo = '';
@@ -265,7 +252,6 @@ const BancoQuestoesIA = () => {
         carregarObjetos(valor);
       }
 
-      // Quando escolhe objeto, limpa a habilidade
       if (campo === 'objeto_conhecimento') {
         nova.codigo = '';
         nova.texto = '';
@@ -273,7 +259,6 @@ const BancoQuestoesIA = () => {
         nova.descritores = [];
       }
 
-      // Quando escolhe código, preenche o texto
       if (campo === 'codigo') {
         const hab = habilidadesDisponiveis.find(x => x.codigo === valor);
         if (hab) {
@@ -297,10 +282,9 @@ const BancoQuestoesIA = () => {
     }));
   };
 
-  // Carrega objetos de conhecimento de uma unidade (com cache por unidade)
   const carregarObjetos = async (unidade) => {
     if (!unidade) return;
-    if (objetosPorUnidade[unidade]) return; // já está em cache
+    if (objetosPorUnidade[unidade]) return;
 
     try {
       const params = { componente, unidade_tematica: unidade };
@@ -340,6 +324,7 @@ const BancoQuestoesIA = () => {
       componente,
       disciplina_nome: componentes.find(c => c.codigo === componente)?.nome || componente,
       referencial,
+      referenciais,
       estado: user?.estado || null,
       incluir_ilustracoes: incluirIlustracoes,
       compartilhar_curadoria: true,
@@ -496,7 +481,9 @@ const BancoQuestoesIA = () => {
         componente,
         disciplina_nome: componentes.find(c => c.codigo === componente)?.nome || componente,
         referencial,
+        referenciais,
         estado: user?.estado || null,
+        dificuldade_padrao: dificuldadePadrao || null,
         questoes: minhasQuestoes.map(q => ({
           numero: q.numero,
           tipo: q.tipo,
@@ -521,7 +508,6 @@ const BancoQuestoesIA = () => {
   const _finalizarComSucesso = (msg) => {
     setJaGerou(true);
     setSucesso(msg);
-    // Limpa o rascunho após gerar com sucesso
     localStorage.removeItem(STORAGE_KEY);
   };
 
@@ -650,12 +636,54 @@ const BancoQuestoesIA = () => {
               {componentes.map(c => <option key={c.codigo} value={c.codigo}>{c.nome}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Referencial</label>
-            <select value={referencial} onChange={(e) => setReferencial(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-              {REFERENCIAIS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
+
+          {/* Referenciais Multi-Seleção */}
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              📚 Referenciais curriculares (escolha um ou mais)
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {REFERENCIAIS.map(r => {
+                const ativo = referenciais.includes(r.value);
+                const isBncc = r.value === 'bncc';
+                return (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => {
+                      if (isBncc) return;
+                      setReferenciais(prev =>
+                        prev.includes(r.value)
+                          ? prev.filter(x => x !== r.value)
+                          : [...prev, r.value]
+                      );
+                    }}
+                    disabled={isBncc}
+                    className={`text-left px-3 py-2 rounded-lg border-2 transition text-sm ${
+                      ativo
+                        ? 'bg-blue-50 border-blue-500 text-blue-900'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                    } ${isBncc ? 'cursor-not-allowed opacity-90' : ''}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={ativo}
+                        readOnly
+                        className="w-4 h-4 pointer-events-none"
+                      />
+                      <span className="font-medium">{r.label}</span>
+                    </div>
+                    {isBncc && (
+                      <p className="text-[10px] text-blue-700 mt-1">(sempre ativo)</p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              💡 A IA vai combinar os referenciais selecionados ao gerar as questões.
+            </p>
           </div>
         </div>
       </div>
@@ -677,7 +705,6 @@ const BancoQuestoesIA = () => {
                 )}
               </div>
 
-              {/* 1. Unidade Temática */}
               <div className="mb-3">
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   📖 Unidade Temática ({unidadesTematicas.length} disponíveis)
@@ -692,7 +719,6 @@ const BancoQuestoesIA = () => {
                 </select>
               </div>
 
-              {/* 2. Objeto de Conhecimento */}
               {h.unidade_tematica && (
                 <div className="mb-3">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -709,16 +735,13 @@ const BancoQuestoesIA = () => {
                 </div>
               )}
 
-              {/* 3. Habilidade (só aparece após escolher objeto) */}
               {h.objeto_conhecimento && (() => {
-                // Filtra habilidades deste objeto
                 const doObjeto = habilidadesDisponiveis.filter(hab => {
                   const matchUnidade = !h.unidade_tematica || hab.unidade_tematica === h.unidade_tematica;
                   const matchObjeto = !h.objeto_conhecimento || hab.objeto_conhecimento === h.objeto_conhecimento;
                   return matchUnidade && matchObjeto;
                 });
 
-                // Filtro local pela busca (opcional)
                 const termo = (h.busca || '').toLowerCase().trim();
                 const comBusca = termo
                   ? doObjeto.filter(hab =>
@@ -729,7 +752,6 @@ const BancoQuestoesIA = () => {
 
                 return (
                   <>
-                    {/* Campo de busca (opcional) */}
                     <div className="mb-3">
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         🔍 Buscar habilidade (opcional)
@@ -742,7 +764,6 @@ const BancoQuestoesIA = () => {
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
                       />
 
-                      {/* Lista de sugestões (só quando digitar) */}
                       {termo && (
                         <div className="mt-1 max-h-48 overflow-y-auto border border-blue-200 rounded-lg bg-blue-50">
                           {comBusca.length === 0 ? (
@@ -771,7 +792,6 @@ const BancoQuestoesIA = () => {
                       )}
                     </div>
 
-                    {/* Dropdown de habilidades (independente da busca) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -811,7 +831,6 @@ const BancoQuestoesIA = () => {
                 );
               })()}
 
-              {/* Info da habilidade escolhida */}
               {h.texto && (
                 <div className="text-xs text-gray-600 bg-white rounded p-2 mb-3 border border-gray-100">
                   <strong>Texto:</strong> {h.texto}
@@ -823,7 +842,6 @@ const BancoQuestoesIA = () => {
                 </div>
               )}
 
-              {/* 4. Bloom + Dificuldade */}
               {h.codigo && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                   <div>
@@ -848,7 +866,6 @@ const BancoQuestoesIA = () => {
                 </div>
               )}
 
-              {/* 5. Descritores (só se a habilidade os tiver) */}
               {h.codigo && descritoresDisponiveis().length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -954,6 +971,9 @@ const BancoQuestoesIA = () => {
             <p className="text-xs uppercase tracking-wide text-purple-200">Gerar mais questões</p>
             <p className="text-2xl font-bold">{totalParaGerar} questão(ões) neste lote</p>
             <p className="text-sm text-purple-100 mt-1">Custo: <strong>{custo} crédito(s)</strong></p>
+            <p className="text-xs text-purple-200 mt-1">
+              Referenciais ativos: <strong>{referenciais.map(r => r.toUpperCase()).join(' + ')}</strong>
+            </p>
           </div>
           <button onClick={gerarQuestoes} disabled={gerando || totalParaGerar < 1}
             className="bg-white text-purple-700 hover:bg-purple-50 disabled:bg-purple-300 disabled:text-white font-bold px-6 py-3 rounded-xl transition">
