@@ -47,17 +47,6 @@ const DIFICULDADES = [
   { value: 'dificil', label: 'Difícil' },
 ];
 
-const DESCRITORES_MATEMATICA = [
-  'D01','D02','D03','D04','D05','D06','D07','D08','D09','D10',
-  'D11','D12','D13','D14','D15','D16','D17','D18','D19','D20',
-  'D21','D22','D23','D24','D25','D26','D27','D28','D29','D30',
-  'D31','D32','D33',
-];
-const DESCRITORES_LP = [
-  'D01','D02','D03','D04','D05','D06','D07','D08','D09','D10',
-  'D11','D12','D13','D14','D15','D16','D17','D18','D19','D20','D21',
-];
-
 function arquivoParaBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -81,6 +70,9 @@ const AdminQuestionForm = () => {
   const [referenciais, setReferenciais] = useState(['bncc']);
   const [habilidadeCodigo, setHabilidadeCodigo] = useState('');
   const [habilidadeTexto, setHabilidadeTexto] = useState('');
+  const [habilidadeComplementoPi, setHabilidadeComplementoPi] = useState('');
+  const [unidadeTematica, setUnidadeTematica] = useState('');
+  const [objetoConhecimento, setObjetoConhecimento] = useState('');
   const [descritores, setDescritores] = useState([]);
   const [dificuldade, setDificuldade] = useState('');
   const [tipo, setTipo] = useState('multipla_escolha');
@@ -98,7 +90,14 @@ const AdminQuestionForm = () => {
   // ----- LISTAS -----
   const [componentes, setComponentes] = useState(COMPONENTES_FALLBACK);
   const [habilidadesDisponiveis, setHabilidadesDisponiveis] = useState([]);
+  const [unidadesTematicas, setUnidadesTematicas] = useState([]);
+  const [objetosPorUnidade, setObjetosPorUnidade] = useState({});
+  const [descritoresDinamicos, setDescritoresDinamicos] = useState([]);
+  const [usaBnccDiretamente, setUsaBnccDiretamente] = useState(false);
+  const [avisoDescritores, setAvisoDescritores] = useState('');
   const [buscaHabilidade, setBuscaHabilidade] = useState('');
+  const [listaCompletaAberta, setListaCompletaAberta] = useState(false);
+  const [buscaCompleta, setBuscaCompleta] = useState('');
 
   // ----- ESTADOS -----
   const [salvando, setSalvando] = useState(false);
@@ -117,15 +116,46 @@ const AdminQuestionForm = () => {
   // ============================================================
   // CARREGAR HABILIDADES
   // ============================================================
-  useEffect(() => {
+    useEffect(() => {
     if (!componente) { setHabilidadesDisponiveis([]); return; }
     const params = { etapa, componente };
     if (etapa === 'EF' && ano) params.ano = ano;
 
-    api.get('/bncc/habilidades', { params })
-      .then(res => setHabilidadesDisponiveis(res.data || []))
+    api.get('/bncc-estrutura/habilidades', { params })
+      .then(res => setHabilidadesDisponiveis(res.data?.habilidades || []))
       .catch(() => setHabilidadesDisponiveis([]));
   }, [etapa, ano, componente]);
+
+  // Unidades temáticas
+  useEffect(() => {
+    if (!componente) { setUnidadesTematicas([]); return; }
+    const params = { componente };
+    if (etapa) params.etapa = etapa;
+    if (etapa === 'EF' && ano) params.ano = ano;
+
+    api.get('/bncc-estrutura/unidades-tematicas', { params })
+      .then(res => setUnidadesTematicas(res.data?.unidades || []))
+      .catch(() => setUnidadesTematicas([]));
+  }, [componente, etapa, ano]);
+
+  // Descritores dinâmicos (com aviso BNCC-direto para CI/HI/GE)
+  useEffect(() => {
+    if (!componente) { setDescritoresDinamicos([]); return; }
+    const params = { componente };
+    if (etapa === 'EF' && ano) params.ano = ano;
+
+    api.get('/bncc-estrutura/descritores', { params })
+      .then(res => {
+        setDescritoresDinamicos(res.data?.descritores || []);
+        setUsaBnccDiretamente(Boolean(res.data?.usa_bncc_diretamente));
+        setAvisoDescritores(res.data?.aviso || '');
+      })
+      .catch(() => {
+        setDescritoresDinamicos([]);
+        setUsaBnccDiretamente(false);
+        setAvisoDescritores('');
+      });
+  }, [componente, etapa, ano]);
 
   // ============================================================
   // FILTRO DE HABILIDADES
@@ -140,13 +170,9 @@ const AdminQuestionForm = () => {
   })();
 
   // ============================================================
-  // DESCRITORES DISPONÍVEIS
+  // DESCRITORES DISPONÍVEIS (dinâmico — vem do backend)
   // ============================================================
-  const descritoresDisponiveis = (() => {
-    if (componente === 'MA') return DESCRITORES_MATEMATICA;
-    if (componente === 'LP') return DESCRITORES_LP;
-    return [];
-  })();
+  const descritoresDisponiveis = descritoresDinamicos;
 
   // ============================================================
   // AÇÕES DAS ALTERNATIVAS
@@ -179,19 +205,84 @@ const AdminQuestionForm = () => {
     setImagemPrincipal(b64);
   };
 
+    // ============================================================
+  // CARREGAR OBJETOS (sob demanda)
   // ============================================================
-  // SELECIONAR HABILIDADE
+  const carregarObjetos = async (unidade) => {
+    if (!unidade) return;
+    if (objetosPorUnidade[unidade]) return;
+
+    try {
+      const params = { componente, unidade_tematica: unidade };
+      if (etapa) params.etapa = etapa;
+      if (etapa === 'EF' && ano) params.ano = ano;
+
+      const res = await api.get('/bncc-estrutura/objetos-conhecimento', { params });
+      setObjetosPorUnidade(prev => ({ ...prev, [unidade]: res.data?.objetos || [] }));
+    } catch {
+      setObjetosPorUnidade(prev => ({ ...prev, [unidade]: [] }));
+    }
+  };
+
+  // ============================================================
+  // SELECIONAR HABILIDADE (preenche unidade + objeto automaticamente)
   // ============================================================
   const selecionarHabilidade = (codigo) => {
     setHabilidadeCodigo(codigo);
     const h = habilidadesDisponiveis.find(x => x.codigo === codigo);
-    setHabilidadeTexto(h?.texto || '');
+    if (h) {
+      setHabilidadeTexto(h.texto || '');
+      setHabilidadeComplementoPi(h.complemento_pi || '');
+      setUnidadeTematica(h.unidade_tematica || '');
+      setObjetoConhecimento(h.objeto_conhecimento || '');
+      if (h.unidade_tematica && !objetosPorUnidade[h.unidade_tematica]) {
+        carregarObjetos(h.unidade_tematica);
+      }
+    } else {
+      setHabilidadeTexto('');
+      setHabilidadeComplementoPi('');
+      setUnidadeTematica('');
+      setObjetoConhecimento('');
+    }
+  };
+
+  // Terceiro caminho: escolher direto da lista completa
+  const selecionarDaListaCompleta = (hab) => {
+    setHabilidadeCodigo(hab.codigo || '');
+    setHabilidadeTexto(hab.texto || '');
+    setHabilidadeComplementoPi(hab.complemento_pi || '');
+    setUnidadeTematica(hab.unidade_tematica || '');
+    setObjetoConhecimento(hab.objeto_conhecimento || '');
+    if (hab.unidade_tematica && !objetosPorUnidade[hab.unidade_tematica]) {
+      carregarObjetos(hab.unidade_tematica);
+    }
+    setListaCompletaAberta(false);
+    setBuscaCompleta('');
   };
 
   const toggleDescritor = (d) => {
     setDescritores(prev =>
       prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]
     );
+  };
+
+  // Handlers da cascata — resetam os níveis inferiores quando um superior muda
+  const handleMudarUnidade = (novaUnidade) => {
+    setUnidadeTematica(novaUnidade);
+    setObjetoConhecimento('');
+    setHabilidadeCodigo('');
+    setHabilidadeTexto('');
+    setHabilidadeComplementoPi('');
+    setDescritores([]);
+    if (novaUnidade) carregarObjetos(novaUnidade);
+  };
+
+  const handleMudarObjeto = (novoObjeto) => {
+    setObjetoConhecimento(novoObjeto);
+    setHabilidadeCodigo('');
+    setHabilidadeTexto('');
+    setHabilidadeComplementoPi('');
+    setDescritores([]);
   };
 
   // BNCC é fixo (sempre ativo). Os demais são toggleáveis.
@@ -234,6 +325,8 @@ const AdminQuestionForm = () => {
         componente,
         disciplina: componentes.find(c => c.codigo === componente)?.nome || componente,
         referenciais,
+        unidade_tematica: unidadeTematica || null,
+        objeto_conhecimento: objetoConhecimento || null,
         habilidade_codigo: habilidadeCodigo || null,
         descritores: descritores.length > 0 ? descritores : null,
         dificuldade: dificuldade || null,
@@ -360,33 +453,182 @@ const AdminQuestionForm = () => {
             </div>
           </div>
 
-          {/* Habilidade e descritores */}
+          {/* Habilidade e descritores — cascata completa */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <h2 className="text-lg font-semibold text-slate-800 mb-4">📚 Habilidade e Descritores</h2>
 
-            <div className="mb-3">
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                🔍 Buscar habilidade ({habilidadesFiltradas.length} disponíveis)
-              </label>
-              <input type="text" value={buscaHabilidade}
-                onChange={(e) => setBuscaHabilidade(e.target.value)}
-                placeholder="Digite o código (EF02MA01) ou palavra-chave"
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+            {/* Terceiro caminho — lista completa do componente */}
+            <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <div className="flex justify-between items-center flex-wrap gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-purple-900">
+                    📋 Atalho: ver todas as habilidades do componente
+                  </p>
+                  <p className="text-[10px] text-purple-700 mt-0.5">
+                    Use quando já souber o código (ex: EF02MA01) ou quiser explorar sem passar pela cascata.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (listaCompletaAberta) {
+                      setListaCompletaAberta(false);
+                      setBuscaCompleta('');
+                    } else {
+                      setBuscaCompleta('');
+                      setListaCompletaAberta(true);
+                    }
+                  }}
+                  className="text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium px-3 py-1.5 rounded-lg flex-shrink-0"
+                >
+                  {listaCompletaAberta
+                    ? '✖ Fechar lista'
+                    : `🔍 Ver ${habilidadesDisponiveis.length} habilidades`}
+                </button>
+              </div>
+
+              {listaCompletaAberta && (() => {
+                const termo = buscaCompleta.toLowerCase().trim();
+                const filtradas = termo
+                  ? habilidadesDisponiveis.filter(x =>
+                      (x.codigo || '').toLowerCase().includes(termo) ||
+                      (x.texto || '').toLowerCase().includes(termo)
+                    )
+                  : habilidadesDisponiveis;
+
+                return (
+                  <div className="mt-3">
+                    <input
+                      type="text"
+                      value={buscaCompleta}
+                      onChange={(e) => setBuscaCompleta(e.target.value)}
+                      placeholder="Filtre por código (EF02MA01) ou palavra-chave..."
+                      className="w-full border border-purple-300 rounded-lg px-3 py-2 text-sm bg-white mb-2"
+                    />
+                    <div className="max-h-64 overflow-y-auto border border-purple-200 rounded-lg bg-white divide-y divide-purple-100">
+                      {filtradas.length === 0 ? (
+                        <div className="p-3 text-xs text-slate-500 italic">
+                          Nenhuma habilidade corresponde a "{buscaCompleta}"
+                        </div>
+                      ) : (
+                        filtradas.slice(0, 200).map(hab => (
+                          <button
+                            key={hab.codigo}
+                            type="button"
+                            onClick={() => selecionarDaListaCompleta(hab)}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-purple-50 transition"
+                          >
+                            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                              <strong className="font-mono text-purple-700">{hab.codigo}</strong>
+                              {hab.unidade_tematica && (
+                                <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                                  {hab.unidade_tematica}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-slate-700">
+                              {(hab.texto || '').slice(0, 120)}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                      {filtradas.length > 200 && (
+                        <div className="p-2 text-[10px] text-slate-500 italic bg-slate-50">
+                          Mostrando 200 de {filtradas.length}. Refine a busca para ver mais.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
+            {/* Cascata: Unidade → Objeto → Habilidade */}
             <div className="mb-3">
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Habilidade selecionada</label>
-              <select value={habilidadeCodigo}
-                onChange={(e) => selecionarHabilidade(e.target.value)}
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
+                📖 Unidade Temática ({unidadesTematicas.length} disponíveis)
+              </label>
+              <select value={unidadeTematica}
+                onChange={(e) => handleMudarUnidade(e.target.value)}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
-                <option value="">Nenhuma (opcional)</option>
-                {habilidadesFiltradas.slice(0, 100).map(h => (
-                  <option key={h.codigo} value={h.codigo}>
-                    {h.codigo} — {(h.texto || '').slice(0, 80)}
-                  </option>
+                <option value="">Selecione a unidade temática...</option>
+                {unidadesTematicas.map(u => (
+                  <option key={u} value={u}>{u}</option>
                 ))}
               </select>
             </div>
+
+            {unidadeTematica && (
+              <div className="mb-3">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  🎯 Objeto de Conhecimento ({(objetosPorUnidade[unidadeTematica] || []).length} disponíveis)
+                </label>
+                <select value={objetoConhecimento}
+                  onChange={(e) => handleMudarObjeto(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+                  <option value="">Selecione o objeto de conhecimento...</option>
+                  {(objetosPorUnidade[unidadeTematica] || []).map(o => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {objetoConhecimento && (() => {
+              const doObjeto = habilidadesDisponiveis.filter(hab => {
+                const matchUnidade = !unidadeTematica || hab.unidade_tematica === unidadeTematica;
+                const matchObjeto = !objetoConhecimento || hab.objeto_conhecimento === objetoConhecimento;
+                return matchUnidade && matchObjeto;
+              });
+
+              const termo = (buscaHabilidade || '').toLowerCase().trim();
+              const comBusca = termo
+                ? doObjeto.filter(hab =>
+                    (hab.codigo || '').toLowerCase().includes(termo) ||
+                    (hab.texto || '').toLowerCase().includes(termo)
+                  )
+                : doObjeto;
+
+              return (
+                <>
+                  <div className="mb-3">
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      🔍 Buscar habilidade (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={buscaHabilidade}
+                      onChange={(e) => setBuscaHabilidade(e.target.value)}
+                      placeholder="Digite o código (EF02MA01) ou palavra-chave..."
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      ✨ Habilidade ({doObjeto.length} disponíveis)
+                    </label>
+                    <select
+                      value={habilidadeCodigo}
+                      onChange={(e) => selecionarHabilidade(e.target.value)}
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
+                    >
+                      <option value="">Nenhuma (opcional)</option>
+                      {(termo ? comBusca : doObjeto).map(hab => (
+                        <option key={hab.codigo} value={hab.codigo}>
+                          {hab.codigo} — {(hab.texto || '').slice(0, 80)}
+                        </option>
+                      ))}
+                    </select>
+                    {doObjeto.length === 0 && (
+                      <p className="text-xs text-amber-700 mt-1">
+                        ⚠️ Nenhuma habilidade cadastrada para este objeto ainda.
+                      </p>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
 
             {habilidadeTexto && (
               <div className="text-xs text-slate-700 bg-slate-50 rounded p-2 mb-3 border border-slate-200">
@@ -394,20 +636,77 @@ const AdminQuestionForm = () => {
               </div>
             )}
 
-            {descritoresDisponiveis.length > 0 && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Descritores ({descritores.length} selecionados)
+            {habilidadeComplementoPi && (
+              <div className="text-xs text-amber-800 bg-amber-50 rounded p-2 mb-3 border border-amber-100">
+                <strong>📌 Complemento Piauí:</strong> {habilidadeComplementoPi}
+              </div>
+            )}
+
+            {habilidadeCodigo && usaBnccDiretamente && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
+                <p className="font-semibold mb-0.5">ℹ️ Este componente não usa descritores tradicionais</p>
+                <p>{avisoDescritores || 'Este componente usa as habilidades da BNCC diretamente, sem descritores SAEB/SAEPI tradicionais.'}</p>
+              </div>
+            )}
+
+            {habilidadeCodigo && !usaBnccDiretamente && descritoresDisponiveis.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-200">
+                <label className="block text-xs font-semibold text-slate-600 mb-2">
+                  📊 Descritores ({descritores.length} selecionados)
                 </label>
-                <div className="flex flex-wrap gap-1 border border-slate-200 rounded p-2 bg-slate-50">
-                  {descritoresDisponiveis.map(d => (
-                    <button key={d} type="button" onClick={() => toggleDescritor(d)}
-                      className={`text-xs px-2 py-0.5 rounded font-mono ${
-                        descritores.includes(d)
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
-                      }`}>{d}</button>
-                  ))}
+                <p className="text-[10px] text-slate-500 mb-2">
+                  Clique nos descritores que deseja avaliar nesta questão.
+                </p>
+                <div className="space-y-1 max-h-64 overflow-y-auto border border-slate-200 rounded p-2 bg-white">
+                  {descritoresDisponiveis.map(d => {
+                    const codigo = d.codigo || d;
+                    const texto = d.texto || '';
+                    const tema = d.tema || '';
+                    const fonte = d.fonte || '';
+                    const selecionado = descritores.includes(codigo);
+
+                    return (
+                      <button
+                        key={codigo + (fonte || '')}
+                        type="button"
+                        onClick={() => toggleDescritor(codigo)}
+                        className={`w-full text-left px-3 py-2 rounded-lg border-2 transition ${
+                          selecionado
+                            ? 'bg-blue-50 border-blue-500'
+                            : 'bg-white border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selecionado}
+                            readOnly
+                            className="mt-0.5 w-4 h-4 text-blue-600 rounded flex-shrink-0 pointer-events-none"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap gap-1.5 items-center mb-1">
+                              <span className="font-mono font-bold text-xs text-blue-700">
+                                {codigo}
+                              </span>
+                              {tema && (
+                                <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                                  {tema}
+                                </span>
+                              )}
+                              {fonte && (
+                                <span className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-semibold uppercase">
+                                  {fonte}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-700 leading-snug">
+                              {texto}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -550,6 +849,11 @@ const AdminQuestionForm = () => {
                     {r === 'curriculo_piaui' ? 'PIAUÍ' : r.toUpperCase()}
                   </span>
                 ))}
+                {unidadeTematica && (
+                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px]">
+                    {unidadeTematica}
+                  </span>
+                )}
                 {habilidadeCodigo && (
                   <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-[10px] font-mono">
                     {habilidadeCodigo}
