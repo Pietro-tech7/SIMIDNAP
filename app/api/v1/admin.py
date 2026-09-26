@@ -641,7 +641,6 @@ def _montar_question_item(q: QuestionBankFundamental, db: Session) -> AdminQuest
         imagem_url=q.imagem_url,
         habilidade_codigo=q.habilidade_codigo,
         referencial=q.referencial,
-        referencias_extras=q.referencias_extras,
         descritores=q.descritores,
         dificuldade=q.dificuldade,
         origem=q.origem,
@@ -912,16 +911,8 @@ def admin_question_bank_editar(
         q.gabarito = data.gabarito
     if data.habilidade_codigo is not None:
         q.habilidade_codigo = data.habilidade_codigo
-    if data.referenciais is not None:
-        if data.referenciais:
-            q.referencial = data.referenciais[0]
-            q.referencias_extras = data.referenciais[1:] if len(data.referenciais) > 1 else None
-        else:
-            q.referencial = None
-            q.referencias_extras = None
-    elif data.referencial is not None:
+    if data.referencial is not None:
         q.referencial = data.referencial
-        q.referencias_extras = None
     if data.ano is not None:
         q.ano = data.ano
     if data.etapa is not None:
@@ -1115,14 +1106,6 @@ def admin_question_bank_criar(
     if not data.enunciado or len(data.enunciado.strip()) < 10:
         raise HTTPException(status_code=400, detail="Enunciado muito curto (mínimo 10 caracteres).")
 
-    # Multi-referencial: primeiro item é o principal, os demais vão para referencias_extras
-    if data.referenciais:
-        referencial_principal = data.referenciais[0]
-        refs_extras = data.referenciais[1:] if len(data.referenciais) > 1 else None
-    else:
-        referencial_principal = data.referencial or "bncc"
-        refs_extras = None
-
     nova = QuestionBankFundamental(
         fonte="SIMIDNAPE_ADMIN",
         ano=data.ano,
@@ -1141,8 +1124,7 @@ def admin_question_bank_criar(
         imagens_extras=data.imagens_extras,
         habilidades=[data.habilidade_codigo] if data.habilidade_codigo else None,
         habilidade_codigo=data.habilidade_codigo,
-        referencial=referencial_principal,
-        referencias_extras=refs_extras,
+        referencial=data.referencial,
         descritores=data.descritores,
         dificuldade=data.dificuldade,
         origem="manual",
