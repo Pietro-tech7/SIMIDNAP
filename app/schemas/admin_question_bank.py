@@ -28,6 +28,7 @@ class AdminQuestionItem(BaseModel):
     imagem_url: Optional[str] = None
     habilidade_codigo: Optional[str] = None
     referencial: Optional[str] = None
+    referencias_extras: Optional[List[str]] = None
     descritores: Optional[List[str]] = None
     dificuldade: Optional[str] = None
     origem: str
@@ -60,6 +61,7 @@ class AdminQuestionUpdate(BaseModel):
     gabarito: Optional[str] = None
     habilidade_codigo: Optional[str] = None
     referencial: Optional[str] = None
+    referenciais: Optional[List[str]] = None
     ano: Optional[int] = None
     etapa: Optional[str] = None
     serie: Optional[str] = None
@@ -108,6 +110,7 @@ class AdminQuestionCreate(BaseModel):
     unidade_tematica: Optional[str] = Field(None, max_length=200)   # NOVO
     objeto_conhecimento: Optional[str] = Field(None, max_length=300) # NOVO
     referencial: Optional[str] = Field("bncc", max_length=30)
+    referenciais: Optional[List[str]] = None
     habilidade_codigo: Optional[str] = Field(None, max_length=50)
     descritores: Optional[List[str]] = None
     dificuldade: Optional[str] = Field(None, max_length=20)

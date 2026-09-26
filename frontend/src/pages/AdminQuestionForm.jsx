@@ -78,7 +78,7 @@ const AdminQuestionForm = () => {
   const [ano, setAno] = useState(2);
   const [serie, setSerie] = useState('');
   const [componente, setComponente] = useState('MA');
-  const [referencial, setReferencial] = useState('bncc');
+  const [referenciais, setReferenciais] = useState(['bncc']);
   const [habilidadeCodigo, setHabilidadeCodigo] = useState('');
   const [habilidadeTexto, setHabilidadeTexto] = useState('');
   const [descritores, setDescritores] = useState([]);
@@ -194,6 +194,14 @@ const AdminQuestionForm = () => {
     );
   };
 
+  // BNCC é fixo (sempre ativo). Os demais são toggleáveis.
+  const toggleReferencial = (valor) => {
+    if (valor === 'bncc') return;
+    setReferenciais(prev =>
+      prev.includes(valor) ? prev.filter(x => x !== valor) : [...prev, valor]
+    );
+  };
+
   // ============================================================
   // SUBMIT
   // ============================================================
@@ -225,7 +233,7 @@ const AdminQuestionForm = () => {
         serie: serie || null,
         componente,
         disciplina: componentes.find(c => c.codigo === componente)?.nome || componente,
-        referencial,
+        referenciais,
         habilidade_codigo: habilidadeCodigo || null,
         descritores: descritores.length > 0 ? descritores : null,
         dificuldade: dificuldade || null,
@@ -315,12 +323,31 @@ const AdminQuestionForm = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Referencial *</label>
-                <select value={referencial} onChange={(e) => setReferencial(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
-                  {REFERENCIAIS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
+              <div className="md:col-span-3">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Referenciais * <span className="text-slate-400 font-normal">(BNCC sempre ativo — clique para marcar os demais)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {REFERENCIAIS.map(r => {
+                    const ativo = referenciais.includes(r.value);
+                    const fixo = r.value === 'bncc';
+                    return (
+                      <button
+                        key={r.value}
+                        type="button"
+                        onClick={() => toggleReferencial(r.value)}
+                        disabled={fixo}
+                        className={`text-xs px-3 py-1.5 rounded-lg font-medium transition border ${
+                          ativo
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                        } ${fixo ? 'opacity-90 cursor-not-allowed' : ''}`}
+                      >
+                        {ativo ? '☑ ' : '☐ '}{r.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
@@ -518,11 +545,11 @@ const AdminQuestionForm = () => {
                     {componentes.find(c => c.codigo === componente)?.nome || componente}
                   </span>
                 )}
-                {referencial && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px]">
-                    {referencial.toUpperCase()}
+                {referenciais.map(r => (
+                  <span key={r} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px]">
+                    {r === 'curriculo_piaui' ? 'PIAUÍ' : r.toUpperCase()}
                   </span>
-                )}
+                ))}
                 {habilidadeCodigo && (
                   <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-[10px] font-mono">
                     {habilidadeCodigo}
