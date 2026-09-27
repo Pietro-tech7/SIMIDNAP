@@ -85,6 +85,7 @@ const BancoQuestoesIA = () => {
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
   const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [gerandoWord, setGerandoWord] = useState(false);
   const [jaGerou, setJaGerou] = useState(false);
 
   const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
@@ -634,6 +635,88 @@ const BancoQuestoesIA = () => {
       mostrarDescritor,
     },
   });
+
+  // ============================================================
+  // BLOCO C.14 — Geração de Word (.docx)
+  // ============================================================
+  const gerarWord = async (tipo) => {
+    if (!metaAtingida) { alert(`Faltam ${faltam} questão(ões) para a meta.`); return; }
+    if (tipo !== 'prova' && tipo !== 'gabarito') return;
+
+    setGerandoWord(true); setErro(''); setSucesso('');
+
+    try {
+      // Salva a prova no backend e envia para curadoria (mesmo comportamento do PDF)
+      await _salvarProvaNoBackend();
+      await _enviarCuradoria();
+
+      // Payload para o endpoint de Word
+      const payload = {
+        tipo,
+        titulo: titulo.trim(),
+        cabecalho: cabecalho || null,
+        questoes: minhasQuestoes.map((q, i) => ({
+          numero: i + 1,
+          enunciado: q.enunciado,
+          alternativas: q.alternativas,
+          gabarito: q.gabarito,
+          explicacao_gabarito: q.explicacao_gabarito,
+          habilidade_codigo: q.habilidade_codigo,
+          habilidade_texto: q.habilidade_texto,
+          descritor: q.descritor,
+          descritor_texto: q.descritor_texto,
+          nivel_cognitivo: q.nivel_cognitivo,
+          dificuldade: q.dificuldade,
+          tema_condutor: q.tema_condutor || null,
+          imagem_url: q.imagem_url || null,
+          ilustracao: q.ilustracao || null,
+        })),
+        opcoes: {
+          mostrarTemaCondutor,
+          mostrarDescritor,
+        },
+      };
+
+      // Faz a requisição com responseType blob (arquivo binário)
+      const res = await api.post('/question-ia/gerar-word', payload, {
+        responseType: 'blob',
+      });
+
+      // Cria o link de download e aciona
+      const blob = new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+      const url = window.URL.createObjectURL(blob);
+
+      const slug = (titulo.trim() || 'prova')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .substring(0, 60) || 'prova';
+
+      const sufixo = tipo === 'prova' ? 'PROVA' : 'GABARITO';
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${slug}_${sufixo}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      _finalizarComSucesso(
+        tipo === 'prova'
+          ? '✅ Word da PROVA gerado! Verifique a pasta de Downloads.'
+          : '✅ Word do GABARITO gerado! Verifique a pasta de Downloads.'
+      );
+    } catch (err) {
+      console.error('Erro ao gerar Word:', err);
+      setErro(err?.message || 'Erro ao gerar arquivo Word.');
+    } finally {
+      setGerandoWord(false);
+    }
+  };
 
   const _salvarProvaNoBackend = async () => {
     try {
@@ -1328,18 +1411,36 @@ const BancoQuestoesIA = () => {
 
           {metaAtingida && (
             <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
-              <button onClick={gerarSoProva} disabled={gerandoPdf}
+              <button onClick={gerarSoProva} disabled={gerandoPdf || gerandoWord}
                 className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3 rounded-lg transition">
                 {gerandoPdf ? '⏳...' : '📄 Baixar Prova'}
               </button>
-              <button onClick={gerarSoGabarito} disabled={gerandoPdf}
+              <button onClick={gerarSoGabarito} disabled={gerandoPdf || gerandoWord}
                 className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold py-3 rounded-lg transition">
                 {gerandoPdf ? '⏳...' : '📋 Baixar Gabarito'}
               </button>
-              <button onClick={gerarAmbos} disabled={gerandoPdf}
+              <button onClick={gerarAmbos} disabled={gerandoPdf || gerandoWord}
                 className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-bold py-3 rounded-lg transition">
                 {gerandoPdf ? '⏳ Gerando...' : '📥 Baixar Ambos'}
               </button>
+            </div>
+          )}
+
+          {metaAtingida && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <p className="text-xs text-gray-600 mb-2">
+                📝 <strong>Ou baixe em Word (.docx)</strong> — para editar livremente no Word
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <button onClick={() => gerarWord('prova')} disabled={gerandoPdf || gerandoWord}
+                  className="bg-sky-600 hover:bg-sky-700 disabled:bg-sky-300 text-white font-bold py-3 rounded-lg transition">
+                  {gerandoWord ? '⏳ Gerando...' : '📄 Word (Prova)'}
+                </button>
+                <button onClick={() => gerarWord('gabarito')} disabled={gerandoPdf || gerandoWord}
+                  className="bg-cyan-700 hover:bg-cyan-800 disabled:bg-cyan-300 text-white font-bold py-3 rounded-lg transition">
+                  {gerandoWord ? '⏳ Gerando...' : '📋 Word (Gabarito)'}
+                </button>
+              </div>
             </div>
           )}
         </div>
