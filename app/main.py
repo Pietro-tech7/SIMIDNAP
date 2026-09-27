@@ -29,6 +29,7 @@ from .models import (  # noqa: F401
     bncc_estrutura,
     descritor,
     habilidade_descritor,
+    figure_bank,
 )
 
 
