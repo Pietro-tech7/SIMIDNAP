@@ -66,7 +66,155 @@ def calcular_custo(total_questoes: int) -> int:
 
 
 # ============================================================
-# SYSTEM INSTRUCTION
+# PALAVRAS-ÂNCORA POR COMPONENTE
+# Usadas no prompt para direcionar a IA a escolher o contexto correto
+# ============================================================
+PALAVRAS_ANCORA_POR_COMPONENTE = {
+    "MA": {
+        "descricao": "Matemática",
+        "palavras": [
+            "dobro, triplo, metade, quádruplo (multiplicação/divisão)",
+            "ao todo, juntou, arrecadaram, somaram, no total (adição)",
+            "sobraram, restaram, ficou, gastou, vendeu (subtração)",
+            "dividiu igualmente, cada um recebeu, repartiu (divisão)",
+            "maior que, menor que, comparar (comparação)",
+            "ordem crescente, ordem decrescente, organizar (sequência)",
+            "decompor, algarismo, ordem, classe, valor posicional (SND)",
+            "localização, deslocamento, mapa, posição (geometria)",
+            "medida, comprimento, massa, capacidade, tempo (grandezas)",
+        ],
+    },
+    "LP": {
+        "descricao": "Língua Portuguesa",
+        "palavras": [
+            "de acordo com o texto, segundo o autor (localização explícita)",
+            "infira, conclua, deduza, subentende-se (inferência)",
+            "qual é o tema, do que trata o texto, assunto principal (tema)",
+            "para que serve, qual a finalidade, propósito (função social)",
+            "o que aconteceu primeiro, depois, em seguida (sequência narrativa)",
+            "causa, consequência, por causa de, por isso (relações lógicas)",
+            "o personagem sentiu, qual a intenção, o que significa (interpretação)",
+            "opinião, fato, argumento, tese (argumentação)",
+        ],
+    },
+    "CI": {
+        "descricao": "Ciências da Natureza",
+        "palavras": [
+            "explique por que, qual a causa, o que provoca (explicação causal)",
+            "compare, diferencie, quais as diferenças (comparação)",
+            "identifique o processo, descreva as etapas (descrição de processos)",
+            "qual seria o resultado se, preveja (previsão)",
+            "como funciona, de que é feito, do que se trata (composição)",
+            "qual o impacto, quais consequências ambientais (impacto socioambiental)",
+        ],
+    },
+    "HI": {
+        "descricao": "História",
+        "palavras": [
+            "qual o contexto histórico, em que época, qual o período (temporalidade)",
+            "qual a causa, o que motivou, o que provocou (causalidade histórica)",
+            "compare os períodos, diferencie as épocas (comparação histórica)",
+            "quem foram os envolvidos, quais os sujeitos históricos (sujeitos)",
+            "qual a consequência, o que mudou depois (mudança e permanência)",
+        ],
+    },
+    "GE": {
+        "descricao": "Geografia",
+        "palavras": [
+            "qual a localização, identifique no mapa, em que região (localização)",
+            "compare os espaços, quais as diferenças entre lugares (comparação)",
+            "qual o impacto ambiental, quais as transformações do espaço (impacto)",
+            "como se relacionam, qual a interdependência (relação sociedade-natureza)",
+            "qual a escala, do local ao global (escalas geográficas)",
+        ],
+    },
+    "AR": {
+        "descricao": "Arte",
+        "palavras": [
+            "quais elementos visuais, cores, formas, texturas (linguagem visual)",
+            "qual a intenção artística, o que a obra representa (leitura de obra)",
+            "compare os estilos, diferencie as linguagens artísticas (comparação)",
+        ],
+    },
+    "EF": {
+        "descricao": "Educação Física",
+        "palavras": [
+            "quais movimentos, qual a técnica, como executar (movimento)",
+            "quais regras, como funciona o jogo (esporte)",
+            "qual a importância para a saúde, benefícios (saúde)",
+        ],
+    },
+    "ER": {
+        "descricao": "Ensino Religioso",
+        "palavras": [
+            "qual o valor, o que representa, qual o significado (valores)",
+            "compare as tradições, diferencie as práticas (diversidade religiosa)",
+            "qual a importância do respeito, da convivência (convivência)",
+        ],
+    },
+    "LI": {
+        "descricao": "Língua Inglesa",
+        "palavras": [
+            "what does it mean, traduza, qual o significado (compreensão)",
+            "complete a frase, escolha a palavra correta (vocabulário)",
+            "qual a estrutura, como se forma (gramática)",
+        ],
+    },
+}
+
+
+# ============================================================
+# TEMAS CONDUTORES POR COMPONENTE
+# Rótulos que a IA usa para identificar o eixo pedagógico da questão
+# ============================================================
+TEMAS_CONDUTORES_POR_COMPONENTE = {
+    "MA": [
+        "QUANTIDADE", "ORDEM", "MEDIDA", "CÓDIGO DE IDENTIFICAÇÃO",
+        "DIFERENCIANDO SITUAÇÕES", "ADIÇÃO", "SUBTRAÇÃO", "MULTIPLICAÇÃO",
+        "DIVISÃO", "COMPARAÇÃO", "SEQUÊNCIA", "DECOMPOSIÇÃO", "VALOR POSICIONAL",
+        "GEOMETRIA", "GRANDEZAS E MEDIDAS", "ESTATÍSTICA",
+    ],
+    "LP": [
+        "LOCALIZAR", "INFERIR", "TEMA", "FINALIDADE", "SEQUÊNCIA",
+        "CAUSA E CONSEQUÊNCIA", "INTERPRETAÇÃO", "ARGUMENTAÇÃO", "COESÃO",
+    ],
+    "CI": [
+        "OBSERVAÇÃO", "EXPLICAÇÃO", "COMPARAÇÃO", "PREVISÃO", "ANÁLISE",
+        "IMPACTO SOCIOAMBIENTAL",
+    ],
+    "HI": [
+        "TEMPO", "CAUSALIDADE", "COMPARAÇÃO HISTÓRICA", "SUJEITOS",
+        "MUDANÇA E PERMANÊNCIA",
+    ],
+    "GE": [
+        "LOCALIZAÇÃO", "COMPARAÇÃO", "IMPACTO", "RELAÇÃO SOCIEDADE-NATUREZA",
+        "ESCALAS",
+    ],
+    "AR": ["LINGUAGEM VISUAL", "LEITURA DE OBRA", "COMPARAÇÃO"],
+    "EF": ["MOVIMENTO", "ESPORTE", "SAÚDE"],
+    "ER": ["VALORES", "DIVERSIDADE", "CONVIVÊNCIA"],
+    "LI": ["COMPREENSÃO", "VOCABULÁRIO", "GRAMÁTICA"],
+}
+
+
+# ============================================================
+# ERROS COMUNS POR TIPO DE HABILIDADE (para calibrar distratores)
+# ============================================================
+ERROS_COMUNS_POR_TIPO = {
+    "adicao": "Aluno soma mas esquece de agrupar; ou soma apenas uma parte.",
+    "subtracao": "Aluno subtrai o menor do maior mesmo quando a ordem não importa; ou esquece de 'emprestar'.",
+    "multiplicacao": "Aluno soma em vez de multiplicar; ou multiplica por número errado.",
+    "divisao": "Aluno divide errado (metade vs. quarta parte); ou confunde divisor com dividendo.",
+    "comparacao": "Aluno confunde 'maior' com 'menor'; ou compara apenas um dígito.",
+    "ordem": "Aluno confunde posição ordinal com quantidade.",
+    "valor_posicional": "Aluno confunde unidade/dezena/centena.",
+    "leitura": "Aluno lê a informação errada por não atentar ao enunciado.",
+    "inferencia": "Aluno escolhe informação explícita em vez de inferir.",
+}
+
+
+# ============================================================
+# SYSTEM INSTRUCTION — enriquecida
 # ============================================================
 def montar_system_instruction() -> str:
     return (
@@ -74,20 +222,59 @@ def montar_system_instruction() -> str:
         "profundo da BNCC, dos currículos estaduais (especialmente do Piauí), "
         "das Matrizes de Referência do SAEB e SAEPI, e da Taxonomia de Bloom.\n\n"
         "Sua tarefa é GERAR QUESTÕES INÉDITAS de múltipla escolha para compor uma prova.\n\n"
-        "REGRAS PEDAGÓGICAS:\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "REGRAS PEDAGÓGICAS OBRIGATÓRIAS\n"
+        "═══════════════════════════════════════════════════════════════\n"
         "1. Cada questão deve estar alinhada a UM descritor específico.\n"
         "2. Respeite as quantidades solicitadas por habilidade.\n"
         "3. Use linguagem adequada à faixa etária.\n"
         "4. Frases curtas, vocabulário simples.\n"
-        "5. Contextualize em situações do cotidiano da criança.\n"
+        "5. Contextualize em situações do cotidiano brasileiro.\n"
         "6. Inclua 4 alternativas (A, B, C, D).\n"
         "7. A alternativa correta deve estar claramente correta.\n"
-        "8. Os distratores devem ser plausíveis (não absurdos).\n\n"
-        "SUPORTE VISUAL:\n"
-        "9. Para cada questão, indique se ela precisa de ilustração.\n"
-        "10. Se precisar, descreva em português o que deve ser ilustrado.\n"
-        "11. Use termos simples e reconhecíveis.\n\n"
-        "FORMATO DE SAÍDA (JSON):\n"
+        "8. Os distratores NÃO devem ser absurdos.\n\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "REGRA CRÍTICA — DISTRATORES CALIBRADOS POR ERRO COMUM\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "Cada distrator deve representar um ERRO COMUM que o aluno cometeria.\n"
+        "NÃO invente distratores aleatórios. Use os seguintes erros típicos:\n"
+        "• Adição: aluno soma mas esquece de agrupar; ou soma só uma parte.\n"
+        "• Subtração: aluno subtrai o menor do maior mesmo quando a ordem não importa.\n"
+        "• Multiplicação: aluno soma em vez de multiplicar.\n"
+        "• Divisão: aluno divide errado (metade vs. quarta parte).\n"
+        "• Comparação: aluno confunde 'maior' com 'menor'.\n"
+        "• Ordem: aluno confunde posição ordinal com quantidade.\n"
+        "• Valor posicional: aluno confunde unidade/dezena/centena.\n"
+        "• Leitura: aluno lê informação errada por não atentar ao enunciado.\n"
+        "• Inferência: aluno escolhe informação explícita em vez de inferir.\n\n"
+        "REGRA CRÍTICA — PROGRESSÃO COGNITIVA\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "Dentro de cada lote, ordene as questões do mais simples para o mais complexo,\n"
+        "respeitando a Taxonomia de Bloom:\n"
+        "  1º Lembrar → 2º Compreender → 3º Aplicar → 4º Analisar → 5º Avaliar → 6º Criar\n\n"
+        "REGRA CRÍTICA — CONTEXTO COTIDIANO E CULTURAL\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "Use nomes próprios brasileiros comuns (Ana, Bruno, Carla, Daniel, Elena).\n"
+        "Use situações do dia a dia (escola, casa, mercado, parque, festa).\n"
+        "Para o Piauí, prefira contextos regionais sem estereótipos.\n"
+        "NUNCA use nomes ou contextos que possam soar excludentes.\n\n"
+        "SUPORTE VISUAL\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "Para cada questão, indique se ela precisa de ilustração.\n"
+        "Se precisar, descreva em português o que deve ser ilustrado.\n"
+        "Use termos simples e reconhecíveis.\n"
+        "Além disso, classifique o tipo de figura sugerida como UM dos:\n"
+        "  - quantidade (objetos contáveis: bolas, lápis, frutas)\n"
+        "  - ordem (fila, pódio, estante, posição ordinal)\n"
+        "  - medida (régua, balança, relógio)\n"
+        "  - decomposicao (blocos de centena/dezena/unidade)\n"
+        "  - sequencia (reta numérica, escada)\n"
+        "  - comparacao (duas colunas lado a lado)\n"
+        "  - objetos_escolares (lápis, caderno, tesoura, mochila)\n"
+        "  - formas (quadrado, círculo, triângulo, etc.)\n"
+        "  - nenhuma (questão não pede figura)\n\n"
+        "FORMATO DE SAÍDA (JSON)\n"
+        "═══════════════════════════════════════════════════════════════\n"
         "{\n"
         '  "questoes": [\n'
         "    {\n"
@@ -149,6 +336,33 @@ def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end
             prompt += f"• {instr}\n"
     prompt += "\n"
 
+    # ----------------------------------------------------------
+    # ENRIQUECIMENTO 1 — palavras-âncora e temas condutores por componente
+    # ----------------------------------------------------------
+    comp = (data.componente or "").upper()
+    if comp in PALAVRAS_ANCORA_POR_COMPONENTE:
+        info = PALAVRAS_ANCORA_POR_COMPONENTE[comp]
+        prompt += f"\nPALAVRAS-ÂNCORA PARA {info['descricao'].upper()}:\n"
+        prompt += "Use as palavras-chave abaixo para escolher o contexto correto:\n"
+        for palavra in info["palavras"]:
+            prompt += f"  • {palavra}\n"
+
+    if comp in TEMAS_CONDUTORES_POR_COMPONENTE:
+        temas = TEMAS_CONDUTORES_POR_COMPONENTE[comp]
+        prompt += f"\nTEMAS CONDUTORES VÁLIDOS PARA {comp}:\n"
+        prompt += "Use EXATAMENTE um destes rótulos em cada questão (em caixa alta):\n"
+        prompt += f"  {', '.join(temas)}\n"
+
+    # ----------------------------------------------------------
+    # ENRIQUECIMENTO 2 — erros comuns para calibrar distratores
+    # ----------------------------------------------------------
+    prompt += "\nERROS COMUNS A CONSIDERAR NOS DISTRATORES:\n"
+    for tipo, descricao in ERROS_COMUNS_POR_TIPO.items():
+        prompt += f"  • {tipo}: {descricao}\n"
+
+    # ----------------------------------------------------------
+    # Habilidades, descritores e nível cognitivo
+    # ----------------------------------------------------------
     prompt += "\nHABILIDADES, DESCRITORES E NÍVEL COGNITIVO:\n"
     for i, h in enumerate(data.habilidades, start=1):
         prompt += f"\nHABILIDADE {i} — {h.codigo} (gerar {h.quantidade} questão/questões no total)\n"
@@ -158,6 +372,11 @@ def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end
             prompt += f"Complemento do Currículo do Piauí: {h.complemento_pi}\n"
         if h.descritores:
             prompt += f"Descritores associados: {', '.join(h.descritores)}\n"
+            prompt += (
+                "  ⚠️ IMPORTANTE: cada questão gerada deve ter como EIXO CENTRAL "
+                "o descritor selecionado. A resposta correta deve corresponder "
+                "exatamente ao que o descritor avalia.\n"
+            )
         if h.unidade_tematica:
             prompt += f"Unidade Temática (BNCC): {h.unidade_tematica}\n"
         if h.objeto_conhecimento:
@@ -181,7 +400,7 @@ def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end
             "\nSUPORTE VISUAL:\n"
             "Para cada questão, indique se precisa de ilustração "
             "(precisa_ilustracao: true/false) e descreva em português o que deve ser "
-            "ilustrado (descricao_ilustracao).\n"
+            "ilustrado (descricao_ilustracao). Use termos simples.\n"
         )
 
     # Instrução específica deste lote
@@ -192,6 +411,7 @@ def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end
         f"═══════════════════════════════════════════════════════════════\n"
         f"Gere EXATAMENTE {qtd} questão(ões) neste lote, numeradas de "
         f"{batch_start} a {batch_end}.\n"
+        f"Ordene-as do mais SIMPLES para o mais COMPLEXO (progressão cognitiva).\n"
         f"Se houver mais de uma habilidade, distribua as questões entre elas.\n"
         f"Retorne APENAS o JSON, sem texto adicional.\n"
     )
