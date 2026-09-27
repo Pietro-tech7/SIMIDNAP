@@ -8,6 +8,7 @@ Prefix: /question-ia
 """
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import cast, String
 from typing import List, Dict, Any, Optional
 
 from ...core.database import get_db
@@ -717,7 +718,7 @@ def listar_figuras_para_motor9(
     """
     from ...models.figure_bank import FigureBank
     import base64
-    from sqlalchemy import or_, func
+    from sqlalchemy import or_
 
     if not categoria:
         raise HTTPException(status_code=400, detail="Categoria obrigatória.")
@@ -729,7 +730,7 @@ def listar_figuras_para_motor9(
         .filter(
             FigureBank.aprovada == True,
             or_(
-                FigureBank.categorias.cast(func.text).ilike(f'%"{categoria}"%'),
+                cast(FigureBank.categorias, String).ilike(f'%"{categoria}"%'),
                 FigureBank.categoria == categoria,
             ),
         )
