@@ -13,7 +13,8 @@ from datetime import datetime
 class FigureBankItem(BaseModel):
     id: UUID
     nome: str
-    categoria: str
+    categoria: Optional[str] = None
+    categorias: List[str] = Field(default_factory=list)
     subcategoria: Optional[str] = None
     keywords: Optional[List[str]] = None
     mime_type: str
@@ -42,7 +43,7 @@ class FigureBankListResponse(BaseModel):
 # ============================================================
 class FigureBankUpdate(BaseModel):
     nome: Optional[str] = Field(None, max_length=200)
-    categoria: Optional[str] = Field(None, max_length=50)
+    categorias: Optional[List[str]] = None
     subcategoria: Optional[str] = Field(None, max_length=100)
     keywords: Optional[List[str]] = None
     aprovada: Optional[bool] = None
@@ -52,16 +53,14 @@ class FigureBankUpdate(BaseModel):
 # UPLOAD (retorno)
 # ============================================================
 class FigureBankUploadItem(BaseModel):
-    """Item retornado no upload (sucesso)"""
     id: UUID
     nome: str
-    categoria: str
+    categorias: List[str] = Field(default_factory=list)
     mime_type: str
     file_size: int
 
 
 class FigureBankUploadError(BaseModel):
-    """Erro específico de um arquivo no upload em lote"""
     filename: str
     motivo: str
 
@@ -73,6 +72,24 @@ class FigureBankUploadResponse(BaseModel):
     total_erro: int
     itens: List[FigureBankUploadItem] = Field(default_factory=list)
     erros: List[FigureBankUploadError] = Field(default_factory=list)
+
+
+# ============================================================
+# AÇÕES EM LOTE
+# ============================================================
+class FigureBankBatchIds(BaseModel):
+    """Usado por: delete em lote, aprovar em lote, desaprovar em lote."""
+    ids: List[UUID] = Field(..., min_items=1, max_items=500)
+
+
+class FigureBankBatchCategorize(BaseModel):
+    """Usado por: categorizar em lote."""
+    ids: List[UUID] = Field(..., min_items=1, max_items=500)
+    categorias: List[str] = Field(..., min_items=1)
+    modo: str = Field(
+        "substituir",
+        description="'substituir' (troca todas) | 'adicionar' (soma às existentes)",
+    )
 
 
 # ============================================================

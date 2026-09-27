@@ -6,8 +6,9 @@ Prefix: /admin/figure-bank
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, UploadFile, File, Form
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from typing import List, Optional
+from datetime import datetime as _dt
 import math
 import uuid
 
@@ -22,6 +23,8 @@ from ...schemas.figure_bank import (
     FigureBankUploadItem,
     FigureBankUploadError,
     FigureBankUploadResponse,
+    FigureBankBatchIds,
+    FigureBankBatchCategorize,
     FigureBankStats,
     FigureBankStatsItem,
 )
@@ -81,6 +84,28 @@ CATEGORIAS_VALIDAS = {
 # ============================================================
 # HELPERS
 # ============================================================
+def _normalizar_categorias(categorias_raw: Optional[List[str]]) -> List[str]:
+    """Limpa, valida e deduplica as categorias."""
+    if not categorias_raw:
+        return ["nenhuma"]
+    limpas = []
+    for c in categorias_raw:
+        c = (c or "").strip().lower()
+        if c and c in CATEGORIAS_VALIDAS and c not in limpas:
+            limpas.append(c)
+    return limpas if limpas else ["nenhuma"]
+
+
+def _categorias_do_item(figura: FigureBank) -> List[str]:
+    """Retorna a lista de categorias do item (fallback para o campo legado)."""
+    cats = figura.categorias
+    if cats and isinstance(cats, list) and len(cats) > 0:
+        return cats
+    if figura.categoria:
+        return [figura.categoria]
+    return ["nenhuma"]
+
+
 def _montar_item(figura: FigureBank, db: Session) -> FigureBankItem:
     nome_autor = None
     if figura.uploaded_by:
@@ -92,6 +117,7 @@ def _montar_item(figura: FigureBank, db: Session) -> FigureBankItem:
         id=figura.id,
         nome=figura.nome,
         categoria=figura.categoria,
+        categorias=_categorias_do_item(figura),
         subcategoria=figura.subcategoria,
         keywords=figura.keywords or [],
         mime_type=figura.mime_type,
@@ -119,34 +145,33 @@ def _limpar_nome_arquivo(filename: str) -> str:
 @router.post("/upload", response_model=FigureBankUploadResponse)
 async def upload_figuras(
     files: List[UploadFile] = File(...),
-    categoria: Optional[str] = Form(None),
+    categorias: Optional[str] = Form(None),
     subcategoria: Optional[str] = Form(None),
     keywords: Optional[str] = Form(None),
+    aprovada: Optional[str] = Form("false"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_superuser),
 ):
     """
     Faz upload de 1 ou várias figuras de uma vez.
 
-    - categoria: aplica a mesma categoria a todos os arquivos (opcional)
-    - subcategoria: idem
+    - categorias: string com vírgulas (ex: "quantidade,formas")
+    - subcategoria: texto livre (opcional)
     - keywords: string separada por vírgula (ex: "carrinho,brinquedo,roda")
-
-    Se não informar categoria, cada figura entra com categoria "nenhuma" e
-    o super admin deve classificá-la depois na edição.
+    - aprovada: "true" ou "false" (padrão false — revisar antes)
     """
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-    if categoria and categoria not in CATEGORIAS_VALIDAS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Categoria inválida: '{categoria}'. Opções: {sorted(CATEGORIAS_VALIDAS)}",
-        )
+    cats_list = _normalizar_categorias(
+        [c.strip() for c in categorias.split(",")] if categorias else []
+    )
 
     kws_list = None
     if keywords:
         kws_list = [k.strip() for k in keywords.split(",") if k.strip()]
+
+    aprovada_bool = str(aprovada).lower() == "true"
 
     itens_ok: List[FigureBankUploadItem] = []
     erros: List[FigureBankUploadError] = []
@@ -156,32 +181,30 @@ async def upload_figuras(
         try:
             conteudo = await file.read()
 
-            # Valida tamanho
             if len(conteudo) == 0:
                 raise ValueError("Arquivo vazio.")
             if len(conteudo) > MAX_SIZE_BYTES:
                 tamanho_mb = len(conteudo) / (1024 * 1024)
                 raise ValueError(f"Arquivo muito grande ({tamanho_mb:.1f} MB). Limite: 5 MB.")
 
-            # Valida tipo
             mime = file.content_type or "application/octet-stream"
             if mime not in TIPOS_PERMITIDOS:
                 raise ValueError(
                     f"Tipo não permitido: '{mime}'. Use SVG, PNG, JPG ou WEBP."
                 )
 
-            # Cria registro
             nova = FigureBank(
                 id=uuid.uuid4(),
                 nome=_limpar_nome_arquivo(filename),
-                categoria=categoria or "nenhuma",
-                subcategoria=subcategoria,
+                categoria=cats_list[0],
+                categorias=cats_list,
+                subcategoria=subcategoria or None,
                 keywords=kws_list,
                 file_data=conteudo,
                 mime_type=mime,
                 file_size=len(conteudo),
                 uploaded_by=current_user.id,
-                aprovada=True,
+                aprovada=aprovada_bool,
                 origem="manual",
             )
             db.add(nova)
@@ -191,7 +214,7 @@ async def upload_figuras(
             itens_ok.append(FigureBankUploadItem(
                 id=nova.id,
                 nome=nova.nome,
-                categoria=nova.categoria,
+                categorias=cats_list,
                 mime_type=nova.mime_type,
                 file_size=nova.file_size or 0,
             ))
@@ -218,7 +241,7 @@ async def upload_figuras(
 # ============================================================
 @router.get("", response_model=FigureBankListResponse)
 def listar_figuras(
-    categoria: Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None, description="Filtra por UMA categoria"),
     subcategoria: Optional[str] = Query(None),
     aprovada: Optional[bool] = Query(None),
     busca: Optional[str] = Query(None, description="Busca por nome ou keyword"),
@@ -231,7 +254,13 @@ def listar_figuras(
     query = db.query(FigureBank)
 
     if categoria:
-        query = query.filter(FigureBank.categoria == categoria)
+        # Busca na lista JSONB de categorias OU no campo legado
+        query = query.filter(
+            or_(
+                FigureBank.categorias.cast(func.text).ilike(f'%"{categoria}"%'),
+                FigureBank.categoria == categoria,
+            )
+        )
     if subcategoria:
         query = query.filter(FigureBank.subcategoria == subcategoria)
     if aprovada is not None:
@@ -261,6 +290,142 @@ def listar_figuras(
         per_page=per_page,
         total_pages=total_pages,
     )
+
+
+# ============================================================
+# ESTATÍSTICAS (precisa vir ANTES de /{figura_id})
+# ============================================================
+@router.get("/stats/resumo", response_model=FigureBankStats)
+def stats_figuras(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    total = db.query(FigureBank).count()
+    aprovadas = db.query(FigureBank).filter(FigureBank.aprovada == True).count()
+    pendentes = total - aprovadas
+
+    # Conta por categoria considerando a lista JSONB (evita duplicar)
+    por_categoria_dict = {}
+    todas = db.query(FigureBank).all()
+    for f in todas:
+        for c in _categorias_do_item(f):
+            por_categoria_dict[c] = por_categoria_dict.get(c, 0) + 1
+
+    por_categoria = [
+        FigureBankStatsItem(chave=k, quantidade=v)
+        for k, v in sorted(por_categoria_dict.items())
+    ]
+
+    por_origem = []
+    rows2 = (
+        db.query(FigureBank.origem, func.count(FigureBank.id))
+        .group_by(FigureBank.origem)
+        .all()
+    )
+    for orig, qtd in rows2:
+        por_origem.append(FigureBankStatsItem(chave=orig or "(sem)", quantidade=qtd))
+
+    return FigureBankStats(
+        total_figuras=total,
+        total_aprovadas=aprovadas,
+        total_pendentes=pendentes,
+        por_categoria=por_categoria,
+        por_origem=por_origem,
+    )
+
+
+# ============================================================
+# AÇÕES EM LOTE (precisam vir ANTES de /{figura_id})
+# ============================================================
+@router.post("/batch/delete")
+def batch_delete(
+    data: FigureBankBatchIds,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Remove várias figuras de uma vez."""
+    qs = db.query(FigureBank).filter(FigureBank.id.in_(data.ids)).all()
+    total = 0
+    for f in qs:
+        db.delete(f)
+        total += 1
+    db.commit()
+    return {"sucesso": True, "total_removido": total}
+
+
+@router.post("/batch/approve")
+def batch_approve(
+    data: FigureBankBatchIds,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Aprova várias figuras de uma vez."""
+    qs = db.query(FigureBank).filter(FigureBank.id.in_(data.ids)).all()
+    total = 0
+    agora = _dt.utcnow()
+    for f in qs:
+        f.aprovada = True
+        f.updated_at = agora
+        total += 1
+    db.commit()
+    return {"sucesso": True, "total_aprovado": total}
+
+
+@router.post("/batch/unapprove")
+def batch_unapprove(
+    data: FigureBankBatchIds,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """Desaprova várias figuras de uma vez (volta para pendentes)."""
+    qs = db.query(FigureBank).filter(FigureBank.id.in_(data.ids)).all()
+    total = 0
+    agora = _dt.utcnow()
+    for f in qs:
+        f.aprovada = False
+        f.updated_at = agora
+        total += 1
+    db.commit()
+    return {"sucesso": True, "total_desaprovado": total}
+
+
+@router.post("/batch/categorize")
+def batch_categorize(
+    data: FigureBankBatchCategorize,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """
+    Muda as categorias de várias figuras.
+    - modo='substituir': troca por essas categorias
+    - modo='adicionar': soma às categorias existentes (sem duplicar)
+    """
+    cats_novas = _normalizar_categorias(data.categorias)
+    if not cats_novas:
+        raise HTTPException(status_code=400, detail="Nenhuma categoria válida informada.")
+
+    modo = (data.modo or "substituir").lower()
+    if modo not in ("substituir", "adicionar"):
+        raise HTTPException(status_code=400, detail="Modo inválido. Use 'substituir' ou 'adicionar'.")
+
+    qs = db.query(FigureBank).filter(FigureBank.id.in_(data.ids)).all()
+    total = 0
+    agora = _dt.utcnow()
+    for f in qs:
+        if modo == "substituir":
+            novas = list(cats_novas)
+        else:  # adicionar
+            atuais = _categorias_do_item(f)
+            novas = list(atuais)
+            for c in cats_novas:
+                if c not in novas:
+                    novas.append(c)
+        f.categorias = novas
+        f.categoria = novas[0] if novas else "nenhuma"
+        f.updated_at = agora
+        total += 1
+    db.commit()
+    return {"sucesso": True, "total_atualizado": total, "modo": modo}
 
 
 # ============================================================
@@ -314,13 +479,10 @@ def editar_figura(
 
     if data.nome is not None:
         figura.nome = data.nome
-    if data.categoria is not None:
-        if data.categoria not in CATEGORIAS_VALIDAS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Categoria inválida. Opções: {sorted(CATEGORIAS_VALIDAS)}",
-            )
-        figura.categoria = data.categoria
+    if data.categorias is not None:
+        novas = _normalizar_categorias(data.categorias)
+        figura.categorias = novas
+        figura.categoria = novas[0] if novas else "nenhuma"
     if data.subcategoria is not None:
         figura.subcategoria = data.subcategoria or None
     if data.keywords is not None:
@@ -328,7 +490,6 @@ def editar_figura(
     if data.aprovada is not None:
         figura.aprovada = data.aprovada
 
-    from datetime import datetime as _dt
     figura.updated_at = _dt.utcnow()
 
     db.commit()
@@ -351,42 +512,3 @@ def deletar_figura(
     db.delete(figura)
     db.commit()
     return None
-
-
-# ============================================================
-# ESTATÍSTICAS
-# ============================================================
-@router.get("/stats/resumo", response_model=FigureBankStats)
-def stats_figuras(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
-):
-    total = db.query(FigureBank).count()
-    aprovadas = db.query(FigureBank).filter(FigureBank.aprovada == True).count()
-    pendentes = total - aprovadas
-
-    por_categoria = []
-    rows = (
-        db.query(FigureBank.categoria, func.count(FigureBank.id))
-        .group_by(FigureBank.categoria)
-        .all()
-    )
-    for cat, qtd in rows:
-        por_categoria.append(FigureBankStatsItem(chave=cat or "(sem)", quantidade=qtd))
-
-    por_origem = []
-    rows2 = (
-        db.query(FigureBank.origem, func.count(FigureBank.id))
-        .group_by(FigureBank.origem)
-        .all()
-    )
-    for orig, qtd in rows2:
-        por_origem.append(FigureBankStatsItem(chave=orig or "(sem)", quantidade=qtd))
-
-    return FigureBankStats(
-        total_figuras=total,
-        total_aprovadas=aprovadas,
-        total_pendentes=pendentes,
-        por_categoria=por_categoria,
-        por_origem=por_origem,
-    )

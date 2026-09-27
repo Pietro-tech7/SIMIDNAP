@@ -17,7 +17,7 @@ class FigureBank(Base):
       3. Super admin revisa/ajusta
       4. Figura fica disponível para todos os professores no Motor 9
 
-    Categorias pedagógicas aceitas (as mesmas do Motor 9):
+    CATEGORIAS (uma figura pode ter VÁRIAS):
       - quantidade, ordem, medida, decomposicao, sequencia, comparacao,
         objetos_escolares, formas, numeros, nenhuma
     """
@@ -32,7 +32,12 @@ class FigureBank(Base):
     # Ex: 'carrinho de brinquedo', 'maçã vermelha', 'pódio'
 
     categoria = Column(String(50), nullable=False, index=True)
-    # Ex: 'quantidade' | 'ordem' | 'medida' | 'decomposicao' | ...
+    # LEGADO — mantido por segurança. Corresponde à primeira categoria da lista.
+
+    categorias = Column(JSONB, nullable=True)
+    # Lista de categorias pedagógicas.
+    # Ex: ["quantidade", "formas"]
+    # Uma figura pode pertencer a várias categorias ao mesmo tempo.
 
     subcategoria = Column(String(100), nullable=True, index=True)
     # Ex: 'brinquedos' | 'frutas' | 'animais' | 'escola' | ...
@@ -62,16 +67,11 @@ class FigureBank(Base):
         nullable=True,
         index=True,
     )
-    # Se o usuário for excluído, a figura fica com uploaded_by = NULL
-    # (não removemos o conteúdo por causa disso)
 
     aprovada = Column(Boolean, default=True, nullable=False, index=True)
-    # Por padrão True (o super admin já revisou antes de salvar)
-    # Fica como campo caso no futuro exista um fluxo de aprovação em lote
 
     origem = Column(String(20), nullable=False, default="manual")
-    # 'manual' (upload pelo super admin) | 'ia_vision' (a IA classificou)
-    # | 'importado_biblioteca' (vindo de Tabler/Lucide via script)
+    # 'manual' | 'ia_vision' | 'importado_biblioteca'
 
     # ============================================================
     # CONTROLE
@@ -79,15 +79,6 @@ class FigureBank(Base):
     created_at = Column(DateTime, server_default="now()", nullable=False)
     updated_at = Column(DateTime, server_default="now()", nullable=False)
 
-    # ============================================================
-    # OBSERVAÇÃO SOBRE ÍNDICES
-    # ============================================================
-    # Os índices são criados automaticamente pelas colunas com index=True:
-    #   ix_figure_bank_categoria
-    #   ix_figure_bank_subcategoria
-    #   ix_figure_bank_uploaded_by
-    #   ix_figure_bank_aprovada
-    # NÃO declarar Index() no __table_args__ — evita conflito de nomes duplicados.
-
     def __repr__(self):
-        return f"<FigureBank {self.nome} ({self.categoria})>"
+        cats = self.categorias or [self.categoria]
+        return f"<FigureBank {self.nome} ({cats})>"
