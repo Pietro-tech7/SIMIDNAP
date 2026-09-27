@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LatexText from '../components/LatexText';
 import EditorCabecalhoProva from '../components/EditorCabecalhoProva';
 import { gerarProvaPDF, gerarGabaritoPDF } from '../utils/gerarPdfProva';
+import { carregarSvgsDaCategoria } from '../utils/icones';
 
 const STORAGE_KEY = 'simidnape_rascunho_prova_ia';
 
@@ -85,6 +86,12 @@ const BancoQuestoesIA = () => {
 
   const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
   const [rascunhoSalvo, setRascunhoSalvo] = useState(false);
+
+  // Fase 3 — SVGs sugeridos por categoria (cache global)
+  const [svgsPorCategoria, setSvgsPorCategoria] = useState({});
+  const [carregandoCategorias, setCarregandoCategorias] = useState({});
+  // Questões com "ver todos desta categoria" expandido
+  const [svgsExpandidos, setSvgsExpandidos] = useState({});
 
   // Carrega rascunho na montagem
   useEffect(() => {
@@ -251,6 +258,38 @@ const BancoQuestoesIA = () => {
       .then(res => setDescritoresDinamicos(res.data?.descritores || []))
       .catch(() => setDescritoresDinamicos([]));
   }, [componente, etapa, ano]);
+
+  // ============================================================
+  // FASE 3 — Carrega SVGs por categoria pedagógica (com cache)
+  // ============================================================
+  const carregarSvgsCategoria = async (categoria) => {
+    if (!categoria) return;
+    if (svgsPorCategoria[categoria] || carregandoCategorias[categoria]) return;
+
+    setCarregandoCategorias(prev => ({ ...prev, [categoria]: true }));
+    try {
+      const lista = await carregarSvgsDaCategoria(categoria);
+      setSvgsPorCategoria(prev => ({ ...prev, [categoria]: lista }));
+    } catch (e) {
+      console.warn('Erro ao carregar SVGs da categoria:', e);
+      setSvgsPorCategoria(prev => ({ ...prev, [categoria]: [] }));
+    } finally {
+      setCarregandoCategorias(prev => ({ ...prev, [categoria]: false }));
+    }
+  };
+
+  // Sempre que uma questão de "Minhas Questões" precisar de uma categoria,
+  // dispara o carregamento (uma vez por categoria, fica em cache).
+  useEffect(() => {
+    if (!minhasQuestoes || minhasQuestoes.length === 0) return;
+    minhasQuestoes.forEach(q => {
+      const ilust = q.ilustracao || {};
+      if (ilust.tipo === 'automatica' && q.tipo_figura_sugerida) {
+        carregarSvgsCategoria(q.tipo_figura_sugerida);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minhasQuestoes]);
 
   const totalParaGerar = habilidades.reduce((s, h) => s + (Number(h.quantidade) || 0), 0);
   const custo = totalParaGerar <= 10 ? 1 : totalParaGerar <= 20 ? 2 : totalParaGerar <= 30 ? 3 : totalParaGerar <= 45 ? 4 : 5;
@@ -513,6 +552,41 @@ const BancoQuestoesIA = () => {
     atualizarIlustracao(localId, 'imagem', b64);
   };
 
+  // Fase 3 — Escolhe um SVG sugerido para a questão
+  const escolherSvg = (localId, caminho, dataUrl) => {
+    setMinhasQuestoes(prev => prev.map(q => {
+      if (q._localId !== localId) return q;
+      return {
+        ...q,
+        ilustracao: {
+          ...(q.ilustracao || { tipo: 'automatica' }),
+          imagem: dataUrl,
+          svg_escolhido: caminho,
+        },
+      };
+    }));
+  };
+
+  // Fase 3 — Remove o SVG escolhido (volta a mostrar os sugeridos)
+  const removerSvgEscolhido = (localId) => {
+    setMinhasQuestoes(prev => prev.map(q => {
+      if (q._localId !== localId) return q;
+      return {
+        ...q,
+        ilustracao: {
+          ...(q.ilustracao || { tipo: 'automatica' }),
+          imagem: null,
+          svg_escolhido: null,
+        },
+      };
+    }));
+  };
+
+  // Fase 3 — Alterna "ver todos desta categoria"
+  const toggleVerTodos = (localId) => {
+    setSvgsExpandidos(prev => ({ ...prev, [localId]: !prev[localId] }));
+  };
+
   const _prepararDados = () => ({
     titulo: titulo.trim(),
     cabecalho,
@@ -545,6 +619,7 @@ const BancoQuestoesIA = () => {
             nivel_cognitivo: q.nivel_cognitivo,
             dificuldade: q.dificuldade,
             imagem_url: q.ilustracao?.imagem || q.imagem_url || null,
+            svg_escolhido: q.ilustracao?.svg_escolhido || null,
           },
           icone_svg: q.ilustracao?.imagem || null,
         })),
@@ -581,6 +656,7 @@ const BancoQuestoesIA = () => {
           nivel_cognitivo: q.nivel_cognitivo,
           dificuldade: q.dificuldade || dificuldadePadrao || null,
           imagem_url: q.ilustracao?.imagem || q.imagem_url || null,
+          svg_escolhido: q.ilustracao?.svg_escolhido || null,
         })),
       };
       await api.post('/question-ia/enviar-curadoria', payload);
@@ -1332,10 +1408,103 @@ const BancoQuestoesIA = () => {
                       </label>
                     </div>
 
-                    {ilust.tipo === 'automatica' && q.descricao_ilustracao && (
-                      <p className="text-xs text-amber-700 mt-2">
-                        💡 Sugestão da IA: {q.descricao_ilustracao}
-                      </p>
+                    {ilust.tipo === 'automatica' && (
+                      <>
+                        {q.descricao_ilustracao && (
+                          <p className="text-xs text-amber-700 mt-2">
+                            💡 Sugestão da IA: {q.descricao_ilustracao}
+                          </p>
+                        )}
+
+                        {q.tipo_figura_sugerida && (
+                          <div className="mt-3 pt-3 border-t border-blue-200">
+                            <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
+                              <p className="text-xs font-semibold text-blue-900">
+                                🎨 Escolha uma figura sugerida ({q.tipo_figura_sugerida})
+                              </p>
+                              {ilust.imagem && (
+                                <button
+                                  type="button"
+                                  onClick={() => removerSvgEscolhido(q._localId)}
+                                  className="text-[10px] text-red-600 hover:text-red-800 font-medium"
+                                >
+                                  🗑️ Trocar figura
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Se já escolheu, mostra preview */}
+                            {ilust.imagem && (
+                              <div className="bg-white border border-blue-300 rounded-lg p-3 text-center mb-2">
+                                <img src={ilust.imagem} alt="SVG escolhido" className="max-h-24 mx-auto" />
+                                <p className="text-[10px] text-gray-500 mt-1">
+                                  Figura escolhida. Clique em "Trocar figura" acima para escolher outra.
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Se ainda não escolheu, mostra os sugeridos */}
+                            {!ilust.imagem && (() => {
+                              const categoria = q.tipo_figura_sugerida;
+                              const lista = svgsPorCategoria[categoria] || [];
+                              const carregando = carregandoCategorias[categoria];
+                              const expandido = svgsExpandidos[q._localId];
+                              const visiveis = expandido ? lista : lista.slice(0, 6);
+
+                              if (carregando) {
+                                return (
+                                  <p className="text-xs text-gray-500 italic p-3 bg-white rounded border border-gray-200">
+                                    ⏳ Carregando figuras sugeridas...
+                                  </p>
+                                );
+                              }
+
+                              if (lista.length === 0) {
+                                return (
+                                  <p className="text-xs text-gray-500 italic p-3 bg-white rounded border border-gray-200">
+                                    Nenhuma figura disponível para esta categoria.
+                                    Use o upload manual abaixo.
+                                  </p>
+                                );
+                              }
+
+                              return (
+                                <>
+                                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                                    {visiveis.map((item) => (
+                                      <button
+                                        key={item.caminho}
+                                        type="button"
+                                        onClick={() => escolherSvg(q._localId, item.caminho, item.dataUrl)}
+                                        className="bg-white border border-gray-200 hover:border-blue-500 hover:bg-blue-50 rounded-lg p-2 transition aspect-square flex items-center justify-center"
+                                        title={item.caminho}
+                                      >
+                                        <img src={item.dataUrl} alt={item.caminho} className="max-h-12 max-w-full" />
+                                      </button>
+                                    ))}
+                                  </div>
+
+                                  {lista.length > 6 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleVerTodos(q._localId)}
+                                      className="mt-2 text-[10px] text-blue-700 hover:text-blue-900 font-medium"
+                                    >
+                                      {expandido
+                                        ? '▲ Ver menos'
+                                        : `▼ Ver todas as ${lista.length} figuras desta categoria`}
+                                    </button>
+                                  )}
+                                </>
+                              );
+                            })()}
+
+                            <p className="text-[10px] text-gray-500 mt-2">
+                              💡 Se não encontrar a figura ideal, use a opção "⬆️ Upload" acima para enviar a sua.
+                            </p>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {ilust.tipo === 'personalizada' && (
