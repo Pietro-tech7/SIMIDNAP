@@ -14,6 +14,9 @@ __pycache__/
 *.db
 *.sqlite3
 
+# Figuras baixadas (material temporário de trabalho - Bloco F)
+scripts/figuras_baixadas/
+
 # VS Code
 .vscode/
 
