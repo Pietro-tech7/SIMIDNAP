@@ -1,6 +1,5 @@
-from sqlalchemy import Column, String, Integer, Text, DateTime, Boolean, Index, ForeignKey
+from sqlalchemy import Column, String, Integer, Text, DateTime, Boolean, ForeignKey, LargeBinary
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy import LargeBinary
 import uuid
 from ..core.database import Base
 
@@ -81,14 +80,14 @@ class FigureBank(Base):
     updated_at = Column(DateTime, server_default="now()", nullable=False)
 
     # ============================================================
-    # ÍNDICES E CONSTRAINTS
+    # OBSERVAÇÃO SOBRE ÍNDICES
     # ============================================================
-    __table_args__ = (
-        Index("ix_figure_bank_categoria", "categoria"),
-        Index("ix_figure_bank_subcategoria", "subcategoria"),
-        Index("ix_figure_bank_aprovada", "aprovada"),
-        Index("ix_figure_bank_uploaded_by", "uploaded_by"),
-    )
+    # Os índices são criados automaticamente pelas colunas com index=True:
+    #   ix_figure_bank_categoria
+    #   ix_figure_bank_subcategoria
+    #   ix_figure_bank_uploaded_by
+    #   ix_figure_bank_aprovada
+    # NÃO declarar Index() no __table_args__ — evita conflito de nomes duplicados.
 
     def __repr__(self):
         return f"<FigureBank {self.nome} ({self.categoria})>"
