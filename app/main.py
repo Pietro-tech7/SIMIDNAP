@@ -6,7 +6,7 @@ from .api.v1 import (
     auth, users, lesson_plans, bncc, reflections, materials,
     subscriptions, pedagogical_cases, admin, announcements,
     banners, images, successful_practices, feedback, questions, landing,
-    exam_papers, question_ia, curriculo_estrutura, figure_bank,
+    exam_papers, question_ia, curriculo_estrutura, figure_bank as figure_bank_api,
 )
 
 from .core.database import engine, Base
@@ -90,7 +90,7 @@ app.include_router(landing.router, prefix="/api/v1")
 app.include_router(exam_papers.router, prefix="/api/v1")
 app.include_router(question_ia.router, prefix="/api/v1")
 app.include_router(curriculo_estrutura.router, prefix="/api/v1")
-app.include_router(figure_bank.router, prefix="/api/v1")
+app.include_router(figure_bank_api.router, prefix="/api/v1")
 
 
 @app.get("/health")
