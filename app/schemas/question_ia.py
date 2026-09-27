@@ -78,6 +78,16 @@ class QuestaoIA(BaseModel):
     imagem_url: Optional[str] = None
     origem: str = "gerada_ia"
 
+    # NOVOS CAMPOS — Fase 2
+    tema_condutor: Optional[str] = None
+    # Rótulo pedagógico da questão (ex: "QUANTIDADE", "ORDEM", "MEDIDA", "INFERIR", "LOCALIZAR").
+    # Usado no PDF (Fase 4) e no filtro de SVGs (Fase 3).
+
+    tipo_figura_sugerida: Optional[str] = None
+    # Categoria pedagógica de figura (ex: "quantidade", "ordem", "medida",
+    # "decomposicao", "sequencia", "comparacao", "objetos_escolares", "formas", "nenhuma").
+    # Usado no frontend para sugerir SVGs ao professor (Fase 3).
+
 
 class GerarQuestoesIAResponse(BaseModel):
     """Resultado da geração com IA."""
