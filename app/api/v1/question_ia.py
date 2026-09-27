@@ -6,7 +6,7 @@ em lotes pequenos (máx 4 questões) para evitar timeout do Railway.
 
 Prefix: /question-ia
 """
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 
@@ -693,3 +693,69 @@ def enviar_curadoria(
         total_enviado=total,
         mensagem=f"{total} questão(ões) enviada(s) para curadoria.",
     )
+
+
+# ============================================================
+# BANCO DE FIGURAS — Motor 9 lê as figuras sugeridas
+# ============================================================
+@router.get("/figuras")
+def listar_figuras_para_motor9(
+    categoria: str = Query(..., description="Categoria pedagógica (ex: quantidade, ordem, medida)"),
+    limit: int = Query(8, ge=1, le=30, description="Máximo de figuras a retornar"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lista figuras aprovadas do Banco de Figuras (figure_bank) por categoria.
+    Retorna data URLs (base64) prontos para exibir no navegador.
+
+    Usado pelo Motor 9 para mostrar sugestões de figuras ao professor
+    quando ele escolhe a opção "✨ Automática".
+
+    Fallback: se a categoria estiver vazia no banco, o frontend cai
+    automaticamente para os SVGs locais (frontend/public/icons).
+    """
+    from ...models.figure_bank import FigureBank
+    import base64
+    from sqlalchemy import or_, func
+
+    if not categoria:
+        raise HTTPException(status_code=400, detail="Categoria obrigatória.")
+
+    # Busca figuras aprovadas que tenham a categoria na lista JSONB
+    # ou no campo legado "categoria"
+    query = (
+        db.query(FigureBank)
+        .filter(
+            FigureBank.aprovada == True,
+            or_(
+                FigureBank.categorias.cast(func.text).ilike(f'%"{categoria}"%'),
+                FigureBank.categoria == categoria,
+            ),
+        )
+        .order_by(FigureBank.created_at.desc())
+        .limit(limit)
+    )
+
+    figuras = query.all()
+
+    resultado = []
+    for f in figuras:
+        try:
+            b64 = base64.b64encode(f.file_data).decode("utf-8")
+            data_url = f"data:{f.mime_type};base64,{b64}"
+            resultado.append({
+                "id": str(f.id),
+                "nome": f.nome,
+                "dataUrl": data_url,
+                "mime_type": f.mime_type,
+            })
+        except Exception as e:
+            print(f"[Figuras] Erro ao converter figura {f.id}: {e}")
+            continue
+
+    return {
+        "categoria": categoria,
+        "total": len(resultado),
+        "figuras": resultado,
+    }

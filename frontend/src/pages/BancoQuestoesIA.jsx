@@ -260,7 +260,8 @@ const BancoQuestoesIA = () => {
   }, [componente, etapa, ano]);
 
   // ============================================================
-  // FASE 3 — Carrega SVGs por categoria pedagógica (com cache)
+  // FASE 3 + BLOCO F — Carrega figuras por categoria pedagógica
+  // 1º tenta o Banco de Figuras (backend); 2º cai no local (icones.js)
   // ============================================================
   const carregarSvgsCategoria = async (categoria) => {
     if (!categoria) return;
@@ -268,10 +269,35 @@ const BancoQuestoesIA = () => {
 
     setCarregandoCategorias(prev => ({ ...prev, [categoria]: true }));
     try {
-      const lista = await carregarSvgsDaCategoria(categoria);
+      let lista = [];
+
+      // 1º) Tenta o Banco de Figuras (backend)
+      try {
+        const res = await api.get(
+          `/question-ia/figuras?categoria=${encodeURIComponent(categoria)}&limit=8`
+        );
+        const figuras = res.data?.figuras || [];
+        if (figuras.length > 0) {
+          lista = figuras.map(f => ({
+            caminho: `banco:${f.id}`,
+            dataUrl: f.dataUrl,
+            nome: f.nome,
+            origem: 'banco',
+          }));
+        }
+      } catch (e) {
+        console.warn('Erro ao buscar figuras do banco, usando fallback local:', e);
+      }
+
+      // 2º) Se o banco não retornou nada, cai no fallback local (icones.js)
+      if (lista.length === 0) {
+        const local = await carregarSvgsDaCategoria(categoria);
+        lista = (local || []).map(item => ({ ...item, origem: 'local' }));
+      }
+
       setSvgsPorCategoria(prev => ({ ...prev, [categoria]: lista }));
     } catch (e) {
-      console.warn('Erro ao carregar SVGs da categoria:', e);
+      console.warn('Erro ao carregar figuras da categoria:', e);
       setSvgsPorCategoria(prev => ({ ...prev, [categoria]: [] }));
     } finally {
       setCarregandoCategorias(prev => ({ ...prev, [categoria]: false }));
