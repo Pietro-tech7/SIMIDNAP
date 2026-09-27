@@ -12,6 +12,7 @@ const AdminLayout = () => {
     { path: '/admin/users', label: 'Usuários', icon: '👥' },
     { path: '/admin/question-bank', label: 'Banco de Questões', icon: '📚' },
     { path: '/admin/correlacoes', label: 'Correlações', icon: '🔗' },
+    { path: '/admin/figure-bank', label: 'Banco de Figuras', icon: '🏞️' },
     { path: '/admin/announcements', label: 'Recados', icon: '📢' },
     { path: '/admin/banners', label: 'Banners', icon: '🎨' },
     { path: '/admin/landing', label: 'Landing Page', icon: '🖼️' },
