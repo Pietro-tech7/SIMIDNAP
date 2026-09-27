@@ -413,7 +413,11 @@ const BancoQuestoesIA = () => {
         codigo: h.codigo,
         texto: h.texto,
         complemento_pi: h.complemento_pi || null,
-        descritores: h.descritores || [],
+        // Converte "saeb:D01" → "D01" e remove duplicatas
+        descritores: Array.from(new Set((h.descritores || []).map(x => {
+          if (typeof x === 'string' && x.includes(':')) return x.split(':')[1];
+          return x;
+        }))),
         unidade_tematica: h.unidade_tematica || null,
         objeto_conhecimento: h.objeto_conhecimento || null,
         nivel_cognitivo: h.nivel_cognitivo,
@@ -1017,13 +1021,15 @@ const BancoQuestoesIA = () => {
                             const tema = d.tema || '';
                             const fonte = d.fonte || '';
                             const confianca = d.confianca || '';
-                            const selecionado = h.descritores?.includes(codigoD);
+                            // Chave composta: "saeb:D01" ou "saepi:D01" (evita marcar os dois juntos)
+                            const chaveDescritor = `${fonte}:${codigoD}`;
+                            const selecionado = h.descritores?.includes(chaveDescritor);
 
                             return (
                               <button
-                                key={codigoD + (fonte || '')}
+                                key={chaveDescritor}
                                 type="button"
-                                onClick={() => toggleDescritor(index, codigoD)}
+                                onClick={() => toggleDescritor(index, chaveDescritor)}
                                 className={`w-full text-left px-3 py-2 rounded-lg border-2 transition ${
                                   selecionado
                                     ? 'bg-blue-50 border-blue-500'
