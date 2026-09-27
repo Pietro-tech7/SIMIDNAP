@@ -198,6 +198,22 @@ TEMAS_CONDUTORES_POR_COMPONENTE = {
 
 
 # ============================================================
+# TIPOS DE FIGURA VÁLIDOS (para o campo tipo_figura_sugerida)
+# ============================================================
+TIPOS_FIGURA_VALIDOS = [
+    "quantidade",         # objetos contáveis: bolas, lápis, frutas
+    "ordem",              # fila, pódio, estante, posição ordinal
+    "medida",             # régua, balança, relógio
+    "decomposicao",       # blocos de centena/dezena/unidade
+    "sequencia",          # reta numérica, escada
+    "comparacao",         # duas colunas lado a lado
+    "objetos_escolares",  # lápis, caderno, tesoura, mochila
+    "formas",             # quadrado, círculo, triângulo
+    "nenhuma",            # questão não pede figura
+]
+
+
+# ============================================================
 # ERROS COMUNS POR TIPO DE HABILIDADE (para calibrar distratores)
 # ============================================================
 ERROS_COMUNS_POR_TIPO = {
@@ -214,7 +230,7 @@ ERROS_COMUNS_POR_TIPO = {
 
 
 # ============================================================
-# SYSTEM INSTRUCTION — enriquecida
+# SYSTEM INSTRUCTION — enriquecida + campos tema/figura
 # ============================================================
 def montar_system_instruction() -> str:
     return (
@@ -247,23 +263,30 @@ def montar_system_instruction() -> str:
         "• Valor posicional: aluno confunde unidade/dezena/centena.\n"
         "• Leitura: aluno lê informação errada por não atentar ao enunciado.\n"
         "• Inferência: aluno escolhe informação explícita em vez de inferir.\n\n"
+        "═══════════════════════════════════════════════════════════════\n"
         "REGRA CRÍTICA — PROGRESSÃO COGNITIVA\n"
         "═══════════════════════════════════════════════════════════════\n"
         "Dentro de cada lote, ordene as questões do mais simples para o mais complexo,\n"
         "respeitando a Taxonomia de Bloom:\n"
         "  1º Lembrar → 2º Compreender → 3º Aplicar → 4º Analisar → 5º Avaliar → 6º Criar\n\n"
+        "═══════════════════════════════════════════════════════════════\n"
         "REGRA CRÍTICA — CONTEXTO COTIDIANO E CULTURAL\n"
         "═══════════════════════════════════════════════════════════════\n"
         "Use nomes próprios brasileiros comuns (Ana, Bruno, Carla, Daniel, Elena).\n"
         "Use situações do dia a dia (escola, casa, mercado, parque, festa).\n"
         "Para o Piauí, prefira contextos regionais sem estereótipos.\n"
         "NUNCA use nomes ou contextos que possam soar excludentes.\n\n"
-        "SUPORTE VISUAL\n"
         "═══════════════════════════════════════════════════════════════\n"
-        "Para cada questão, indique se ela precisa de ilustração.\n"
-        "Se precisar, descreva em português o que deve ser ilustrado.\n"
-        "Use termos simples e reconhecíveis.\n"
-        "Além disso, classifique o tipo de figura sugerida como UM dos:\n"
+        "REGRA CRÍTICA — TEMA CONDUTOR (obrigatório em TODA questão)\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "Para CADA questão, defina um TEMA CONDUTOR. O tema é um rótulo curto\n"
+        "em CAIXA ALTA que resume o eixo pedagógico da questão.\n"
+        "Use EXATAMENTE um dos temas condutores listados no prompt para o componente.\n"
+        "Exemplos: 'QUANTIDADE', 'ORDEM', 'MEDIDA', 'INFERIR', 'LOCALIZAR', 'COMPARAÇÃO'.\n\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "REGRA CRÍTICA — TIPO DE FIGURA (obrigatório em TODA questão)\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "Para CADA questão, classifique o TIPO DE FIGURA sugerida como UM dos:\n"
         "  - quantidade (objetos contáveis: bolas, lápis, frutas)\n"
         "  - ordem (fila, pódio, estante, posição ordinal)\n"
         "  - medida (régua, balança, relógio)\n"
@@ -271,8 +294,13 @@ def montar_system_instruction() -> str:
         "  - sequencia (reta numérica, escada)\n"
         "  - comparacao (duas colunas lado a lado)\n"
         "  - objetos_escolares (lápis, caderno, tesoura, mochila)\n"
-        "  - formas (quadrado, círculo, triângulo, etc.)\n"
+        "  - formas (quadrado, círculo, triângulo)\n"
         "  - nenhuma (questão não pede figura)\n\n"
+        "SUPORTE VISUAL\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "Para cada questão, indique se ela precisa de ilustração.\n"
+        "Se precisar, descreva em português o que deve ser ilustrado.\n"
+        "Use termos simples e reconhecíveis.\n\n"
         "FORMATO DE SAÍDA (JSON)\n"
         "═══════════════════════════════════════════════════════════════\n"
         "{\n"
@@ -285,6 +313,8 @@ def montar_system_instruction() -> str:
         '      "descritor_texto": "...",\n'
         '      "nivel_cognitivo": "Aplicar",\n'
         '      "tipo": "multipla_escolha",\n'
+        '      "tema_condutor": "QUANTIDADE",\n'
+        '      "tipo_figura_sugerida": "quantidade",\n'
         '      "enunciado": "...",\n'
         '      "alternativas": [\n'
         '        {"letra": "A", "texto": "..."},\n'
@@ -353,6 +383,9 @@ def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end
         prompt += "Use EXATAMENTE um destes rótulos em cada questão (em caixa alta):\n"
         prompt += f"  {', '.join(temas)}\n"
 
+    prompt += "\nTIPOS DE FIGURA VÁLIDOS (use EXATAMENTE um por questão, no campo 'tipo_figura_sugerida'):\n"
+    prompt += f"  {', '.join(TIPOS_FIGURA_VALIDOS)}\n"
+
     # ----------------------------------------------------------
     # ENRIQUECIMENTO 2 — erros comuns para calibrar distratores
     # ----------------------------------------------------------
@@ -412,6 +445,7 @@ def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end
         f"Gere EXATAMENTE {qtd} questão(ões) neste lote, numeradas de "
         f"{batch_start} a {batch_end}.\n"
         f"Ordene-as do mais SIMPLES para o mais COMPLEXO (progressão cognitiva).\n"
+        f"TODA questão deve ter os campos 'tema_condutor' e 'tipo_figura_sugerida' preenchidos.\n"
         f"Se houver mais de uma habilidade, distribua as questões entre elas.\n"
         f"Retorne APENAS o JSON, sem texto adicional.\n"
     )
@@ -512,6 +546,22 @@ def gerar_questoes(
                     texto=str(alt.get("texto", "")),
                 ))
 
+        # Normaliza tema_condutor e tipo_figura_sugerida (Fase 2b)
+        tema_condutor = q.get("tema_condutor")
+        if isinstance(tema_condutor, str):
+            tema_condutor = tema_condutor.strip().upper() or None
+        else:
+            tema_condutor = None
+
+        tipo_figura = q.get("tipo_figura_sugerida")
+        if isinstance(tipo_figura, str):
+            tipo_figura = tipo_figura.strip().lower() or None
+            # Se vier algo fora da lista, mantém como None para não poluir
+            if tipo_figura and tipo_figura not in TIPOS_FIGURA_VALIDOS:
+                tipo_figura = None
+        else:
+            tipo_figura = None
+
         questoes_out.append(QuestaoIA(
             numero=i,
             habilidade_codigo=q.get("habilidade_codigo", ""),
@@ -530,6 +580,8 @@ def gerar_questoes(
             descricao_ilustracao=q.get("descricao_ilustracao"),
             icone_sugerido=None,
             origem="gerada_ia",
+            tema_condutor=tema_condutor,
+            tipo_figura_sugerida=tipo_figura,
         ))
 
     # ------------------------------------------------------------
