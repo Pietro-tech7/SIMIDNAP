@@ -50,6 +50,9 @@ const BancoQuestoesIA = () => {
   const [incluirIlustracoes, setIncluirIlustracoes] = useState(true);
   const [dificuldadePadrao, setDificuldadePadrao] = useState('');
   const [cabecalho, setCabecalho] = useState(null);
+  // Fase 4 — opções de apresentação do PDF
+  const [mostrarTemaCondutor, setMostrarTemaCondutor] = useState(true);
+  const [mostrarDescritor, setMostrarDescritor] = useState(false);
 
   const [habilidades, setHabilidades] = useState([
     {
@@ -115,6 +118,8 @@ const BancoQuestoesIA = () => {
             if (d.referenciais !== undefined) setReferenciais(d.referenciais);
             if (d.incluirIlustracoes !== undefined) setIncluirIlustracoes(d.incluirIlustracoes);
             if (d.dificuldadePadrao !== undefined) setDificuldadePadrao(d.dificuldadePadrao);
+            if (d.mostrarTemaCondutor !== undefined) setMostrarTemaCondutor(d.mostrarTemaCondutor);
+            if (d.mostrarDescritor !== undefined) setMostrarDescritor(d.mostrarDescritor);
             if (d.habilidades !== undefined) setHabilidades(d.habilidades);
             if (d.pool !== undefined) setPool(d.pool);
             if (d.minhasQuestoes !== undefined) setMinhasQuestoes(d.minhasQuestoes);
@@ -138,6 +143,7 @@ const BancoQuestoesIA = () => {
         titulo, metaQuestoes, etapa, ano, componente, referencial,
         referenciais,
         incluirIlustracoes, dificuldadePadrao, habilidades,
+        mostrarTemaCondutor, mostrarDescritor,
         pool, minhasQuestoes, jaGerou,
         _salvo_em: new Date().toISOString(),
       };
@@ -151,7 +157,9 @@ const BancoQuestoesIA = () => {
   }, [
     rascunhoCarregado, titulo, metaQuestoes, etapa, ano, componente, referencial,
     referenciais,
-    incluirIlustracoes, dificuldadePadrao, habilidades, pool, minhasQuestoes, jaGerou,
+    incluirIlustracoes, dificuldadePadrao, habilidades,
+    mostrarTemaCondutor, mostrarDescritor,
+    pool, minhasQuestoes, jaGerou,
   ]);
 
   // Limpa todas as escolhas do formulário para começar de novo.
@@ -167,6 +175,8 @@ const BancoQuestoesIA = () => {
     setReferenciais(['bncc']);
     setIncluirIlustracoes(true);
     setDificuldadePadrao('');
+    setMostrarTemaCondutor(true);
+    setMostrarDescritor(false);
     setHabilidades([{
       unidade_tematica: '',
       objeto_conhecimento: '',
@@ -200,6 +210,8 @@ const BancoQuestoesIA = () => {
     setReferenciais(['bncc']);
     setIncluirIlustracoes(true);
     setDificuldadePadrao('');
+    setMostrarTemaCondutor(true);
+    setMostrarDescritor(false);
     setHabilidades([{
       unidade_tematica: '',
       objeto_conhecimento: '',
@@ -617,6 +629,10 @@ const BancoQuestoesIA = () => {
     titulo: titulo.trim(),
     cabecalho,
     questoes: minhasQuestoes,
+    opcoes: {
+      mostrarTemaCondutor,
+      mostrarDescritor,
+    },
   });
 
   const _salvarProvaNoBackend = async () => {
@@ -1207,6 +1223,35 @@ const BancoQuestoesIA = () => {
               className="w-4 h-4 text-purple-600 rounded" />
             Incluir sugestões de ilustrações nas questões
           </label>
+
+          {/* Fase 4 — opções de apresentação do PDF */}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 space-y-3">
+            <p className="text-xs font-semibold text-purple-900">📄 Apresentação no PDF</p>
+
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked={mostrarTemaCondutor}
+                  onChange={(e) => setMostrarTemaCondutor(e.target.checked)}
+                  className="w-4 h-4 text-purple-600 rounded" />
+                Mostrar o tema condutor em cada questão
+              </label>
+              <p className="text-[11px] text-purple-700 ml-6 mt-0.5">
+                Cada questão começa com uma faixa indicando o eixo pedagógico (QUANTIDADE, ORDEM, MEDIDA...).
+              </p>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked={mostrarDescritor}
+                  onChange={(e) => setMostrarDescritor(e.target.checked)}
+                  className="w-4 h-4 text-purple-600 rounded" />
+                Mostrar os descritores abaixo de cada questão
+              </label>
+              <p className="text-[11px] text-purple-700 ml-6 mt-0.5">
+                Quando marcado, cada questão exibe o(s) descritor(es) SAEB/SAEPI que ela avalia.
+              </p>
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

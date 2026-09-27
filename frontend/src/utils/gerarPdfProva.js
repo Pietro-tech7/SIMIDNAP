@@ -164,14 +164,26 @@ async function montarIlustracao(questao) {
 // ============================================================
 // QUESTÕES (async — precisa resolver os ícones)
 // ============================================================
-async function montarQuestoes(questoes) {
+async function montarQuestoes(questoes, opcoes = {}) {
+  const { mostrarTemaCondutor = true, mostrarDescritor = false } = opcoes;
   const blocos = [];
   for (let idx = 0; idx < questoes.length; idx++) {
     const q = questoes[idx];
     const ilustracaoHtml = await montarIlustracao(q);
 
+    // Fase 4 — faixa do tema condutor (opcional)
+    const temaHtml = (mostrarTemaCondutor && q.tema_condutor)
+      ? `<div style="background: #e5e7eb; color: #1f2937; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; margin-bottom: 6px; border-radius: 3px; display: inline-block;">${escapeHtml(q.tema_condutor)}</div>`
+      : '';
+
+    // Fase 4 — descritor abaixo da questão (opcional)
+    const descritorHtml = (mostrarDescritor && q.descritor)
+      ? `<div style="margin-top: 6px; font-size: 9px; color: #6b7280; font-style: italic;">Descritor: ${escapeHtml(q.descritor)}${q.descritor_texto ? ' — ' + escapeHtml(q.descritor_texto) : ''}</div>`
+      : '';
+
     blocos.push(`
       <div style="margin-bottom: 22px; page-break-inside: avoid;">
+        ${temaHtml}
         <div style="font-weight: bold; margin-bottom: 6px; font-size: 12px;">
           ${idx + 1}) ${escapeHtml(q.enunciado)}
         </div>
@@ -184,6 +196,7 @@ async function montarQuestoes(questoes) {
             </div>
           `).join('')}
         </div>
+        ${descritorHtml}
       </div>
     `);
   }
@@ -215,10 +228,10 @@ function montarGabaritoQuestoes(questoes) {
 // ============================================================
 // FUNÇÕES PÚBLICAS
 // ============================================================
-export async function gerarProvaPDF({ titulo, cabecalho, questoes }) {
+export async function gerarProvaPDF({ titulo, cabecalho, questoes, opcoes }) {
   if (!questoes || questoes.length === 0) throw new Error('Sem questões.');
 
-  const questoesHtml = await montarQuestoes(questoes);
+  const questoesHtml = await montarQuestoes(questoes, opcoes || {});
 
   const html = `
     <div style="padding: 10px;">
