@@ -1356,6 +1356,124 @@ class GeminiService:
 
         raise Exception(f"Todos os modelos falharam: {ultimo_erro}")
 
+    # ============================================================
+    # IA VISION — CLASSIFICAÇÃO DE FIGURAS (BLOCO F - FASE 5)
+    # ============================================================
+    CATEGORIAS_FIGURA = [
+        "quantidade", "ordem", "medida", "decomposicao", "sequencia",
+        "comparacao", "objetos_escolares", "formas", "numeros", "nenhuma",
+    ]
+
+    async def classify_image(self, image_bytes: bytes, mime_type: str) -> Dict[str, Any]:
+        """
+        Classifica uma imagem pedagógica usando Gemini Vision.
+
+        Recebe os bytes da imagem + mime_type.
+        Retorna dict com:
+          {
+            "nome": "carrinho de brinquedo vermelho",
+            "categorias": ["quantidade", "objetos_escolares"],
+            "subcategoria": "brinquedos",
+            "keywords": ["carrinho", "brinquedo", "veículo", "roda"]
+          }
+        """
+        if not self.controle.pode_usar():
+            raise Exception(self.controle.mensagem_limite())
+
+        cats_validas = ", ".join(self.CATEGORIAS_FIGURA)
+
+        system_prompt = (
+            "Você é um especialista em educação brasileira e ilustrações pedagógicas. "
+            "Analise a imagem enviada e retorne APENAS um JSON com a estrutura:\n"
+            "{\n"
+            '  "nome": "string (nome curto e descritivo em português, ex: \'carrinho de brinquedo vermelho\')",\n'
+            '  "categorias": ["array com 1 a 3 categorias da lista permitida"],\n'
+            '  "subcategoria": "string (opcional, ex: frutas, animais, brinquedos, escola)",\n'
+            '  "keywords": ["array com 3 a 6 palavras-chave em português para busca"]\n'
+            "}\n\n"
+            f"CATEGORIAS PERMITIDAS: {cats_validas}\n\n"
+            "REGRAS DE CATEGORIZAÇÃO:\n"
+            "- quantidade = objetos contáveis (bolas, frutas, lápis, brinquedos)\n"
+            "- ordem = posição, fila, pódio, ranking, sequência de posições\n"
+            "- medida = régua, relógio, balança, instrumentos de medida\n"
+            "- decomposicao = blocos, ábaco, material dourado, valor posicional\n"
+            "- sequencia = reta numérica, padrões, ciclos\n"
+            "- comparacao = maior/menor, sinais matemáticos, grupos comparados\n"
+            "- objetos_escolares = lápis, caderno, tesoura, mochila, livro\n"
+            "- formas = formas geométricas (quadrado, círculo, triângulo)\n"
+            "- numeros = dígitos ou números\n"
+            "- nenhuma = apenas se não se encaixar em nenhuma\n\n"
+            "REGRAS IMPORTANTES:\n"
+            "- SEMPRE retorne pelo menos 1 categoria.\n"
+            "- Se a imagem puder servir a mais de uma categoria, inclua todas (até 3).\n"
+            "- O nome deve ser descritivo e curto (máximo 60 caracteres).\n"
+            "- As keywords devem ajudar a encontrar a figura por busca textual.\n"
+            "- Retorne APENAS o JSON, sem texto antes ou depois."
+        )
+
+        # Cria o Part da imagem para o SDK novo
+        try:
+            image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+        except Exception as e:
+            print(f"[Gemini Vision] Erro ao criar Part: {e}")
+            raise Exception("Formato de imagem não suportado.")
+
+        ultimo_erro = None
+        for modelo in MODELOS_CHAT:
+            try:
+                print(f"[Gemini Vision] Classificando com {modelo}...")
+                response = self._executar_com_retry(
+                    self.client.models.generate_content,
+                    model=modelo,
+                    contents=[image_part, system_prompt],
+                    config=types.GenerateContentConfig(
+                        temperature=0.3,
+                        max_output_tokens=1024,
+                        response_mime_type="application/json",
+                        thinking_config=_thinking_config(),
+                    ),
+                )
+                self.controle.registrar_uso()
+                texto = response.text.strip()
+
+                # Remove marcações markdown
+                if texto.startswith("```"):
+                    texto = texto.split("```")[1]
+                    if texto.startswith("json"):
+                        texto = texto[4:]
+                texto = texto.strip()
+
+                try:
+                    resultado = json.loads(texto)
+                except json.JSONDecodeError:
+                    resultado = self._reparar_json(texto)
+                    if resultado is None:
+                        raise
+
+                # Normaliza categorias
+                cats = resultado.get("categorias", []) or []
+                cats_validas_lista = [c for c in cats if c in self.CATEGORIAS_FIGURA]
+                if not cats_validas_lista:
+                    cats_validas_lista = ["nenhuma"]
+
+                # Normaliza keywords
+                kws = resultado.get("keywords", []) or []
+                kws = [str(k).strip() for k in kws if k][:6]
+
+                print(f"[Gemini Vision] Sucesso: {modelo}")
+                return {
+                    "nome": (resultado.get("nome") or "figura")[:100],
+                    "categorias": cats_validas_lista[:3],
+                    "subcategoria": resultado.get("subcategoria") or None,
+                    "keywords": kws,
+                }
+            except Exception as e:
+                print(f"[Gemini Vision] Falha em {modelo}: {e}")
+                ultimo_erro = e
+                continue
+
+        raise Exception(f"Todos os modelos falharam: {ultimo_erro}")
+
     def generate_questions_batch(
         self,
         system_instruction: str,

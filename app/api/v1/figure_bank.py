@@ -25,6 +25,7 @@ from ...schemas.figure_bank import (
     FigureBankUploadResponse,
     FigureBankBatchIds,
     FigureBankBatchCategorize,
+    FigureBankClassifyResponse,
     FigureBankStats,
     FigureBankStatsItem,
 )
@@ -234,6 +235,62 @@ async def upload_figuras(
         itens=itens_ok,
         erros=erros,
     )
+
+
+# ============================================================
+# IA VISION — CLASSIFICAR FIGURA
+# ============================================================
+@router.post("/classify", response_model=FigureBankClassifyResponse)
+async def classify_figura(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
+    """
+    Classifica uma imagem usando IA Vision (Gemini).
+    NÃO salva — apenas devolve a sugestão para o admin confirmar/ajustar.
+
+    Retorna: { nome, categorias, subcategoria, keywords }
+    """
+    if not file:
+        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
+
+    try:
+        conteudo = await file.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao ler arquivo: {e}")
+
+    if len(conteudo) == 0:
+        raise HTTPException(status_code=400, detail="Arquivo vazio.")
+    if len(conteudo) > MAX_SIZE_BYTES:
+        tamanho_mb = len(conteudo) / (1024 * 1024)
+        raise HTTPException(status_code=400, detail=f"Arquivo muito grande ({tamanho_mb:.1f} MB). Limite: 5 MB.")
+
+    mime = file.content_type or "application/octet-stream"
+    if mime not in TIPOS_PERMITIDOS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tipo não permitido: '{mime}'. Use SVG, PNG, JPG ou WEBP.",
+        )
+
+    # SVG não é suportado pelo Gemini Vision — usar PNG/JPG/WEBP
+    if mime == "image/svg+xml":
+        raise HTTPException(
+            status_code=400,
+            detail="SVG não é suportado pela IA Vision. Use PNG, JPG ou WEBP.",
+        )
+
+    try:
+        from ...services.gemini_service import get_gemini_service
+        service = get_gemini_service()
+        sugestao = await service.classify_image(conteudo, mime)
+        return FigureBankClassifyResponse(**sugestao)
+    except Exception as e:
+        print(f"[Classify] Erro ao classificar figura: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao classificar. Detalhe: {str(e)[:200]}",
+        )
 
 
 # ============================================================

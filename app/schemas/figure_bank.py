@@ -93,6 +93,16 @@ class FigureBankBatchCategorize(BaseModel):
 
 
 # ============================================================
+# IA VISION — CLASSIFICAÇÃO
+# ============================================================
+class FigureBankClassifyResponse(BaseModel):
+    nome: str
+    categorias: List[str] = Field(default_factory=list)
+    subcategoria: Optional[str] = None
+    keywords: List[str] = Field(default_factory=list)
+
+
+# ============================================================
 # ESTATÍSTICAS
 # ============================================================
 class FigureBankStatsItem(BaseModel):
