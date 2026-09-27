@@ -1,9 +1,14 @@
 // ============================================================
-// BIBLIOTECA DE ÍCONES (Fase A - MVP)
-// Mapeia palavras-chave da descrição → caminho do SVG
+// BIBLIOTECA DE ÍCONES
+// Suporta dois modos:
+//   1) Busca por palavra-chave (buscarIcone) — legado
+//   2) Busca por categoria pedagógica (buscarSvgsPorCategoria) — Fase 3
 // ============================================================
 
+// ============================================================
+// MAPA DE PALAVRAS-CHAVE → SVG (modo legado, mantido)
 // Ordem de prioridade importa: termos mais específicos primeiro
+// ============================================================
 const MAPA_ICONES = [
   // --- NÚMEROS ---
   { chave: 'reta numérica', path: 'numeros/reta-numerica.svg' },
@@ -53,9 +58,140 @@ const MAPA_ICONES = [
   { chave: 'maçã', path: 'genericos/maca.svg' },
   { chave: 'maca', path: 'genericos/maca.svg' },
   { chave: 'livro', path: 'genericos/livro.svg' },
+  { chave: 'dado', path: 'genericos/dado.svg' },
+  { chave: 'moeda', path: 'genericos/moeda.svg' },
+  { chave: 'presente', path: 'genericos/presente.svg' },
+  { chave: 'troféu', path: 'genericos/trofeu.svg' },
+  { chave: 'trofeu', path: 'genericos/trofeu.svg' },
+
+  // --- ORDEM (Fase 3) ---
+  { chave: 'pódio', path: 'ordem/podio.svg' },
+  { chave: 'podio', path: 'ordem/podio.svg' },
+  { chave: 'fila', path: 'ordem/fila.svg' },
+  { chave: 'estante', path: 'ordem/estante.svg' },
+  { chave: 'escada', path: 'ordem/escada.svg' },
+  { chave: 'ranking', path: 'ordem/ranking.svg' },
+
+  // --- MEDIDA (Fase 3) ---
+  { chave: 'balança', path: 'medida/balanca.svg' },
+  { chave: 'balanca', path: 'medida/balanca.svg' },
+  { chave: 'relógio', path: 'medida/relogio.svg' },
+  { chave: 'relogio', path: 'medida/relogio.svg' },
+  { chave: 'termômetro', path: 'medida/termometro.svg' },
+  { chave: 'termometro', path: 'medida/termometro.svg' },
+
+  // --- DECOMPOSIÇÃO (Fase 3) ---
+  { chave: 'material dourado', path: 'decomposicao/material-dourado.svg' },
+  { chave: 'ábaco', path: 'decomposicao/abaco.svg' },
+  { chave: 'abaco', path: 'decomposicao/abaco.svg' },
+  { chave: 'centena', path: 'decomposicao/bloco-centena.svg' },
+  { chave: 'dezena', path: 'decomposicao/bloco-dezena.svg' },
+  { chave: 'unidade', path: 'decomposicao/bloco-unidade.svg' },
+
+  // --- SEQUÊNCIA (Fase 3) ---
+  { chave: 'sequência', path: 'sequencia/seta-sequencia.svg' },
+  { chave: 'sequencia', path: 'sequencia/seta-sequencia.svg' },
+  { chave: 'padrão', path: 'sequencia/padrao-geometrico.svg' },
+  { chave: 'padrao', path: 'sequencia/padrao-geometrico.svg' },
 ];
 
-// Cache de data URLs (evita re-fetch)
+// ============================================================
+// MAPA DE CATEGORIA PEDAGÓGICA → LISTA DE SVGs (Fase 3)
+// A chave é o valor do campo "tipo_figura_sugerida" que a IA devolve.
+// ============================================================
+const SVGS_POR_CATEGORIA = {
+  quantidade: [
+    'genericos/bola.svg',
+    'genericos/maca.svg',
+    'genericos/balao.svg',
+    'genericos/carrinho.svg',
+    'genericos/presente.svg',
+    'genericos/dado.svg',
+    'objetos/lapis.svg',
+    'objetos/borracha.svg',
+  ],
+  ordem: [
+    'ordem/fila.svg',
+    'ordem/podio.svg',
+    'ordem/estante.svg',
+    'ordem/ranking.svg',
+    'ordem/escada.svg',
+    'ordem/seta-posicao.svg',
+    'genericos/trofeu.svg',
+  ],
+  medida: [
+    'medida/balanca.svg',
+    'medida/relogio.svg',
+    'medida/termometro.svg',
+    'medida/fita-metrica.svg',
+    'medida/jarra.svg',
+    'medida/ampulheta.svg',
+    'objetos/regua.svg',
+  ],
+  decomposicao: [
+    'decomposicao/bloco-centena.svg',
+    'decomposicao/bloco-dezena.svg',
+    'decomposicao/bloco-unidade.svg',
+    'decomposicao/material-dourado.svg',
+    'decomposicao/abaco.svg',
+    'decomposicao/valor-posicional.svg',
+  ],
+  sequencia: [
+    'sequencia/seta-sequencia.svg',
+    'sequencia/padrao-geometrico.svg',
+    'sequencia/serie-numerica.svg',
+    'sequencia/escada-numerica.svg',
+    'sequencia/linha-tempo.svg',
+    'sequencia/ciclo.svg',
+    'numeros/reta-numerica.svg',
+  ],
+  comparacao: [
+    'comparacao/duas-colunas.svg',
+    'comparacao/comparar-grupos.svg',
+    'comparacao/sinal-maior.svg',
+    'comparacao/sinal-menor.svg',
+    'comparacao/sinal-igual.svg',
+    'comparacao/maior-menor.svg',
+  ],
+  objetos_escolares: [
+    'objetos/lapis.svg',
+    'objetos/caderno.svg',
+    'objetos/borracha.svg',
+    'objetos/regua.svg',
+    'objetos/tesoura.svg',
+    'objetos/mochila.svg',
+    'genericos/livro.svg',
+  ],
+  formas: [
+    'formas/quadrado.svg',
+    'formas/circulo.svg',
+    'formas/triangulo.svg',
+    'formas/retangulo.svg',
+    'formas/losango.svg',
+    'formas/estrela.svg',
+    'formas/coracao.svg',
+    'formas/hexagono.svg',
+  ],
+  numeros: [
+    'numeros/1.svg',
+    'numeros/2.svg',
+    'numeros/3.svg',
+    'numeros/4.svg',
+    'numeros/5.svg',
+    'numeros/6.svg',
+    'numeros/7.svg',
+    'numeros/8.svg',
+    'numeros/9.svg',
+    'numeros/10.svg',
+    'numeros/reta-numerica.svg',
+  ],
+  nenhuma: [],
+};
+
+
+// ============================================================
+// CACHE de data URLs (evita re-fetch)
+// ============================================================
 const CACHE = {};
 
 
@@ -71,7 +207,7 @@ function normalizar(texto) {
 
 
 // ============================================================
-// BUSCA o ícone mais adequado para uma descrição
+// BUSCA o ícone mais adequado para uma descrição (modo legado)
 // ============================================================
 export function buscarIcone(descricao) {
   if (!descricao) return null;
@@ -84,6 +220,26 @@ export function buscarIcone(descricao) {
     }
   }
   return null;
+}
+
+
+// ============================================================
+// BUSCA SVGs por CATEGORIA PEDAGÓGICA (Fase 3)
+// Retorna lista de paths da categoria.
+// Se a categoria não existir, retorna lista vazia.
+// ============================================================
+export function buscarSvgsPorCategoria(categoria) {
+  if (!categoria) return [];
+  const cat = String(categoria).toLowerCase().trim();
+  return SVGS_POR_CATEGORIA[cat] || [];
+}
+
+
+// ============================================================
+// Retorna TODAS as categorias disponíveis (útil para debug/UI)
+// ============================================================
+export function listarCategorias() {
+  return Object.keys(SVGS_POR_CATEGORIA);
 }
 
 
@@ -111,7 +267,27 @@ export async function carregarIconeComoDataURL(caminho) {
 
 
 // ============================================================
-// HELPER — para uso direto em componentes React
+// CARREGA vários SVGs de uma categoria de uma vez (Fase 3)
+// Retorna [{ caminho, dataUrl }, ...]
+// ============================================================
+export async function carregarSvgsDaCategoria(categoria) {
+  const caminhos = buscarSvgsPorCategoria(categoria);
+  if (caminhos.length === 0) return [];
+
+  const resultados = await Promise.all(
+    caminhos.map(async (caminho) => {
+      const dataUrl = await carregarIconeComoDataURL(caminho);
+      return { caminho, dataUrl };
+    })
+  );
+
+  // Remove os que falharam ao carregar
+  return resultados.filter(r => r.dataUrl);
+}
+
+
+// ============================================================
+// HELPER — busca por descrição + carrega (modo legado)
 // ============================================================
 export async function buscarEcarregarIcone(descricao) {
   const caminho = buscarIcone(descricao);
