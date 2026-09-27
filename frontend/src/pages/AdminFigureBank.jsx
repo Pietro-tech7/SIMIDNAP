@@ -61,7 +61,7 @@ const AdminFigureBank = () => {
   const [filtroBusca, setFiltroBusca] = useState('');
 
   // ---- Upload (staging) ----
-  const [stagedFiles, setStagedFiles] = useState([]);       // [{ id, file, previewUrl }]
+  const [stagedFiles, setStagedFiles] = useState([]);
   const [uploadCategorias, setUploadCategorias] = useState(['nenhuma']);
   const [uploadSubcategoria, setUploadSubcategoria] = useState('');
   const [uploadKeywords, setUploadKeywords] = useState('');
@@ -69,6 +69,10 @@ const AdminFigureBank = () => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
+
+  // ---- IA Vision (classificação) ----
+  const [classificandoLote, setClassificandoLote] = useState(false);
+  const [classificandoEdit, setClassificandoEdit] = useState(false);
 
   // ---- Imagens (cache blob URLs) ----
   const [imagens, setImagens] = useState({});
@@ -177,7 +181,6 @@ const AdminFigureBank = () => {
     if (!files || files.length === 0) return;
     const novos = [];
     for (const file of Array.from(files)) {
-      // Valida tamanho antes de staged
       if (file.size > 5 * 1024 * 1024) {
         setErro(`"${file.name}" é muito grande (máx. 5 MB). Ignorado.`);
         continue;
@@ -230,13 +233,110 @@ const AdminFigureBank = () => {
         const novas = prev.filter(x => x !== valor);
         return novas.length > 0 ? novas : ['nenhuma'];
       }
-      // Se clicar em "nenhuma", limpa as outras
       if (valor === 'nenhuma') return ['nenhuma'];
-      // Se clicar em outra, remove "nenhuma"
       return [...prev.filter(x => x !== 'nenhuma'), valor];
     });
   };
 
+  // ============================================================
+  // IA VISION — CLASSIFICAR LOTE (staging)
+  // ============================================================
+  const classificarLoteStaging = async () => {
+    if (stagedFiles.length === 0) return;
+    setClassificandoLote(true); setErro(''); setSucesso('');
+
+    // Pega o primeiro arquivo para servir de referência do lote
+    const primeiro = stagedFiles[0];
+
+    // Avisa se tiver mais de 1 arquivo
+    if (stagedFiles.length > 1) {
+      const ok = window.confirm(
+        `⚠️ A IA vai classificar usando apenas o PRIMEIRO arquivo da fila.\n\n` +
+        `Se os ${stagedFiles.length} arquivos forem de temas diferentes, o ideal é subir em grupos separados.\n\n` +
+        `Deseja continuar?`
+      );
+      if (!ok) {
+        setClassificandoLote(false);
+        return;
+      }
+    }
+
+    try {
+      const form = new FormData();
+      form.append('file', primeiro.file);
+
+      const res = await api.post('/admin/figure-bank/classify', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const r = res.data;
+      if (r.categorias && r.categorias.length > 0) {
+        setUploadCategorias(r.categorias);
+      }
+      if (r.subcategoria) {
+        setUploadSubcategoria(r.subcategoria);
+      }
+      if (r.keywords && r.keywords.length > 0) {
+        setUploadKeywords(r.keywords.join(', '));
+      }
+
+      setSucesso(`🤖 IA sugeriu classificação com base em "${r.nome}". Revise abaixo antes de subir.`);
+      setTimeout(() => setSucesso(''), 5000);
+    } catch (e) {
+      const msg = e?.response?.data?.detail || 'Erro ao classificar com IA.';
+      setErro(msg);
+    } finally {
+      setClassificandoLote(false);
+    }
+  };
+
+  // ============================================================
+  // IA VISION — CLASSIFICAR ITEM INDIVIDUAL (modal edição)
+  // ============================================================
+  const classificarFiguraEditando = async () => {
+    if (!editandoItem) return;
+    const url = imagens[editandoItem.id];
+    if (!url) {
+      setErro('Imagem ainda não foi carregada. Aguarde um instante e tente novamente.');
+      return;
+    }
+
+    setClassificandoEdit(true); setErro(''); setSucesso('');
+
+    try {
+      // Pega o blob a partir da URL cacheada
+      const blobResp = await fetch(url);
+      const blob = await blobResp.blob();
+
+      const form = new FormData();
+      form.append('file', blob, 'figura.png');
+
+      const res = await api.post('/admin/figure-bank/classify', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const r = res.data;
+      setFormEdit(f => ({
+        ...f,
+        nome: r.nome || f.nome,
+        categorias: (r.categorias && r.categorias.length > 0) ? r.categorias : f.categorias,
+        subcategoria: r.subcategoria || f.subcategoria,
+        keywords: (r.keywords && r.keywords.length > 0) ? r.keywords.join(', ') : f.keywords,
+      }));
+
+      setSucesso(`🤖 IA classificou como "${r.nome}". Revise e salve.`);
+      setTimeout(() => setSucesso(''), 5000);
+    } catch (e) {
+      const msg = e?.response?.data?.detail || 'Erro ao classificar com IA.';
+      setErro(msg);
+    } finally {
+      setClassificandoEdit(false);
+    }
+  };
+
+  // ============================================================
+  // CONFIRMAR UPLOAD
+  // ============================================================
   const confirmarUpload = async () => {
     if (stagedFiles.length === 0) return;
     setErro(''); setSucesso(''); setUploading(true);
@@ -570,6 +670,29 @@ const AdminFigureBank = () => {
               ))}
             </div>
 
+            {/* Botão IA Vision */}
+            <div className="mt-4 pt-4 border-t border-blue-200">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={classificarLoteStaging}
+                  disabled={classificandoLote}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-semibold px-4 py-2 rounded-lg text-sm transition flex items-center gap-2"
+                >
+                  {classificandoLote ? (
+                    <>
+                      <span className="animate-pulse">🤖</span> Classificando...
+                    </>
+                  ) : (
+                    <>🤖 Classificar com IA</>
+                  )}
+                </button>
+                <span className="text-xs text-slate-600">
+                  A IA sugere nome, categorias, subcategoria e palavras-chave.
+                </span>
+              </div>
+            </div>
+
             {/* Classificação */}
             <div className="mt-4 pt-4 border-t border-blue-200 space-y-3">
               <div>
@@ -711,7 +834,6 @@ const AdminFigureBank = () => {
 
       {!loading && items.length > 0 && (
         <>
-          {/* Barra de seleção */}
           <div className="bg-white rounded-lg border border-slate-200 p-3 mb-3 flex flex-wrap justify-between items-center gap-2">
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 cursor-pointer text-sm">
@@ -909,6 +1031,32 @@ const AdminFigureBank = () => {
                     className="max-h-32 mx-auto object-contain"
                   />
                 )}
+              </div>
+
+              {/* Botão IA Vision */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                  <button
+                    type="button"
+                    onClick={classificarFiguraEditando}
+                    disabled={classificandoEdit}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-semibold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5"
+                  >
+                    {classificandoEdit ? (
+                      <>
+                        <span className="animate-pulse">🤖</span> Classificando...
+                      </>
+                    ) : (
+                      <>🤖 Classificar com IA</>
+                    )}
+                  </button>
+                  <span className="text-[11px] text-purple-900">
+                    A IA sugere nome, categorias, subcategoria e palavras-chave.
+                  </span>
+                </div>
+                <p className="text-[10px] text-purple-700">
+                  💡 A sugestão preenche os campos abaixo. Você revisa antes de salvar.
+                </p>
               </div>
 
               <div>
