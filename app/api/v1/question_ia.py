@@ -6,7 +6,7 @@ em lotes pequenos (máx 4 questões) para evitar timeout do Railway.
 
 Prefix: /question-ia
 """
-from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import cast, String
 from typing import List, Dict, Any, Optional
@@ -24,6 +24,7 @@ from ...services.subscription_service import verificar_creditos, consumir_credit
 from ...models.question_bank_fundamental import QuestionBankFundamental
 from pydantic import BaseModel
 import uuid
+import re
 
 router = APIRouter(prefix="/question-ia", tags=["question-ia"])
 
@@ -760,3 +761,65 @@ def listar_figuras_para_motor9(
         "total": len(resultado),
         "figuras": resultado,
     }
+
+
+# ============================================================
+# GERAR WORD (.docx) — Bloco C.14
+# ============================================================
+class GerarWordRequest(BaseModel):
+    tipo: str  # "prova" | "gabarito"
+    titulo: str
+    cabecalho: Optional[Dict[str, Any]] = None
+    questoes: List[Dict[str, Any]]
+    opcoes: Optional[Dict[str, Any]] = None
+
+
+@router.post("/gerar-word")
+def gerar_word(
+    data: GerarWordRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Gera a PROVA ou o GABARITO em formato .docx.
+    Retorna o arquivo pronto para download.
+
+    O frontend envia o payload completo e recebe o .docx de volta.
+    Nenhum dado é salvo no banco — geração puramente em memória.
+    """
+    if data.tipo not in ("prova", "gabarito"):
+        raise HTTPException(status_code=400, detail="Tipo deve ser 'prova' ou 'gabarito'.")
+    if not data.questoes:
+        raise HTTPException(status_code=400, detail="Nenhuma questão informada.")
+
+    try:
+        from ...services.word_service import gerar_word_prova, gerar_word_gabarito
+
+        if data.tipo == "prova":
+            buffer = gerar_word_prova(
+                titulo=data.titulo,
+                cabecalho=data.cabecalho or {},
+                questoes=data.questoes,
+                opcoes=data.opcoes or {},
+            )
+        else:
+            buffer = gerar_word_gabarito(
+                titulo=data.titulo,
+                cabecalho=data.cabecalho or {},
+                questoes=data.questoes,
+            )
+    except Exception as e:
+        print(f"[Word] Erro ao gerar .docx: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar Word: {str(e)[:200]}")
+
+    # Nome do arquivo
+    slug = re.sub(r'[^a-z0-9]+', '_', (data.titulo or 'prova').lower()).strip('_')[:60] or 'prova'
+    sufixo = 'PROVA' if data.tipo == 'prova' else 'GABARITO'
+    filename = f"{slug}_{sufixo}.docx"
+
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )

@@ -9,6 +9,7 @@ pyjwt
 python-multipart
 requests
 google-genai
+python-docx==1.1.2
 langchain-google-genai
 langchain-community
 faiss-cpu
