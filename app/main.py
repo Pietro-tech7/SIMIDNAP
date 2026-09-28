@@ -30,6 +30,7 @@ from .models import (  # noqa: F401
     descritor,
     habilidade_descritor,
     figure_bank,
+    system_setting,
 )
 
 
