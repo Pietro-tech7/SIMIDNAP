@@ -27,6 +27,10 @@ from ...services.subscription_service import (
     consumir_cota_imagem,
     TASK_TYPE_IMAGEM_IA,
 )
+from ...services.system_settings_service import (
+    flag_ativa,
+    obter_setting,
+)
 from ...models.question_bank_fundamental import QuestionBankFundamental
 from pydantic import BaseModel
 import uuid
@@ -868,6 +872,17 @@ async def gerar_imagem(
     - Salva automaticamente no Banco de Figuras como origem="ia_gerada".
     - A imagem NÃO é removida pela política de retenção (é acervo permanente).
     """
+    # ------------------------------------------------------------
+    # 0. Guard: recurso ligado/desligado globalmente pelo super admin
+    # ------------------------------------------------------------
+    if not flag_ativa(db, "feature_gerar_imagem_ia", default=False):
+        texto_indisponivel = obter_setting(
+            db,
+            "texto_imagem_ia_indisponivel",
+            default="A geração de imagens com IA está temporariamente indisponível.",
+        )
+        raise HTTPException(status_code=503, detail=texto_indisponivel)
+
     # ------------------------------------------------------------
     # 1. Validação básica
     # ------------------------------------------------------------
