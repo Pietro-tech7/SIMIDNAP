@@ -71,6 +71,19 @@ class QuestionBankFundamental(Base):
     trashed_at = Column(DateTime, nullable=True)  # quando foi jogada na lixeira
 
     # ============================================================
+    # RETENÇÃO AUTOMÁTICA (Bloco D — política de 3 camadas)
+    # ============================================================
+    retencao_nivel = Column(Integer, nullable=False, default=1, index=True)
+    # 1 = rascunho (nunca usada em prova)       → descarta após 30 dias
+    # 2 = usada em prova (PDF/Word)             → descarta após 90 dias
+    # 3 = favorita / reutilizada / curadoria    → nunca descarta
+    # O cron job semanal recalcula e aplica a política.
+
+    ultima_utilizacao_em = Column(DateTime, nullable=True, index=True)
+    # Atualizada sempre que a questão é usada em uma prova gerada.
+    # Base para o cálculo de retenção.
+
+    # ============================================================
     # CONTROLE
     # ============================================================
     created_at = Column(DateTime, server_default="now()", nullable=False)

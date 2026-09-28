@@ -77,6 +77,17 @@ class ExamPaper(Base):
     aprovado_pelo_admin = Column(Boolean, default=False, nullable=False)
 
     # ============================================================
+    # RETENÇÃO AUTOMÁTICA (Bloco D — política de 3 camadas)
+    # ============================================================
+    retencao_nivel = Column(Integer, nullable=False, default=1, index=True)
+    # 1 = rascunho (nunca usada em prova)       → descarta após 30 dias
+    # 2 = usada em prova (PDF/Word)             → descarta após 90 dias
+    # 3 = favorita / reutilizada / curadoria    → nunca descarta
+
+    ultima_utilizacao_em = Column(DateTime, nullable=True, index=True)
+    # Atualizada sempre que a prova é baixada em PDF/Word.
+
+    # ============================================================
     # CONTROLE
     # ============================================================
     created_at = Column(DateTime, server_default="now()", nullable=False)

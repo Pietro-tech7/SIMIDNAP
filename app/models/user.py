@@ -14,6 +14,14 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
     gemini_api_key = Column(String, nullable=True)
+    # Chave do Gemini do usuário — armazenada CRIPTOGRAFADA (Fernet + SECRET_KEY).
+    # Quando presente, o sistema usa essa chave em vez da chave global.
+    # Nunca é retornada em texto puro pela API — sempre mascarada.
+
+    data_cadastro_api = Column(DateTime, nullable=True)
+    # Data em que o usuário cadastrou a própria chave. NULL = ainda usa a do sistema.
+    # Usada para métricas do super admin (quantos ainda não cadastraram).
+
     avatar_url = Column(String, nullable=True)
 
     # ============================================================
