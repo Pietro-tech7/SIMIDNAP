@@ -57,6 +57,7 @@ PLANOS = {
         "creditos_mes": 70,        # legado
         "creditos_sem_api": 70,    # 7.0 créditos
         "creditos_com_api": 70,    # trial não muda com API
+        "imagens_ia_mes": 3,       # cota de geração de imagens IA (taster)
         "recursos": RECURSOS_TODOS,
         "destaque": False,
     },
@@ -67,6 +68,7 @@ PLANOS = {
         "creditos_mes": 150,
         "creditos_sem_api": 150,    # 15.0 créditos
         "creditos_com_api": 500,    # 50.0 créditos
+        "imagens_ia_mes": 0,        # sem geração de imagens IA
         "recursos": RECURSOS_BASICO,
         "destaque": False,
     },
@@ -77,6 +79,7 @@ PLANOS = {
         "creditos_mes": 250,
         "creditos_sem_api": 250,    # 25.0 créditos
         "creditos_com_api": 1500,   # 150.0 créditos
+        "imagens_ia_mes": 0,        # sem geração de imagens IA
         "recursos": RECURSOS_INTERMEDIARIO,
         "destaque": True,
     },
@@ -87,6 +90,7 @@ PLANOS = {
         "creditos_mes": 500,
         "creditos_sem_api": 500,    # 50.0 créditos
         "creditos_com_api": 5000,   # 500.0 créditos
+        "imagens_ia_mes": 5,        # cota de geração de imagens IA
         "recursos": RECURSOS_VIP,
         "destaque": False,
     },
@@ -97,6 +101,7 @@ PLANOS = {
         "creditos_mes": 1000,
         "creditos_sem_api": 1000,   # 100.0 créditos
         "creditos_com_api": 10000,  # 1000.0 créditos
+        "imagens_ia_mes": 10,       # cota de geração de imagens IA
         "recursos": RECURSOS_PREMIUM,
         "destaque": False,
     },
@@ -346,3 +351,123 @@ def sincronizar_creditos_usuario(db: Session, user_id: str) -> Subscription:
     sub = get_or_create_subscription(db, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     return _sincronizar_creditos(db, sub, user)
+
+
+# ============================================================
+# COTA DE IMAGENS IA (Bloco C.15 — Geração de imagens)
+# Conta pelo UsageLog com task_type = "gerar_imagem_ia"
+# ============================================================
+TASK_TYPE_IMAGEM_IA = "gerar_imagem_ia"
+
+
+def _imagens_usadas_no_ciclo(db: Session, user_id: str, desde: datetime) -> int:
+    """Conta quantas imagens IA o usuário gerou desde uma data."""
+    return (
+        db.query(UsageLog)
+        .filter(
+            UsageLog.user_id == user_id,
+            UsageLog.task_type == TASK_TYPE_IMAGEM_IA,
+            UsageLog.created_at >= desde,
+        )
+        .count()
+    )
+
+
+def verificar_cota_imagem(db: Session, user_id: str) -> Dict[str, Any]:
+    """
+    Verifica se o usuário pode gerar uma imagem IA agora.
+
+    Retorna dict:
+        {
+            "pode": bool,
+            "disponiveis": int,       # -1 = ilimitado (usa API própria)
+            "cota": int,              # -1 = ilimitado
+            "ilimitado": bool,        # True se tem API própria + plano premium
+            "motivo": str | None,     # motivo caso não possa
+            "renova_em": str | None,  # data ISO do fim do ciclo atual
+        }
+    """
+    sub = get_or_create_subscription(db, user_id)
+    sub = _resetar_se_novo_ciclo(db, sub)
+    user = db.query(User).filter(User.id == user_id).first()
+
+    # Status inativo → não pode
+    if sub.status != "active":
+        return {
+            "pode": False,
+            "disponiveis": 0,
+            "cota": 0,
+            "ilimitado": False,
+            "motivo": "Sua assinatura está inativa. Renove para continuar.",
+            "renova_em": sub.period_end.isoformat() if sub.period_end else None,
+        }
+
+    plano = PLANOS.get(sub.plan, PLANOS["trial"])
+    tem_api = _tem_api_propria(user)
+    cota = int(plano.get("imagens_ia_mes", 0))
+
+    # Sem cota no plano
+    if cota <= 0:
+        return {
+            "pode": False,
+            "disponiveis": 0,
+            "cota": 0,
+            "ilimitado": False,
+            "motivo": "Seu plano não inclui geração de imagens com IA. Disponível no Premium.",
+            "renova_em": None,
+        }
+
+    # Tem API própria → ilimitado (o custo é do usuário no Google)
+    if tem_api:
+        return {
+            "pode": True,
+            "disponiveis": -1,
+            "cota": -1,
+            "ilimitado": True,
+            "motivo": None,
+            "renova_em": sub.period_end.isoformat() if sub.period_end else None,
+        }
+
+    # Conta uso do ciclo atual
+    desde = sub.period_start or (datetime.utcnow() - timedelta(days=30))
+    usadas = _imagens_usadas_no_ciclo(db, user_id, desde)
+    disponiveis = max(0, cota - usadas)
+
+    if disponiveis <= 0:
+        return {
+            "pode": False,
+            "disponiveis": 0,
+            "cota": cota,
+            "ilimitado": False,
+            "motivo": f"Você usou todas as {cota} imagens deste ciclo. Renova em {sub.period_end.strftime('%d/%m/%Y') if sub.period_end else 'breve'}.",
+            "renova_em": sub.period_end.isoformat() if sub.period_end else None,
+        }
+
+    return {
+        "pode": True,
+        "disponiveis": disponiveis,
+        "cota": cota,
+        "ilimitado": False,
+        "motivo": None,
+        "renova_em": sub.period_end.isoformat() if sub.period_end else None,
+    }
+
+
+def consumir_cota_imagem(db: Session, user_id: str) -> bool:
+    """
+    Registra o uso de 1 imagem IA (via UsageLog).
+    NÃO consome créditos normais — a cota é separada.
+    Retorna True se registrou, False se não havia cota disponível.
+    """
+    verificacao = verificar_cota_imagem(db, user_id)
+    if not verificacao["pode"]:
+        return False
+
+    # Se tem API própria, registra mas não conta cota (é ilimitado)
+    db.add(UsageLog(
+        user_id=user_id,
+        task_type=TASK_TYPE_IMAGEM_IA,
+        credits_consumed=0,  # não consome créditos normais
+    ))
+    db.commit()
+    return True
