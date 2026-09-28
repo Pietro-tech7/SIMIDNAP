@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from uuid import UUID
 from datetime import datetime
 from typing import Optional
@@ -30,3 +30,19 @@ class UpdateProfile(BaseModel):
     avatar_url: Optional[str] = None
     estado: Optional[str] = None
     rede: Optional[str] = None
+
+
+# ============================================================
+# MULTI-API KEY — Gemini (Bloco multi-API)
+# ============================================================
+class GeminiKeyIn(BaseModel):
+    """Payload para cadastro da chave do Gemini."""
+    api_key: str = Field(..., min_length=20, max_length=200)
+
+
+class GeminiKeyOut(BaseModel):
+    """Status da chave do Gemini (sempre mascarada)."""
+    tem_chave: bool
+    chave_mascarada: Optional[str] = None
+    data_cadastro: Optional[datetime] = None
+    mensagem: Optional[str] = None

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/api';
 import AvatarUpload from '../components/AvatarUpload';
+import CadastroApiKey from '../components/CadastroApiKey';
 
 // Lista de UFs do Brasil
 const UFS = [
@@ -340,6 +341,9 @@ const Perfil = () => {
           </button>
         </form>
       </div>
+
+      {/* Multi-API Key — Cadastro da chave do Gemini */}
+      <CadastroApiKey />
 
       {/* Assinatura atual */}
       {loading ? (
