@@ -120,6 +120,22 @@ const Layout = () => {
     sucesso: 'border-l-green-500',
   };
 
+  // Nome do CTA de upgrade (adapta por plano) — copy psicológica
+  const getCTAName = () => {
+    if (!creditos) return 'Ver planos';
+    if (creditos.plano === 'trial') return 'Desbloquear recursos';
+    if (creditos.plano === 'avancado') return 'Mais créditos';
+    return 'Subir de nível';
+  };
+
+  // Nome curto para o botão do mobile
+  const getCTAMobile = () => {
+    if (!creditos) return 'Planos';
+    if (creditos.plano === 'trial') return 'Desbloquear';
+    if (creditos.plano === 'avancado') return 'Créditos';
+    return 'Subir';
+  };
+
   const iconeTipoRecado = {
     info: 'ℹ️',
     aviso: '⚠️',
@@ -141,9 +157,9 @@ const Layout = () => {
         <div className="flex items-center gap-3">
           <Link
             to="/minha-assinatura"
-            className="md:hidden bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full"
+            className="md:hidden bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md"
           >
-            🚀 {ehTrial ? 'Upgrade' : 'Planos'}
+            🚀 {getCTAMobile()}
           </Link>
 
           {/* SINO DE RECADOS */}
@@ -241,6 +257,14 @@ const Layout = () => {
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-semibold text-gray-800 truncate">{user?.full_name}</p>
                   <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  {creditos && (
+                    <div className="mt-2 inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200">
+                      <span>{creditos.plano_icone || '📋'}</span>
+                      <span className="uppercase tracking-wide">
+                        Plano {creditos.plano_nome}
+                      </span>
+                    </div>
+                  )}
                 </div>
                   <div className="py-1">
                   <Link
@@ -260,9 +284,9 @@ const Layout = () => {
                   <Link
                     to="/minha-assinatura"
                     onClick={() => setAvatarAberto(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                    className="block px-4 py-2 text-sm font-semibold text-orange-600 hover:bg-orange-50 transition"
                   >
-                    🚀 {ehTrial ? 'Fazer Upgrade' : 'Ver Planos'}
+                    🚀 {getCTAName()}
                   </Link>
                 </div>
                 <div className="border-t border-gray-100 py-1">
@@ -322,11 +346,24 @@ const Layout = () => {
                   : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'
               }`}
             >
-              <div className="flex justify-between items-center mb-1">
-                <span className={`text-xs font-semibold ${mostrarAlertaBaixo ? 'text-orange-900' : 'text-blue-900'}`}>
-                  {creditos.plano_nome}
+              {/* Badge de identificação do plano */}
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-2xl leading-none">
+                  {creditos.plano_icone || '📋'}
                 </span>
-                <span className={`text-xs font-bold ${mostrarAlertaBaixo ? 'text-orange-700' : 'text-blue-700'}`}>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[9px] uppercase tracking-widest font-bold ${mostrarAlertaBaixo ? 'text-orange-600' : 'text-blue-600'}`}>
+                    Seu plano
+                  </p>
+                  <p className={`text-sm font-bold truncate ${mostrarAlertaBaixo ? 'text-orange-900' : 'text-blue-900'}`}>
+                    {creditos.plano_nome}
+                  </p>
+                </div>
+              </div>
+
+              {/* Créditos */}
+              <div className="flex justify-between items-center mb-1">
+                <span className={`text-[11px] font-medium ${mostrarAlertaBaixo ? 'text-orange-800' : 'text-blue-800'}`}>
                   {creditosDisponiveis.toFixed(1)} créditos
                 </span>
               </div>
@@ -342,9 +379,9 @@ const Layout = () => {
 
             <Link
               to="/minha-assinatura"
-              className="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold text-sm py-2.5 rounded-lg transition"
+              className="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-sm py-2.5 rounded-lg transition shadow-md"
             >
-              🚀 {ehTrial ? 'Fazer Upgrade' : 'Ver Planos'}
+              🚀 {getCTAName()}
             </Link>
           </div>
         )}
