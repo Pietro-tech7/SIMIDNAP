@@ -32,3 +32,9 @@ class User(Base):
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
+
+    @property
+    def tem_gemini_key(self) -> bool:
+        """Retorna True se o usuário tem a própria chave do Gemini cadastrada.
+        Propriedade calculada — não é coluna do banco."""
+        return bool(self.gemini_api_key)

@@ -56,6 +56,8 @@ const CadastroApiKey = () => {
         tipo: 'sucesso',
         texto: res.data.mensagem || '✅ Chave cadastrada com sucesso!',
       });
+      // Notifica todos os AlertasApiKey (badge no topo, card no dashboard) para sumirem
+      window.dispatchEvent(new CustomEvent('gemini-key-updated'));
     } catch (err) {
       const detalhe = err?.response?.data?.detail || 'Erro ao cadastrar a chave. Tente novamente.';
       setMsg({ tipo: 'erro', texto: detalhe });
@@ -110,6 +112,46 @@ const CadastroApiKey = () => {
       {/* Estado 1 — sem chave cadastrada */}
       {!temChave && (
         <>
+          {/* Bloco de benefícios — destaque */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p className="text-sm font-bold text-blue-900 mb-2">
+              🎁 O que você ganha cadastrando sua chave:
+            </p>
+            <ul className="text-sm text-blue-900 space-y-1.5">
+              <li className="flex items-start gap-2">
+                <span className="text-base leading-none flex-shrink-0">📈</span>
+                <span>
+                  <strong>Multiplica seus créditos</strong> — de 10 para <strong>até 500/mês</strong> no plano Básico
+                  (e mais nos planos superiores)
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-base leading-none flex-shrink-0">💸</span>
+                <span>
+                  <strong>Zero custo adicional</strong> — a chave do Google Gemini é <strong>gratuita</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-base leading-none flex-shrink-0">⏱️</span>
+                <span>
+                  <strong>2 minutos</strong> para cadastrar — com tutorial passo a passo abaixo
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-base leading-none flex-shrink-0">🔒</span>
+                <span>
+                  <strong>Você no controle</strong> — usa a cota do seu próprio Google, sem intermediários
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-base leading-none flex-shrink-0">💬</span>
+                <span>
+                  <strong>Ajuda quando precisar</strong> — suporte via WhatsApp durante o cadastro
+                </span>
+              </li>
+            </ul>
+          </div>
+
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-sm text-amber-900">
             <p className="font-semibold mb-1">⚠️ Você está usando a chave do sistema</p>
             <p>

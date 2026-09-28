@@ -13,6 +13,7 @@ class UserOut(BaseModel):
     avatar_url: Optional[str] = None
     estado: Optional[str] = None
     rede: Optional[str] = None
+    tem_gemini_key: bool = False
     created_at: datetime
     updated_at: Optional[datetime]
 

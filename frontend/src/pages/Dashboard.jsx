@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import AlertaApiKey from '../components/AlertaApiKey';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -33,6 +34,9 @@ const Dashboard = () => {
         </h1>
         <p className="text-lg text-gray-600 mt-1">O que você precisa resolver hoje?</p>
       </div>
+
+      {/* ALERTA API KEY — card de destaque no topo */}
+      <AlertaApiKey variant="card" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {modules.map(mod => (

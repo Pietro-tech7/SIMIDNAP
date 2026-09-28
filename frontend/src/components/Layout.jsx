@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/api';
 import SidebarBanner from './SidebarBanner';
+import AlertaApiKey from './AlertaApiKey';
 
 const Layout = () => {
   const { user, logout } = useAuth();
@@ -211,6 +212,9 @@ const Layout = () => {
               </div>
             )}
           </div>
+
+          {/* ALERTA API KEY — badge ao lado do avatar */}
+          <AlertaApiKey variant="badge" />
 
           {/* AVATAR DO USUÁRIO */}
           <div className="relative" ref={avatarRef}>
