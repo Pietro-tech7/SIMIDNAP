@@ -20,6 +20,8 @@ from typing import Dict, Any, List, Tuple, Optional, AsyncGenerator
 from google import genai
 from google.genai import types
 
+from ..core.crypto import descriptografar
+
 
 # ============================================================
 # CONFIGURAÇÃO
@@ -41,6 +43,20 @@ THINKING_LEVEL = "minimal"
 
 # Tarefas que NÃO usam RAG
 TAREFAS_SEM_RAG = ("situacao_pedagogica", "meu_aluno", "pratica_exitosa")
+
+
+# ============================================================
+# CACHES GLOBAIS (compartilhados entre instâncias)
+# ============================================================
+# RAG compartilhado — construído UMA VEZ (com a chave do sistema)
+# e reutilizado por TODAS as instâncias, incluindo as de usuário.
+# Isso evita que cada usuário gaste cota dele para construir embeddings.
+_RAG_INDEX_COMPARTILHADO: List[Tuple[str, List[float]]] = []
+_RAG_CONSTRUIDO_COMPARTILHADO = False
+
+# Cache de instâncias por usuário.
+# Chave: user_id (str). Valor: GeminiService configurado com a chave do usuário.
+_gemini_users_cache: Dict[str, "GeminiService"] = {}
 
 
 class ControleDeUso:
@@ -846,23 +862,28 @@ def _thinking_config():
 # ============================================================
 class GeminiService:
 
-    def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY")
+    def __init__(self, api_key: Optional[str] = None, chave_propria: bool = False):
+        """
+        Args:
+            api_key: chave do Gemini a ser usada. Se None, usa GEMINI_API_KEY do ambiente.
+            chave_propria: True quando a chave é do usuário (não do sistema).
+                           Usado apenas para logging e métricas.
+        """
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
-            raise ValueError("GEMINI_API_KEY não configurada no .env")
+            raise ValueError("GEMINI_API_KEY não configurada no .env nem fornecida.")
 
+        self.chave_propria = chave_propria
         self.client = genai.Client(api_key=self.api_key)
         self.controle = ControleDeUso()
-
-        self._embeddings_index: List[Tuple[str, List[float]]] = []
-        self._index_construido = False
 
     # --------------------------------------------------------
     # CONSTRUÇÃO DO ÍNDICE RAG (chamada no startup)
     # --------------------------------------------------------
     def construir_indice_agora(self):
-        """Constrói o índice RAG. Chamado no startup do app."""
-        if self._index_construido:
+        """Constrói o índice RAG (compartilhado entre TODAS as instâncias)."""
+        global _RAG_INDEX_COMPARTILHADO, _RAG_CONSTRUIDO_COMPARTILHADO
+        if _RAG_CONSTRUIDO_COMPARTILHADO:
             return
         print("[RAG] Construindo índice de conhecimento pedagógico...")
         inicio = time.time()
@@ -873,15 +894,15 @@ class GeminiService:
                     contents=item["texto"],
                     config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
                 )
-                self._embeddings_index.append((item["texto"], result.embeddings[0].values))
+                _RAG_INDEX_COMPARTILHADO.append((item["texto"], result.embeddings[0].values))
             except Exception as e:
                 print(f"[RAG] Erro ao gerar embedding: {e}")
-        self._index_construido = True
+        _RAG_CONSTRUIDO_COMPARTILHADO = True
         duracao = time.time() - inicio
-        print(f"[RAG] Índice construído com {len(self._embeddings_index)} itens em {duracao:.1f}s")
+        print(f"[RAG] Índice construído com {len(_RAG_INDEX_COMPARTILHADO)} itens em {duracao:.1f}s")
 
     def _construir_indice(self):
-        if self._index_construido:
+        if _RAG_CONSTRUIDO_COMPARTILHADO:
             return
         self.construir_indice_agora()
 
@@ -974,7 +995,7 @@ class GeminiService:
     def _buscar_conhecimento(self, consulta: str, top_k: int = 3) -> str:
         try:
             self._construir_indice()
-            if not self._embeddings_index:
+            if not _RAG_INDEX_COMPARTILHADO:
                 return ""
             result = self.client.models.embed_content(
                 model=MODELO_EMBEDDINGS,
@@ -984,7 +1005,7 @@ class GeminiService:
             consulta_emb = result.embeddings[0].values
             scored = [
                 (self._cosine_similarity(consulta_emb, emb), texto)
-                for texto, emb in self._embeddings_index
+                for texto, emb in _RAG_INDEX_COMPARTILHADO
             ]
             scored.sort(reverse=True, key=lambda x: x[0])
             return "\n\n".join([texto for _, texto in scored[:top_k]])
@@ -1542,3 +1563,63 @@ def inicializar_rag_no_startup():
         service.construir_indice_agora()
     except Exception as e:
         print(f"[RAG] Erro ao construir índice no startup: {e}")
+
+
+# ============================================================
+# MULTI-API KEY — instância por usuário
+# ============================================================
+def get_gemini_service_for_user(user, db=None) -> GeminiService:
+    """
+    Retorna uma instância do GeminiService apropriada para o usuário.
+
+    Regras:
+      - Se o usuário tem `gemini_api_key` (criptografada) → descriptografa
+        e retorna uma instância cacheada com a chave DELE.
+      - Se não tem → retorna o singleton global (chave do sistema).
+
+    Args:
+        user: instância do modelo User (com atributo `gemini_api_key`)
+        db: reservado para uso futuro (métricas de uso por chave)
+
+    Returns:
+        GeminiService configurado corretamente
+    """
+    global _gemini_users_cache
+
+    # Sem usuário ou sem chave → usa singleton do sistema
+    if user is None or not getattr(user, "gemini_api_key", None):
+        return get_gemini_service()
+
+    user_id = str(user.id)
+    token_criptografado = user.gemini_api_key
+
+    # Já existe instância em cache para este usuário com a mesma chave?
+    cached = _gemini_users_cache.get(user_id)
+    if cached is not None:
+        if getattr(cached, "_token_origem", None) == token_criptografado:
+            return cached
+        # Chave mudou → invalida cache
+        _gemini_users_cache.pop(user_id, None)
+
+    # Descriptografa a chave
+    api_key_plana = descriptografar(token_criptografado)
+    if not api_key_plana:
+        print(f"[Gemini] Falha ao descriptografar chave do usuário {user_id}. Usando chave do sistema.")
+        return get_gemini_service()
+
+    # Cria nova instância com a chave do usuário
+    try:
+        instancia = GeminiService(api_key=api_key_plana, chave_propria=True)
+        # Guarda o token de origem para detectar troca de chave
+        instancia._token_origem = token_criptografado
+        _gemini_users_cache[user_id] = instancia
+        print(f"[Gemini] Usando chave PRÓPRIA do usuário {user_id}")
+        return instancia
+    except Exception as e:
+        print(f"[Gemini] Erro ao criar instância para usuário {user_id}: {e}. Usando chave do sistema.")
+        return get_gemini_service()
+
+
+def invalidar_cache_usuario(user_id: str):
+    """Remove a instância cacheada do usuário (útil quando a chave muda)."""
+    _gemini_users_cache.pop(str(user_id), None)
