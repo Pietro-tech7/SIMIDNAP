@@ -441,33 +441,75 @@ export const FounderOfferSection = ({ data }) => {
 const PLANOS_FIXOS = [
   {
     codigo: 'trial',
-    nome: 'Trial',
+    nome: 'Grátis',
+    icone: '🎁',
     preco: 0,
-    creditos_mes: 5,
+    creditos_sem_api: 7,
+    creditos_com_api: 7,
     trial: true,
-    itens: ['5 créditos grátis', 'Acesso a todos os motores', 'Sem cartão de crédito', 'Válido por 30 dias'],
+    itens: [
+      '7 créditos para testar',
+      '✨ Acesso a TODOS os motores',
+      'Sem cartão de crédito',
+      'Válido por 30 dias',
+    ],
   },
   {
     codigo: 'basico',
     nome: 'Básico',
+    icone: '🎒',
     preco: 9.90,
-    creditos_mes: 15,
-    itens: ['15 créditos/mês', 'Acesso a todos os motores', 'Cancele quando quiser'],
+    creditos_sem_api: 15,
+    creditos_com_api: 50,
+    itens: [
+      'Motores básicos (NeuroAula, Materiais...)',
+      'Banco de Questões ENEM',
+      'Banco de Questões Fundamental',
+      'Exportação em PDF',
+    ],
   },
   {
     codigo: 'padrao',
-    nome: 'Padrão',
+    nome: 'Intermediário',
+    icone: '🚀',
     preco: 19.90,
-    creditos_mes: 25,
+    creditos_sem_api: 25,
+    creditos_com_api: 150,
     destaque: true,
-    itens: ['25 créditos/mês', 'Acesso a todos os motores', 'Suporte prioritário', 'Cancele quando quiser'],
+    itens: [
+      'Tudo do Básico, mais:',
+      '✨ Banco de Questões IA (Motor 9)',
+      '📄 Exportação em Word editável',
+      'Cascata curricular completa',
+    ],
+  },
+  {
+    codigo: 'vip',
+    nome: 'VIP',
+    icone: '💎',
+    preco: 29.90,
+    creditos_sem_api: 50,
+    creditos_com_api: 500,
+    itens: [
+      'Tudo do Intermediário, mais:',
+      '📅 Planejamento de Aula',
+      'De 1 dia até 2 meses',
+      'Curadoria colaborativa',
+    ],
   },
   {
     codigo: 'avancado',
-    nome: 'Avançado',
-    preco: 49.90,
-    creditos_mes: 100,
-    itens: ['100 créditos/mês', 'Acesso a todos os motores', 'Suporte prioritário', 'Cancele quando quiser'],
+    nome: 'Premium',
+    icone: '👑',
+    preco: 44.90,
+    creditos_sem_api: 100,
+    creditos_com_api: 1000,
+    itens: [
+      'Tudo do VIP, mais:',
+      '🎨 Geração de imagens com IA',
+      'Ilustrações exclusivas por questão',
+      'Acesso a novidades primeiro',
+    ],
   },
 ];
 
@@ -475,77 +517,157 @@ export const PlansSection = ({ data }) => {
   return (
     <section id="plans" className="py-20 md:py-28 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
-        <div className="text-center mb-14">
+        <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
-          {data.subtitle && <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>}
+          {data.subtitle && (
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Faixa de destaque: bônus da API própria */}
+        <div className="max-w-3xl mx-auto mb-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-5 text-white text-center shadow-lg">
+          <p className="text-base md:text-lg font-bold leading-snug">
+            🔑 Cadastre sua API Key do Gemini <span className="bg-white/20 px-2 py-0.5 rounded">gratuita</span> e multiplique seus créditos
+          </p>
+          <p className="text-sm text-blue-100 mt-2">
+            A chave é gratuita, leva 2 minutos, e você ganha <strong className="text-white">até 10x mais créditos</strong> pelo mesmo preço.
+          </p>
+        </div>
+
+        {/* Grid dos planos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {PLANOS_FIXOS.map((p) => {
             const precoPorDia = p.preco > 0 ? (p.preco / 30).toFixed(2).replace('.', ',') : null;
+            const multiplicador = p.creditos_sem_api > 0
+              ? (p.creditos_com_api / p.creditos_sem_api).toFixed(1)
+              : null;
 
             return (
               <div
                 key={p.codigo}
-                className={`relative rounded-2xl p-6 border-2 transition flex flex-col bg-white ${
+                className={`relative rounded-2xl p-5 border-2 transition flex flex-col bg-white ${
                   p.destaque
-                    ? 'border-blue-600 shadow-lg'
+                    ? 'border-blue-600 shadow-lg scale-[1.02]'
                     : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                 }`}
               >
                 {p.destaque && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap">
-                    ⭐ Mais escolhido
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
+                    ⭐ MAIS ESCOLHIDO
                   </div>
                 )}
 
-                <h3 className="text-xl font-bold text-gray-900 mb-3 mt-1">{p.nome}</h3>
-
-                <div className="mb-1">
-                  <span className="text-3xl font-bold text-gray-900">
-                    {p.preco === 0 ? 'Grátis' : `R$ ${p.preco.toFixed(2).replace('.', ',')}`}
-                  </span>
-                  {p.preco > 0 && <span className="text-gray-500 ml-1 text-sm">/mês</span>}
+                {/* Ícone + Nome */}
+                <div className="flex items-center gap-2 mb-3 mt-1">
+                  <span className="text-2xl leading-none">{p.icone}</span>
+                  <h3 className="text-lg font-bold text-gray-900 leading-tight">{p.nome}</h3>
                 </div>
 
+                {/* Preço */}
+                <div className="mb-1">
+                  <span className="text-2xl font-bold text-gray-900">
+                    {p.preco === 0 ? 'Grátis' : `R$ ${p.preco.toFixed(2).replace('.', ',')}`}
+                  </span>
+                  {p.preco > 0 && <span className="text-gray-500 ml-1 text-xs">/mês</span>}
+                </div>
                 {precoPorDia && (
-                  <p className="text-xs text-gray-500 mb-4">
+                  <p className="text-[10px] text-gray-500 mb-3">
                     Apenas R$ {precoPorDia} por dia
                   </p>
                 )}
 
-                <p className="text-2xl font-bold text-blue-700 mb-5">
-                  {p.creditos_mes} {p.creditos_mes === 1 ? 'crédito' : 'créditos'}
-                </p>
+                {/* Bloco de créditos: sem API vs com API */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-lg p-3 mb-4">
+                  <p className="text-[9px] uppercase tracking-widest font-bold text-blue-700 mb-2">
+                    Seus créditos/mês
+                  </p>
 
-                <ul className="space-y-2 mb-6 flex-1">
+                  {p.trial ? (
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-blue-700 leading-none">
+                        {p.creditos_com_api}
+                      </p>
+                      <p className="text-[10px] text-blue-600 font-medium mt-1">
+                        para testar tudo
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-1">
+                      {/* Sem API */}
+                      <div className="text-center flex-1">
+                        <p className="text-base font-bold text-gray-500 leading-none">
+                          {p.creditos_sem_api}
+                        </p>
+                        <p className="text-[9px] text-gray-500 mt-1 leading-none">
+                          sem API
+                        </p>
+                      </div>
+
+                      {/* Seta */}
+                      <div className="text-blue-500 text-sm leading-none">→</div>
+
+                      {/* Com API */}
+                      <div className="text-center flex-1">
+                        <p className="text-2xl font-bold text-blue-700 leading-none">
+                          {p.creditos_com_api}
+                        </p>
+                        <p className="text-[9px] font-bold text-blue-700 mt-1 leading-none">
+                          com sua API ✨
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {multiplicador && (
+                    <p className="text-[10px] text-center text-blue-700 font-bold mt-2 bg-white/70 rounded py-1">
+                      ⬆ {multiplicador}x mais créditos
+                    </p>
+                  )}
+                </div>
+
+                {/* Features */}
+                <ul className="space-y-1.5 mb-4 flex-1">
                   {p.itens.map((item, j) => (
-                    <li key={j} className="flex items-start gap-2 text-sm text-gray-700">
-                      <Check className="text-green-600 w-4 h-4 mt-0.5" />
+                    <li key={j} className="flex items-start gap-1.5 text-[11px] text-gray-700 leading-snug">
+                      <Check className="text-green-600 w-3 h-3 mt-0.5 flex-shrink-0" />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
 
+                {/* CTA */}
                 <Link
                   to="/register"
-                  className={`block text-center font-semibold py-3 rounded-lg transition ${
+                  className={`block text-center font-bold py-2.5 rounded-lg transition text-sm ${
                     p.destaque
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
                       : p.trial
-                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200'
+                        ? 'bg-white hover:bg-gray-50 text-blue-700 border-2 border-blue-200'
                         : 'bg-gray-900 hover:bg-black text-white'
                   }`}
                 >
-                  {p.trial ? 'Começar grátis' : 'Assinar agora'}
+                  {p.trial ? '🚀 Começar grátis' : 'Assinar agora'}
                 </Link>
               </div>
             );
           })}
         </div>
 
+        {/* Rodapé explicativo */}
+        <div className="mt-10 max-w-3xl mx-auto">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              <strong>💡 Como funciona o bônus da API própria:</strong> ao assinar, você tem uma cota de créditos mensais usando a infraestrutura do SIMIDNAPE.
+              Se você cadastrar sua própria chave do Google Gemini (gratuita), essa cota <strong>multiplica automaticamente</strong> — sem custo adicional e sem trocar de plano.
+            </p>
+            <p className="text-xs text-gray-500 mt-3">
+              🔒 Sua chave é criptografada e fica só na sua conta. Você mantém total controle.
+            </p>
+          </div>
+        </div>
+
         <p className="text-center text-sm text-gray-500 mt-8">
-          💳 Pagamento via Pix (instantâneo) ou cartão de crédito/débito. Cancele a qualquer momento.
+          💳 Pagamento via cartão de crédito (recomendado) ou Pix. Cancele quando quiser, sem multa.
         </p>
       </div>
     </section>
