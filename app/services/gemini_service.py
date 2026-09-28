@@ -1279,7 +1279,9 @@ class GeminiService:
         if not self.controle.pode_usar():
             raise Exception(self.controle.mensagem_limite())
 
-        MODELO_IMAGEM = "gemini-3.1-flash-lite-image"
+        # Gemini 2.5 Flash Image (codinome "Nano Banana")
+        # Modelo principal de geração de imagens — prioridade qualidade.
+        MODELO_IMAGEM = "gemini-2.5-flash-image"
 
         try:
             response = self.client.models.generate_content(

@@ -20,7 +20,13 @@ from ...schemas.question_ia import (
     QuestaoIA,
     AlternativaIA,
 )
-from ...services.subscription_service import verificar_creditos, consumir_creditos
+from ...services.subscription_service import (
+    verificar_creditos,
+    consumir_creditos,
+    verificar_cota_imagem,
+    consumir_cota_imagem,
+    TASK_TYPE_IMAGEM_IA,
+)
 from ...models.question_bank_fundamental import QuestionBankFundamental
 from pydantic import BaseModel
 import uuid
@@ -824,4 +830,160 @@ def gerar_word(
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
         },
+    )
+
+
+# ============================================================
+# GERAÇÃO DE IMAGENS IA (Bloco C.15)
+# ============================================================
+class GerarImagemRequest(BaseModel):
+    descricao: str  # o `descricao_ilustracao` que a IA já gerou para a questão
+    categoria: Optional[str] = None       # ex: "quantidade", "sequencia"
+    subcategoria: Optional[str] = None    # ex: "brinquedos", "alimentos"
+    contexto: Optional[Dict[str, Any]] = None  # etapa, ano, componente, enunciado...
+
+
+class GerarImagemResponse(BaseModel):
+    sucesso: bool
+    figura_id: str
+    dataUrl: str
+    nome_salvo: str
+    cota_restante: int  # -1 = ilimitado
+    ilimitado: bool
+    mensagem: Optional[str] = None
+
+
+@router.post("/gerar-imagem", response_model=GerarImagemResponse)
+async def gerar_imagem(
+    data: GerarImagemRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Gera uma imagem com o Gemini (Nano Banana) a partir da descrição
+    que a IA já criou para uma questão do Motor 9.
+
+    - Verifica a cota do plano (Premium 10/mês, VIP 5/mês).
+    - Se o usuário tem API key própria, gera ilimitado (custo dele no Google).
+    - Salva automaticamente no Banco de Figuras como origem="ia_gerada".
+    - A imagem NÃO é removida pela política de retenção (é acervo permanente).
+    """
+    # ------------------------------------------------------------
+    # 1. Validação básica
+    # ------------------------------------------------------------
+    descricao = (data.descricao or "").strip()
+    if len(descricao) < 10:
+        raise HTTPException(
+            status_code=400,
+            detail="A descrição da imagem precisa ter ao menos 10 caracteres.",
+        )
+    if len(descricao) > 800:
+        descricao = descricao[:800]
+
+    # ------------------------------------------------------------
+    # 2. Verificar cota
+    # ------------------------------------------------------------
+    cota = verificar_cota_imagem(db, str(current_user.id))
+    if not cota["pode"]:
+        raise HTTPException(status_code=402, detail=cota["motivo"])
+
+    # ------------------------------------------------------------
+    # 3. Preparar o prompt enriquecido
+    # ------------------------------------------------------------
+    # Direciona o modelo para gerar uma ilustração pedagógica clara,
+    # sem texto em excesso, estilo limpo e compatível com prova escolar.
+    ctx = data.contexto or {}
+    etapa = ctx.get("etapa", "")
+    ano = ctx.get("ano", "")
+    componente = ctx.get("componente", "")
+    faixa = "educação infantil" if etapa == "EI" else (f"{ano}º ano do ensino fundamental" if ano else "ensino fundamental")
+
+    prompt_visual = (
+        f"Ilustração pedagógica para uma questão de prova escolar de {faixa}"
+        f"{' de ' + componente if componente else ''}. "
+        f"Estilo: desenho vetorial simples, cores suaves, fundo branco ou claro, "
+        f"traço limpo, sem texto escrito na imagem, sem sombras realistas, "
+        f"adequado para impressão em preto e branco. "
+        f"A imagem deve representar claramente: {descricao}"
+    )
+
+    # ------------------------------------------------------------
+    # 4. Chamar a IA (chave do usuário se tiver, senão do sistema)
+    # ------------------------------------------------------------
+    try:
+        from ...services.gemini_service import get_gemini_service_for_user
+        service = get_gemini_service_for_user(current_user, db=db)
+        data_url = await service.generate_image(prompt_visual)
+    except Exception as e:
+        print(f"[Imagem IA] Erro ao gerar: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Não foi possível gerar a imagem. Tente novamente.",
+        )
+
+    if not data_url or not data_url.startswith("data:image/"):
+        raise HTTPException(status_code=500, detail="A IA não retornou uma imagem válida.")
+
+    # ------------------------------------------------------------
+    # 5. Salvar no Banco de Figuras (acervo permanente)
+    # ------------------------------------------------------------
+    from ...models.figure_bank import FigureBank
+    import base64 as _b64
+
+    # Extrai bytes + mime da data URL
+    try:
+        header, b64_data = data_url.split(",", 1)
+        mime_type = header.split(":")[1].split(";")[0]  # ex: image/png
+        file_bytes = _b64.b64decode(b64_data)
+    except Exception as e:
+        print(f"[Imagem IA] Erro ao decodificar data URL: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao processar a imagem gerada.")
+
+    # Nome da figura = descrição curta
+    nome_figura = descricao[:120]
+    cat = (data.categoria or "nenhuma").strip().lower()
+    categorias_lista = [cat] if cat else ["nenhuma"]
+    keywords_lista = [w for w in descricao.lower().split()[:8] if len(w) > 3]
+
+    try:
+        nova_figura = FigureBank(
+            id=uuid.uuid4(),
+            nome=nome_figura,
+            categoria=categorias_lista[0],
+            categorias=categorias_lista,
+            subcategoria=data.subcategoria or None,
+            keywords=keywords_lista,
+            file_data=file_bytes,
+            mime_type=mime_type,
+            file_size=len(file_bytes),
+            uploaded_by=current_user.id,
+            aprovada=True,           # imagem gerada por IA é imediatamente utilizável
+            origem="ia_gerada",      # NOVO valor de origem (a coluna é String(20))
+        )
+        db.add(nova_figura)
+        db.commit()
+        db.refresh(nova_figura)
+    except Exception as e:
+        db.rollback()
+        print(f"[Imagem IA] Erro ao salvar figura: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao salvar a imagem no banco.")
+
+    # ------------------------------------------------------------
+    # 6. Consumir 1 da cota
+    # ------------------------------------------------------------
+    consumir_cota_imagem(db, str(current_user.id))
+
+    # ------------------------------------------------------------
+    # 7. Calcular cota restante (após consumo)
+    # ------------------------------------------------------------
+    cota_pos = verificar_cota_imagem(db, str(current_user.id))
+
+    return GerarImagemResponse(
+        sucesso=True,
+        figura_id=str(nova_figura.id),
+        dataUrl=data_url,
+        nome_salvo=nova_figura.nome,
+        cota_restante=cota_pos["disponiveis"],
+        ilimitado=cota_pos["ilimitado"],
+        mensagem="Imagem gerada e salva no Banco de Figuras.",
     )
