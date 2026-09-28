@@ -279,8 +279,8 @@ const MinhaAssinatura = () => {
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-1">Assinar um plano</h2>
         <p className="text-sm text-gray-600 mb-5">
-          Pague com <strong>Pix</strong> (instantâneo) ou com <strong>cartão</strong> (crédito ou débito).
-          Cancele quando quiser.
+          Recomendamos <strong>cartão de crédito</strong> — a cobrança é automática, você não precisa lembrar todo mês.
+          Também aceitamos <strong>Pix</strong> se preferir.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -328,7 +328,7 @@ const MinhaAssinatura = () => {
                   {!isAtual ? (
                     <>
                       <button
-                        onClick={() => assinarComPix(p.codigo, p.nome)}
+                        onClick={() => assinarComCartao(p.codigo, p.nome)}
                         disabled={qualquerCarregando}
                         className={`w-full font-semibold py-2.5 rounded-lg transition text-sm flex items-center justify-center gap-2 ${
                           destaque
@@ -336,20 +336,23 @@ const MinhaAssinatura = () => {
                             : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white'
                         }`}
                       >
-                        {carregandoPix ? (
-                          'Gerando QR Code...'
+                        {carregandoCartao ? (
+                          'Abrindo formulário...'
                         ) : (
                           <>
-                            <span>⚡</span> Assinar com Pix
+                            <span>💳</span> Assinar com cartão
                           </>
                         )}
                       </button>
+                      <p className="text-[10px] text-gray-500 text-center mt-1.5 leading-tight">
+                        Cobrança automática mensal. Cancele quando quiser.
+                      </p>
                       <button
-                        onClick={() => assinarComCartao(p.codigo, p.nome)}
+                        onClick={() => assinarComPix(p.codigo, p.nome)}
                         disabled={qualquerCarregando}
                         className="w-full text-xs text-gray-500 hover:text-gray-700 py-2 mt-1 underline"
                       >
-                        {carregandoCartao ? 'Redirecionando...' : 'ou pagar com cartão →'}
+                        {carregandoPix ? 'Gerando QR Code...' : 'ou pagar com Pix →'}
                       </button>
                     </>
                   ) : (
@@ -371,7 +374,7 @@ const MinhaAssinatura = () => {
         <h2 className="text-2xl font-bold text-gray-900 mb-1">Comprar créditos avulsos</h2>
         <p className="text-sm text-gray-600 mb-5">
           Precisa de mais créditos sem mudar de plano? Compre um pacote avulso.
-          Os créditos não expiram.
+          Os créditos não expiram. Pague com <strong>cartão</strong> (recomendado) ou <strong>Pix</strong>.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -400,24 +403,27 @@ const MinhaAssinatura = () => {
 
                 <div className="mt-auto">
                   <button
-                    onClick={() => comprarComPix(pct.codigo, pct.nome)}
+                    onClick={() => comprarComCartao(pct.codigo, pct.nome)}
                     disabled={qualquerCarregando}
                     className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-semibold py-2.5 rounded-lg transition text-sm flex items-center justify-center gap-2"
                   >
-                    {carregandoPix ? (
-                      'Gerando QR Code...'
+                    {carregandoCartao ? (
+                      'Abrindo formulário...'
                     ) : (
                       <>
-                        <span>⚡</span> Comprar com Pix
+                        <span>💳</span> Comprar com cartão
                       </>
                     )}
                   </button>
+                  <p className="text-[10px] text-gray-500 text-center mt-1.5 leading-tight">
+                    Pagamento único e seguro. Créditos liberados na hora.
+                  </p>
                   <button
-                    onClick={() => comprarComCartao(pct.codigo, pct.nome)}
+                    onClick={() => comprarComPix(pct.codigo, pct.nome)}
                     disabled={qualquerCarregando}
                     className="w-full text-xs text-gray-500 hover:text-gray-700 py-2 mt-1 underline"
                   >
-                    {carregandoCartao ? 'Redirecionando...' : 'ou pagar com cartão →'}
+                    {carregandoPix ? 'Gerando QR Code...' : 'ou pagar com Pix →'}
                   </button>
                 </div>
               </div>
