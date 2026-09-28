@@ -30,6 +30,7 @@ import AdminQuestionBank from './pages/AdminQuestionBank';
 import AdminQuestionForm from './pages/AdminQuestionForm';
 import AdminCorrelacoes from './pages/AdminCorrelacoes';
 import AdminFigureBank from './pages/AdminFigureBank';
+import GateRecurso from './components/GateRecurso';
 import LandingPage from './pages/LandingPage';
 import Termos from './pages/Termos';
 import Privacidade from './pages/Privacidade';
@@ -93,7 +94,14 @@ function AppRoutes() {
         <Route path="/praticas-exitosas" element={<PraticasExitosas />} />
         <Route path="/banco-questoes" element={<BancoQuestoes />} />
         <Route path="/banco-questoes-fundamental" element={<BancoQuestoesFundamental />} />
-        <Route path="/banco-questoes-ia" element={<BancoQuestoesIA />} />
+        <Route
+          path="/banco-questoes-ia"
+          element={
+            <GateRecurso recurso="banco_ia">
+              <BancoQuestoesIA />
+            </GateRecurso>
+          }
+        />
         <Route path="/minha-assinatura" element={<MinhaAssinatura />} />
         <Route path="/meu-aluno" element={<MeuAluno />} />
         <Route path="/perfil" element={<Perfil />} />
