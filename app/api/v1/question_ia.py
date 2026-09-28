@@ -516,8 +516,10 @@ def gerar_questoes(
     # 3. Chamar a IA
     # ------------------------------------------------------------
     try:
-        from ...services.gemini_service import get_gemini_service
-        service = get_gemini_service()
+        from ...services.gemini_service import get_gemini_service_for_user
+        # Multi-API key: usa a chave do usuário se ele tiver cadastrado
+        # (fallback automático para a chave do sistema se não tiver)
+        service = get_gemini_service_for_user(current_user, db=db)
 
         questoes_raw = service.generate_questions_batch(
             system_instruction=montar_system_instruction(),
