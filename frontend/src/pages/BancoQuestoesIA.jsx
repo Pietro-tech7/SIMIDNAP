@@ -6,6 +6,7 @@ import LatexText from '../components/LatexText';
 import EditorCabecalhoProva from '../components/EditorCabecalhoProva';
 import { gerarProvaPDF, gerarGabaritoPDF } from '../utils/gerarPdfProva';
 import { carregarSvgsDaCategoria } from '../utils/icones';
+import { usePlan } from '../hooks/usePlan';
 
 const STORAGE_KEY = 'simidnape_rascunho_prova_ia';
 
@@ -39,6 +40,11 @@ function arquivoParaBase64(file) {
 
 const BancoQuestoesIA = () => {
   const { user } = useAuth();
+  const { temRecurso } = usePlan();
+
+  // Bloco C.14 + Fase 6 — o Word é um recurso pago (plano Intermediário+).
+  // Superuser tem acesso sempre (para testes).
+  const podeBaixarWord = user?.is_superuser || temRecurso('export_word');
 
   const [titulo, setTitulo] = useState('');
   const [metaQuestoes, setMetaQuestoes] = useState(10);
@@ -1426,7 +1432,7 @@ const BancoQuestoesIA = () => {
             </div>
           )}
 
-          {metaAtingida && (
+          {metaAtingida && podeBaixarWord && (
             <div className="mt-3 pt-3 border-t border-gray-200">
               <p className="text-xs text-gray-600 mb-2">
                 📝 <strong>Ou baixe em Word (.docx)</strong> — para editar livremente no Word
@@ -1440,6 +1446,28 @@ const BancoQuestoesIA = () => {
                   className="bg-cyan-700 hover:bg-cyan-800 disabled:bg-cyan-300 text-white font-bold py-3 rounded-lg transition">
                   {gerandoWord ? '⏳ Gerando...' : '📋 Word (Gabarito)'}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {metaAtingida && !podeBaixarWord && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-indigo-900">
+                    📄 Exportação em Word (.docx)
+                  </p>
+                  <p className="text-xs text-indigo-700 mt-0.5">
+                    Edite sua prova livremente no Word. Disponível a partir do plano{' '}
+                    <strong>🚀 Intermediário</strong>.
+                  </p>
+                </div>
+                <Link
+                  to="/minha-assinatura"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition whitespace-nowrap shadow-sm"
+                >
+                  🚀 Fazer Upgrade
+                </Link>
               </div>
             </div>
           )}
