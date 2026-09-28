@@ -226,6 +226,15 @@ def cadastrar_gemini_key(
     except Exception as e:
         print(f"[Gemini Key] Aviso: não foi possível invalidar cache do usuário: {e}")
 
+    # ------------------------------------------------------------
+    # 4. Sincroniza os créditos com o novo estado (chave cadastrada)
+    # ------------------------------------------------------------
+    try:
+        from ...services.subscription_service import sincronizar_creditos_usuario
+        sincronizar_creditos_usuario(db, str(current_user.id))
+    except Exception as e:
+        print(f"[Gemini Key] Aviso: não foi possível sincronizar créditos: {e}")
+
     return GeminiKeyOut(
         tem_chave=True,
         chave_mascarada=_mascarar_chave(chave_plana),

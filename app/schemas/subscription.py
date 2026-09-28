@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from uuid import UUID
 from datetime import datetime
 
@@ -9,7 +9,7 @@ from datetime import datetime
 # ============================================================
 class CheckoutSubscriptionRequest(BaseModel):
     """Payload para criar uma assinatura (mensal recorrente)."""
-    plan: str = Field(..., description="'basico' | 'padrao' | 'avancado'")
+    plan: str = Field(..., description="'basico' | 'padrao' | 'vip' | 'avancado'")
 
 
 class CheckoutResponse(BaseModel):
@@ -44,11 +44,14 @@ class CancelSubscriptionRequest(BaseModel):
 class SubscriptionStatusOut(BaseModel):
     plano: str
     plano_nome: str
+    plano_icone: Optional[str] = None
     plano_preco: float
     status: str
     creditos_total: float
     creditos_usados: float
     creditos_disponiveis: float
+    tem_api_propria: bool = False
+    recursos: List[str] = []
     periodo_inicio: Optional[str] = None
     periodo_fim: Optional[str] = None
     payment_provider: Optional[str] = None
@@ -65,8 +68,13 @@ class SubscriptionStatusOut(BaseModel):
 class PlanoOut(BaseModel):
     codigo: str
     nome: str
+    icone: str = "📋"
     preco: float
-    creditos_mes: float
+    creditos_mes: float = 0          # legado (sem API)
+    creditos_sem_api: float = 0
+    creditos_com_api: float = 0
+    destaque: bool = False
+    recursos: List[str] = []
 
 
 # ============================================================
@@ -85,8 +93,8 @@ class PacoteCreditosOut(BaseModel):
 class PaymentHistoryItem(BaseModel):
     id: UUID
     payment_provider_id: Optional[str]
-    amount: float          # em reais
-    credits_added: float   # em créditos
+    amount: float
+    credits_added: float
     status: str
     payment_method: Optional[str]
     created_at: datetime
