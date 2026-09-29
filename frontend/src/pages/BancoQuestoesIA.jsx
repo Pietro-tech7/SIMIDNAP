@@ -7,6 +7,7 @@ import EditorCabecalhoProva from '../components/EditorCabecalhoProva';
 import { gerarProvaPDF, gerarGabaritoPDF } from '../utils/gerarPdfProva';
 import { carregarSvgsDaCategoria } from '../utils/icones';
 import { usePlan } from '../hooks/usePlan';
+import { useSystemFlags } from '../hooks/useSystemFlags';
 
 const STORAGE_KEY = 'simidnape_rascunho_prova_ia';
 
@@ -41,6 +42,7 @@ function arquivoParaBase64(file) {
 const BancoQuestoesIA = () => {
   const { user } = useAuth();
   const { temRecurso } = usePlan();
+  const { gerarImagemIAAtiva, textoImagemIAIndisponivel } = useSystemFlags();
 
   // Bloco C.14 + Fase 6 — o Word é um recurso pago (plano Intermediário+).
   // Superuser tem acesso sempre (para testes).
@@ -93,6 +95,11 @@ const BancoQuestoesIA = () => {
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [gerandoWord, setGerandoWord] = useState(false);
   const [jaGerou, setJaGerou] = useState(false);
+
+  // Bloco C.15 — Geração de imagens IA por questão
+  const [gerandoImagemIA, setGerandoImagemIA] = useState({});
+  const [cotaImagemIA, setCotaImagemIA] = useState(null);
+  const [previewImagemIA, setPreviewImagemIA] = useState({});
 
   const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
   const [rascunhoSalvo, setRascunhoSalvo] = useState(false);
@@ -577,6 +584,98 @@ const BancoQuestoesIA = () => {
 
   const removerDaMinhas = (localId) => {
     setMinhasQuestoes(prev => prev.filter(q => q._localId !== localId));
+  };
+
+  // ============================================================
+  // BLOCO C.15 — Geração de imagem IA (por questão)
+  // Respeita a flag global (feature_gerar_imagem_ia).
+  // ============================================================
+  const gerarImagemIA = async (localId) => {
+    const questao = minhasQuestoes.find(q => q._localId === localId);
+    if (!questao) return;
+
+    const descricao = (questao.descricao_ilustracao || questao.enunciado || '').trim();
+    if (descricao.length < 10) {
+      alert('A questão não tem descrição suficiente para gerar a imagem.');
+      return;
+    }
+
+    setGerandoImagemIA(prev => ({ ...prev, [localId]: true }));
+    setErro('');
+    setSucesso('');
+
+    try {
+      const res = await api.post('/question-ia/gerar-imagem', {
+        descricao,
+        categoria: questao.tipo_figura_sugerida || 'nenhuma',
+        subcategoria: null,
+        contexto: {
+          etapa,
+          ano: etapa === 'EF' ? Number(ano) : null,
+          componente,
+        },
+      });
+
+      const { dataUrl, cota_restante, ilimitado, figura_id } = res.data;
+
+      setPreviewImagemIA(prev => ({
+        ...prev,
+        [localId]: { dataUrl, figura_id },
+      }));
+
+      if (ilimitado) {
+        setCotaImagemIA(-1); // -1 = ilimitado
+      } else {
+        setCotaImagemIA(cota_restante);
+      }
+    } catch (err) {
+      const status = err?.response?.status;
+      const detalhe = err?.response?.data?.detail;
+      if (status === 503) {
+        setErro(detalhe || 'A geração de imagens com IA está temporariamente indisponível.');
+      } else if (status === 402) {
+        setErro(detalhe || 'Você usou todas as imagens deste ciclo.');
+      } else {
+        setErro(detalhe || 'Não foi possível gerar a imagem. Tente novamente.');
+      }
+    } finally {
+      setGerandoImagemIA(prev => ({ ...prev, [localId]: false }));
+    }
+  };
+
+  const usarImagemIA = (localId) => {
+    const preview = previewImagemIA[localId];
+    if (!preview) return;
+
+    setMinhasQuestoes(prev => prev.map(q => {
+      if (q._localId !== localId) return q;
+      return {
+        ...q,
+        ilustracao: {
+          ...(q.ilustracao || { tipo: 'automatica' }),
+          imagem: preview.dataUrl,
+          svg_escolhido: null,
+          gerada_ia: true,
+          figura_id: preview.figura_id,
+        },
+      };
+    }));
+
+    setPreviewImagemIA(prev => {
+      const novo = { ...prev };
+      delete novo[localId];
+      return novo;
+    });
+
+    setSucesso('Imagem aplicada à questão.');
+  };
+
+  const descartarPreviewImagemIA = (localId) => {
+    setPreviewImagemIA(prev => {
+      const novo = { ...prev };
+      delete novo[localId];
+      return novo;
+    });
   };
 
   const atualizarIlustracao = (localId, campo, valor) => {
@@ -1702,6 +1801,86 @@ const BancoQuestoesIA = () => {
                             <p className="text-[10px] text-gray-500 mt-2">
                               💡 Se não encontrar a figura ideal, use a opção "⬆️ Upload" acima para enviar a sua.
                             </p>
+
+                            {/* Bloco C.15 — Geração de imagem com IA (respeita a flag global) */}
+                            <div className="mt-3 pt-3 border-t border-blue-200">
+                              {gerarImagemIAAtiva() ? (
+                                <>
+                                  <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
+                                    <p className="text-xs font-semibold text-purple-900">
+                                      🎨 Gerar imagem exclusiva com IA
+                                    </p>
+                                    {cotaImagemIA !== null && (
+                                      <span className="text-[10px] text-purple-700 font-medium">
+                                        {cotaImagemIA === -1
+                                          ? '♾️ Ilimitado'
+                                          : `${cotaImagemIA} imagem(ns) disponível(is) este mês`}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {!previewImagemIA[q._localId] && (
+                                    <button
+                                      type="button"
+                                      onClick={() => gerarImagemIA(q._localId)}
+                                      disabled={gerandoImagemIA[q._localId]}
+                                      className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white text-xs font-bold py-2 rounded-lg transition"
+                                    >
+                                      {gerandoImagemIA[q._localId]
+                                        ? '⏳ Gerando imagem...'
+                                        : '🎨 Gerar imagem com IA'}
+                                    </button>
+                                  )}
+
+                                  {previewImagemIA[q._localId] && (
+                                    <div className="bg-purple-50 border border-purple-300 rounded-lg p-3">
+                                      <img
+                                        src={previewImagemIA[q._localId].dataUrl}
+                                        alt="Preview IA"
+                                        className="max-h-32 mx-auto mb-2 bg-white rounded"
+                                      />
+                                      <div className="flex gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => usarImagemIA(q._localId)}
+                                          className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 rounded"
+                                        >
+                                          ✅ Usar esta
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => gerarImagemIA(q._localId)}
+                                          disabled={gerandoImagemIA[q._localId]}
+                                          className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white text-xs font-bold py-1.5 rounded"
+                                        >
+                                          {gerandoImagemIA[q._localId] ? '⏳...' : '🔄 Gerar outra'}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => descartarPreviewImagemIA(q._localId)}
+                                          className="bg-white hover:bg-red-50 text-red-600 border border-red-300 text-xs font-medium px-2 py-1.5 rounded"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <p className="text-[10px] text-gray-500 mt-2">
+                                    💡 A imagem gerada é salva automaticamente no Banco de Figuras.
+                                  </p>
+                                </>
+                              ) : (
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                  <p className="text-xs font-semibold text-gray-700">
+                                    🎨 Geração de imagens com IA
+                                  </p>
+                                  <p className="text-[10px] text-gray-500 mt-1">
+                                    {textoImagemIAIndisponivel()}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </>
