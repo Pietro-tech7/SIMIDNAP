@@ -6,7 +6,7 @@ import UploadImage from '../components/UploadImage';
 // SEÇÕES (nomes bonitos)
 // ============================================================
 const SECOES_INFO = {
-  hero:          { icon: '🎯', label: 'Hero (Carrossel)' },
+  hero:          { icon: '🎯', label: 'Banner principal rotativo' },
   credibility:   { icon: '✅', label: 'Barra de Credibilidade' },
   problem:       { icon: '😩', label: 'Problema (Dor)' },
   before_after:  { icon: '🔄', label: 'Antes vs Depois' },
@@ -279,7 +279,13 @@ const Textarea = ({ label, value, onChange, rows = 3, placeholder, help }) => (
 );
 
 const Toggle = ({ label, value, onChange }) => (
-  <label className="flex items-center gap-3 mb-4 cursor-pointer">
+  <label
+    className="flex items-center gap-3 mb-4 cursor-pointer select-none"
+    onClick={(e) => {
+      e.preventDefault();
+      if (onChange) onChange(!value);
+    }}
+  >
     <div className={`relative w-11 h-6 rounded-full transition ${value ? 'bg-blue-600' : 'bg-slate-300'}`}>
       <div className="absolute top-0.5 w-5 h-5 bg-white rounded-full transition shadow-sm"
         style={{ left: value ? '22px' : '2px' }} />
