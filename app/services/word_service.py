@@ -77,6 +77,23 @@ def _inserir_logo_em_celula(cell, data_url, largura_cm=2.2):
         print(f"[Word] Erro ao inserir logo: {e}")
 
 
+def _inserir_imagem_em_celula(cell, data_url, largura_cm=5.0):
+    """Insere uma imagem (ilustração) dentro de uma célula de tabela.
+    Usado quando a ilustração fica ao lado das alternativas."""
+    if not data_url:
+        return
+    dados, mime = _decodificar_data_url(data_url)
+    if not dados or not mime or not _suporta_no_word(mime):
+        return
+    try:
+        p = cell.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run()
+        run.add_picture(BytesIO(dados), width=Cm(largura_cm))
+    except Exception as e:
+        print(f"[Word] Erro ao inserir imagem lado a lado: {e}")
+
+
 def _adicionar_linha_separadora(doc):
     """Adiciona uma linha horizontal."""
     p = doc.add_paragraph()
@@ -290,17 +307,48 @@ def gerar_word_prova(titulo, cabecalho, questoes, opcoes):
         if q.get('imagem_url'):
             _adicionar_imagem_se_possivel(doc, q['imagem_url'])
 
-        # Imagem da ilustração (se escolhida)
+        # Ilustração + alternativas
         ilust = q.get('ilustracao') or {}
-        if ilust.get('imagem'):
-            _adicionar_imagem_se_possivel(doc, ilust['imagem'])
+        alternativas = q.get('alternativas') or []
+        tem_ilustracao = bool(ilust.get('imagem'))
 
-        # Alternativas
-        for alt in (q.get('alternativas') or []):
-            p = doc.add_paragraph()
-            p.add_run(f"({alt.get('letra', '')}) ").bold = True
-            p.add_run(alt.get('texto', ''))
-            p.paragraph_format.space_after = Pt(2)
+        if tem_ilustracao:
+            # Layout lado a lado: alternativas à esquerda, imagem à direita.
+            # Usa tabela invisível de 2 colunas (python-docx não tem float).
+            tabela = doc.add_table(rows=1, cols=2)
+            tabela.autofit = False
+
+            # Larguras: 11.5 cm + 5.5 cm ≈ 17 cm (largura útil da página)
+            tabela.columns[0].width = Cm(11.5)
+            tabela.columns[1].width = Cm(5.5)
+
+            for row in tabela.rows:
+                row.cells[0].width = Cm(11.5)
+                row.cells[1].width = Cm(5.5)
+
+            _remover_bordas_tabela(tabela)
+
+            # Coluna 1 — alternativas
+            cell_alt = tabela.rows[0].cells[0]
+            for i, alt in enumerate(alternativas):
+                if i == 0:
+                    p = cell_alt.paragraphs[0]
+                else:
+                    p = cell_alt.add_paragraph()
+                p.add_run(f"({alt.get('letra', '')}) ").bold = True
+                p.add_run(alt.get('texto', ''))
+                p.paragraph_format.space_after = Pt(2)
+
+            # Coluna 2 — ilustração
+            cell_img = tabela.rows[0].cells[1]
+            _inserir_imagem_em_celula(cell_img, ilust['imagem'], largura_cm=5.0)
+        else:
+            # Sem ilustração: alternativas em bloco normal
+            for alt in alternativas:
+                p = doc.add_paragraph()
+                p.add_run(f"({alt.get('letra', '')}) ").bold = True
+                p.add_run(alt.get('texto', ''))
+                p.paragraph_format.space_after = Pt(2)
 
         # Descritor (opcional)
         if mostrar_descritor and q.get('descritor'):

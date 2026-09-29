@@ -181,6 +181,41 @@ async function montarQuestoes(questoes, opcoes = {}) {
       ? `<div style="margin-top: 6px; font-size: 9px; color: #6b7280; font-style: italic;">Descritor: ${escapeHtml(q.descritor)}${q.descritor_texto ? ' — ' + escapeHtml(q.descritor_texto) : ''}</div>`
       : '';
 
+    // Bloco de alternativas (HTML puro — o wrapper é aplicado abaixo).
+    const alternativasHtml = (q.alternativas || []).map(a => `
+      <div style="margin-bottom: 2px;">
+        <strong>(${escapeHtml(a.letra)})</strong> ${escapeHtml(a.texto)}
+      </div>
+    `).join('');
+
+    // Quando a questão tem uma IMAGEM escolhida (personalizada ou automática),
+    // coloca as alternativas à esquerda e a imagem à direita, no mesmo bloco.
+    // Aproveita o espaço vazio ao lado das alternativas.
+    const _ilust = q.ilustracao || { tipo: 'automatica', imagem: null };
+    const temImagemLado =
+      (_ilust.tipo === 'personalizada' || _ilust.tipo === 'automatica') && !!_ilust.imagem;
+
+    let corpoHtml;
+    if (temImagemLado && ilustracaoHtml) {
+      corpoHtml = `
+        <div style="display: flex; align-items: flex-start; gap: 16px; margin-top: 8px; page-break-inside: avoid;">
+          <div style="flex: 1 1 auto; min-width: 0; font-size: 11px; line-height: 1.7;">
+            ${alternativasHtml}
+          </div>
+          <div style="flex: 0 0 auto;">
+            ${ilustracaoHtml}
+          </div>
+        </div>
+      `;
+    } else {
+      corpoHtml = `
+        <div style="margin-top: 8px; font-size: 11px; line-height: 1.7;">
+          ${alternativasHtml}
+        </div>
+        ${ilustracaoHtml}
+      `;
+    }
+
     blocos.push(`
       <div style="margin-bottom: 22px; page-break-inside: avoid;">
         ${temaHtml}
@@ -188,14 +223,7 @@ async function montarQuestoes(questoes, opcoes = {}) {
           ${idx + 1}) ${escapeHtml(q.enunciado)}
         </div>
         ${q.imagem_url ? `<div style="margin: 8px 0; text-align: center;"><img src="${q.imagem_url}" style="max-width: 100%; max-height: 250px;" /></div>` : ''}
-        ${ilustracaoHtml}
-        <div style="margin-top: 8px; font-size: 11px; line-height: 1.7;">
-          ${(q.alternativas || []).map(a => `
-            <div style="margin-bottom: 2px;">
-              <strong>(${escapeHtml(a.letra)})</strong> ${escapeHtml(a.texto)}
-            </div>
-          `).join('')}
-        </div>
+        ${corpoHtml}
         ${descritorHtml}
       </div>
     `);
