@@ -1026,26 +1026,122 @@ const EditorPopup = ({ config, setConfig, salvando }) => {
       setConfig(res.data.config);
     } catch {}
   };
+
+  const TEMAS = [
+    { value: 'azul',    label: '🔵 Azul institucional',  preview: 'bg-gradient-to-br from-blue-600 to-indigo-700' },
+    { value: 'roxo',    label: '🟣 Roxo premium',        preview: 'bg-gradient-to-br from-purple-600 to-indigo-700' },
+    { value: 'laranja', label: '🟠 Laranja urgência',    preview: 'bg-gradient-to-br from-orange-500 to-red-600' },
+    { value: 'verde',   label: '🟢 Verde sucesso',       preview: 'bg-gradient-to-br from-emerald-500 to-teal-600' },
+    { value: 'preto',   label: '⚫ Preto elegante',      preview: 'bg-gradient-to-br from-gray-900 to-blue-950' },
+  ];
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
         <span className="text-3xl">📢</span>
         <div>
           <h2 className="text-xl font-bold text-slate-900">Pop-up de Promoção</h2>
-          <p className="text-xs text-slate-500">Aparece no canto da landing após alguns segundos</p>
+          <p className="text-xs text-slate-500">Card moderno com badge, imagem, bullets e CTA clicável. Aparece após alguns segundos.</p>
         </div>
       </div>
+
       <Toggle label="Pop-up ativado" value={popup.enabled} onChange={(v) => update('enabled', v)} />
-      <Input label="Título" value={popup.title} onChange={(v) => update('title', v)} />
-      <Textarea label="Mensagem" value={popup.message} onChange={(v) => update('message', v)} rows={3} />
+
+      {/* ============================== */}
+      {/* CONTEÚDO PRINCIPAL              */}
+      {/* ============================== */}
+      <div className="mt-2 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">Conteúdo</p>
+      </div>
+
+      <Input label="Badge (etiqueta do topo)" value={popup.badge}
+        onChange={(v) => update('badge', v)}
+        placeholder="🎁 OFERTA DE LANÇAMENTO"
+        help="Aparece em destaque no topo do card. Deixe vazio para não mostrar." />
+
+      <Input label="Título principal" value={popup.title} onChange={(v) => update('title', v)} />
+
+      <Textarea label="Subtítulo" value={popup.subtitle} onChange={(v) => update('subtitle', v)} rows={2}
+        help="Uma linha curta abaixo do título. Deixe vazio para não mostrar." />
+
+      <Textarea label="Bullets (um por linha)" value={(popup.bullets || []).join('\n')}
+        onChange={(v) => update('bullets', v.split('\n').filter(Boolean))} rows={3}
+        help="Cada linha vira um item com ✓ no card. Deixe vazio para não mostrar." />
+
+      {/* ============================== */}
+      {/* APARÊNCIA                       */}
+      {/* ============================== */}
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">Aparência</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-2">Cor de tema</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+          {TEMAS.map((t) => (
+            <button key={t.value} type="button"
+              onClick={() => update('cor_tema', t.value)}
+              className={`flex items-center gap-3 p-2 rounded-lg border-2 transition text-left ${
+                popup.cor_tema === t.value
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}>
+              <div className={`w-10 h-10 rounded-lg ${t.preview} border border-slate-200`} />
+              <span className="text-xs font-medium text-slate-700">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <UploadImage slot="popup_image" label="Imagem do pop-up (opcional)"
+        value={popup.image} onChange={(v) => update('image', v)}
+        help="Se preencher, o card vira horizontal (imagem à esquerda, texto à direita). Sem imagem, fica vertical compacto." />
+
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-2">Layout com imagem</label>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <button type="button"
+            onClick={() => update('layout', 'horizontal')}
+            className={`p-3 rounded-lg border-2 text-sm font-medium transition ${
+              popup.layout !== 'vertical'
+                ? 'border-blue-500 bg-blue-50 text-blue-900'
+                : 'border-slate-200 text-slate-700 hover:border-slate-300'
+            }`}>
+            ↔ Horizontal (recomendado)
+          </button>
+          <button type="button"
+            onClick={() => update('layout', 'vertical')}
+            className={`p-3 rounded-lg border-2 text-sm font-medium transition ${
+              popup.layout === 'vertical'
+                ? 'border-blue-500 bg-blue-50 text-blue-900'
+                : 'border-slate-200 text-slate-700 hover:border-slate-300'
+            }`}>
+            ↕ Vertical
+          </button>
+        </div>
+        <p className="text-xs text-slate-500 mb-4">
+          Só tem efeito se houver imagem acima. Sem imagem, o pop-up sempre fica vertical compacto.
+        </p>
+      </div>
+
+      {/* ============================== */}
+      {/* COMPORTAMENTO                   */}
+      {/* ============================== */}
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">Comportamento</p>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <Input label="Texto do botão" value={popup.cta_text} onChange={(v) => update('cta_text', v)} />
-        <Input label="Link do botão" value={popup.cta_link} onChange={(v) => update('cta_link', v)} />
+        <Input label="Link do botão (card inteiro)" value={popup.cta_link} onChange={(v) => update('cta_link', v)}
+          help="Para onde vai ao clicar em qualquer lugar do card." />
         <Input label="Delay em segundos" type="number" value={popup.delay_seconds}
           onChange={(v) => update('delay_seconds', parseInt(v) || 8)} />
       </div>
+
       <Toggle label="Mostrar apenas uma vez por sessão" value={popup.show_once_per_user}
         onChange={(v) => update('show_once_per_user', v)} />
+
       <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
         <button onClick={salvar} disabled={salvando}
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">

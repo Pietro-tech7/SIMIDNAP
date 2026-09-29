@@ -891,22 +891,119 @@ export const PopupSection = ({ data }) => {
 
   if (!data.enabled || !visivel || fechado) return null;
 
+  // Paletas de cor (gradiente + cor do botão + cor do badge)
+  const TEMAS = {
+    azul: {
+      gradiente: 'from-blue-600 to-indigo-700',
+      botao: 'bg-white text-blue-700 hover:bg-blue-50',
+    },
+    roxo: {
+      gradiente: 'from-purple-600 to-indigo-700',
+      botao: 'bg-white text-purple-700 hover:bg-purple-50',
+    },
+    laranja: {
+      gradiente: 'from-orange-500 to-red-600',
+      botao: 'bg-white text-orange-700 hover:bg-orange-50',
+    },
+    verde: {
+      gradiente: 'from-emerald-500 to-teal-600',
+      botao: 'bg-white text-emerald-700 hover:bg-emerald-50',
+    },
+    preto: {
+      gradiente: 'from-gray-900 via-gray-900 to-blue-950',
+      botao: 'bg-white text-gray-900 hover:bg-gray-100',
+    },
+  };
+  const tema = TEMAS[data.cor_tema] || TEMAS.roxo;
+
+  const bullets = Array.isArray(data.bullets) ? data.bullets.filter(Boolean) : [];
+  const temImagem = !!data.image;
+  const horizontal = temImagem && data.layout !== 'vertical';
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 animate-slide-in">
-      <button
-        onClick={() => setFechado(true)}
-        className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-xl w-7 h-7 flex items-center justify-center"
+    <div className="fixed inset-x-0 bottom-0 sm:inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
+      <a
+        href={data.cta_link || '/register'}
+        className={`pointer-events-auto relative w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br ${tema.gradiente} text-white transform transition-all duration-500 ease-out ${
+          visivel ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+        }`}
       >
-        ×
-      </button>
-      <h3 className="text-lg font-bold text-gray-900 mb-2 pr-6">{data.title}</h3>
-      <p className="text-sm text-gray-600 mb-4 leading-relaxed">{data.message}</p>
-      <Link
-        to={data.cta_link || '/register'}
-        className="block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg transition text-sm"
-      >
-        {data.cta_text || 'Ver planos'}
-      </Link>
+        {/* Botão de fechar */}
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFechado(true); }}
+          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white text-lg flex items-center justify-center transition"
+          aria-label="Fechar pop-up"
+        >
+          ×
+        </button>
+
+        <div className={`flex ${horizontal ? 'flex-col sm:flex-row' : 'flex-col'}`}>
+          {/* Imagem (opcional) */}
+          {temImagem && (
+            <div className={`${horizontal ? 'sm:w-2/5' : 'w-full'} bg-white/10 overflow-hidden flex items-center justify-center`}>
+              <img
+                src={data.image}
+                alt=""
+                className={`${horizontal ? 'w-full h-full object-cover min-h-[180px]' : 'w-full h-40 object-cover'}`}
+              />
+            </div>
+          )}
+
+          {/* Conteúdo */}
+          <div className={`${horizontal ? 'sm:w-3/5' : 'w-full'} p-6 sm:p-7 md:p-8`}>
+            {/* Badge */}
+            {data.badge && (
+              <div className="inline-block bg-white/20 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">
+                {data.badge}
+              </div>
+            )}
+
+            {/* Título */}
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight mb-2">
+              {data.title}
+            </h3>
+
+            {/* Subtítulo */}
+            {data.subtitle && (
+              <p className="text-white/90 text-sm md:text-base leading-snug mb-3">
+                {data.subtitle}
+              </p>
+            )}
+
+            {/* Fallback: mensagem antiga (se não houver subtítulo) */}
+            {!data.subtitle && data.message && (
+              <p className="text-white/80 text-sm leading-snug mb-3">
+                {data.message}
+              </p>
+            )}
+
+            {/* Bullets */}
+            {bullets.length > 0 && (
+              <ul className="space-y-1.5 mb-5">
+                {bullets.map((b, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-white/95 leading-snug">
+                    <span className="text-white font-bold flex-shrink-0">✓</span>
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* CTA (botão visível — o card inteiro também é clicável) */}
+            <div className={`inline-flex items-center gap-2 ${tema.botao} font-bold px-5 py-3 rounded-lg transition text-sm shadow-md`}>
+              {data.cta_text || 'Ver planos'}
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </div>
+
+            <p className="text-xs text-white/70 mt-3">
+              🔒 Pagamento seguro · Cancele quando quiser
+            </p>
+          </div>
+        </div>
+      </a>
     </div>
   );
 };

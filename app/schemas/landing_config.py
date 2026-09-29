@@ -461,6 +461,7 @@ class FooterSection(BaseModel):
 
 
 class PopupSection(BaseModel):
+    # Campos originais (compatibilidade — não remover)
     enabled: bool = False
     title: str = "Oferta de Fundador"
     message: str = "Os 100 primeiros travam o preço para sempre. Restam poucas vagas."
@@ -468,6 +469,18 @@ class PopupSection(BaseModel):
     cta_link: str = "/register"
     delay_seconds: int = 8
     show_once_per_user: bool = True
+
+    # Campos novos (redesign Bloco 14) — todos com default, sem quebrar config antiga
+    badge: str = "🎁 OFERTA DE LANÇAMENTO"
+    subtitle: str = "Vagas limitadas para os primeiros assinantes."
+    bullets: List[str] = Field(default_factory=lambda: [
+        "Preço travado para sempre",
+        "Cancele quando quiser, sem multa",
+        "Acesso imediato a todos os motores",
+    ])
+    image: str = ""
+    layout: str = "horizontal"  # "horizontal" | "vertical"
+    cor_tema: str = "roxo"      # "azul" | "roxo" | "laranja" | "verde" | "preto"
 
 
 # ============================================================
