@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../api/api';
 import AvatarUpload from '../components/AvatarUpload';
 import CadastroApiKey from '../components/CadastroApiKey';
+import BotaoWhatsApp from '../components/BotaoWhatsApp';
 
 // Lista de UFs do Brasil
 const UFS = [
@@ -372,6 +373,13 @@ const Perfil = () => {
           <p className="text-xs text-blue-800 leading-relaxed">
             🔒 Sua chave é criptografada e fica só na sua conta. Você mantém total controle.
           </p>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-blue-100">
+          <p className="text-xs text-blue-800 mb-3">
+            💬 Ficou com alguma dúvida sobre a chave ou sobre os créditos? Fale com a gente.
+          </p>
+          <BotaoWhatsApp variant="inline" />
         </div>
       </div>
 

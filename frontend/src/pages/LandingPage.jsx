@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { useSEO } from '../hooks/useSEO';
+import BotaoWhatsApp from '../components/BotaoWhatsApp';
 
 // Seções — Parte 1
 import {
@@ -250,6 +251,9 @@ const LandingPage = () => {
 
       {/* ===================== POPUP (opcional) ===================== */}
       {config.popup?.enabled && <PopupSection data={config.popup} />}
+
+      {/* ===================== BOTÃO WHATSAPP FLUTUANTE ===================== */}
+      <BotaoWhatsApp variant="flutuante" />
     </div>
   );
 };
