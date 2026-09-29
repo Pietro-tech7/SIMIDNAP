@@ -1515,6 +1515,125 @@ class GeminiService:
         return {"erro": f"Todos os modelos falharam: {ultimo_erro}"}
 
     # --------------------------------------------------------
+    # GERAÇÃO ESTRUTURADA EM LOTES (para o Modo Planejamento)
+    # --------------------------------------------------------
+    def _system_para_task_com_lote(
+        self,
+        task_type: str,
+        batch_start: int,
+        batch_end: int,
+        total_aulas: int,
+    ) -> str:
+        """
+        Retorna o system prompt do task_type acrescido da instrução
+        de LOTE. Só usado pelo task_type 'planejamento'.
+        """
+        system_prompt = _system_para_task(task_type, diferenciado=False)
+        instrucao = (
+            f"\n\n═══════════════════════════════════════════════════════════════\n"
+            f"INSTRUÇÃO DE LOTE (CRÍTICA)\n"
+            f"═══════════════════════════════════════════════════════════════\n"
+            f"Você está gerando um planejamento LONGO em LOTES.\n"
+            f"Este é o lote {batch_start}–{batch_end} de um total de {total_aulas} aulas.\n\n"
+            f"REGRAS:\n"
+            f"1. Retorne o MESMO formato JSON completo do schema (cabecalho, objetivos_gerais, "
+            f"objetivos_especificos, habilidades, justificativa, sequencia_didatica, avaliacao_geral, "
+            f"adaptacoes_inclusivas, consideracoes_finais, referencias).\n"
+            f"2. No campo `sequencia_didatica`, retorne APENAS as aulas {batch_start} a {batch_end}.\n"
+            f"3. Cada aula em `sequencia_didatica` deve ter `numero_aula` ABSOLUTO "
+            f"(de {batch_start} a {batch_end}), não relativo ao lote.\n"
+            f"4. Os campos de cabeçalho, objetivos, justificativa e referências devem ser os MESMOS "
+            f"em todos os lotes (para manter consistência quando o frontend concatenar).\n"
+            f"5. Mantenha a progressão cognitiva considerando o planejamento COMPLETO "
+            f"(as aulas anteriores já foram geradas nos lotes {1}–{batch_start - 1}).\n"
+            f"6. Retorne APENAS o JSON, sem texto adicional.\n"
+        )
+        return system_prompt + instrucao
+
+    def generate_structured_batch(
+        self,
+        task_type: str,
+        payload: Dict[str, Any],
+        batch_start: int,
+        batch_end: int,
+        total_aulas: int,
+        diferenciado: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Geração estruturada em LOTES. Só implementado para 'planejamento'.
+
+        Retorna o JSON parcial com `sequencia_didatica` contendo apenas
+        as aulas do lote [batch_start, batch_end].
+        """
+        if not self.controle.pode_usar():
+            return {"erro": self.controle.mensagem_limite()}
+
+        if task_type != "planejamento":
+            return {"erro": f"Batching não suportado para task_type: {task_type}"}
+
+        system_prompt = self._system_para_task_com_lote(
+            task_type, batch_start, batch_end, total_aulas
+        )
+
+        # RAG — só se houver conteúdo não-vazio
+        conteudo = payload.get("content") or payload.get("tema") or ""
+        if conteudo and conteudo.strip():
+            conhecimento = self._buscar_conhecimento(conteudo)
+            if conhecimento:
+                system_prompt += f"\n\n=== CONHECIMENTO PEDAGÓGICO RELEVANTE ===\n{conhecimento}"
+
+        prompt = (
+            f"Dados da solicitação:\n{json.dumps(payload, ensure_ascii=False, indent=2)}\n\n"
+            f"Gere o JSON parcial conforme a instrução de lote."
+        )
+
+        ultimo_erro = None
+        for modelo in MODELOS_CHAT:
+            try:
+                print(f"[Gemini] Structured BATCH ({task_type} {batch_start}-{batch_end}/{total_aulas}) — tentando: {modelo}")
+                response = self._executar_com_retry(
+                    self.client.models.generate_content,
+                    model=modelo,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        temperature=0.5,
+                        max_output_tokens=16384,
+                        response_mime_type="application/json",
+                        thinking_config=_thinking_config(),
+                    ),
+                )
+                self.controle.registrar_uso()
+                texto = response.text.strip()
+                if texto.startswith("```"):
+                    texto = texto.split("```")[1]
+                    if texto.startswith("json"):
+                        texto = texto[4:]
+                texto = texto.strip()
+
+                try:
+                    resultado = json.loads(texto)
+                    print(f"[Gemini] BATCH Sucesso: {modelo}")
+                    return resultado
+                except json.JSONDecodeError:
+                    resultado = self._reparar_json(texto)
+                    if resultado is not None:
+                        print(f"[Gemini] BATCH Sucesso (JSON reparado): {modelo}")
+                        return resultado
+                    raise
+            except json.JSONDecodeError as e:
+                print(f"[Gemini] BATCH JSON inválido com {modelo}: {e}")
+                ultimo_erro = e
+                continue
+            except Exception as e:
+                print(f"[Gemini] BATCH Falha em {modelo}: {e}")
+                ultimo_erro = e
+                continue
+
+        self.controle.registrar_uso()
+        return {"erro": f"Todos os modelos falharam no lote {batch_start}-{batch_end}: {ultimo_erro}"}
+
+    # --------------------------------------------------------
     # GERAÇÃO ESTRUTURADA COM STREAMING
     # --------------------------------------------------------
     async def generate_structured_stream(

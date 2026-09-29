@@ -620,6 +620,44 @@ class AIService(BaseAIService):
 
         return self._mock.generate_structured(task_type, payload, diferenciado=diferenciado)
     
+    def generate_structured_batch(
+        self,
+        task_type: str,
+        payload: Dict[str, Any],
+        batch_start: int,
+        batch_end: int,
+        total_aulas: int,
+        diferenciado: bool = False,
+        user=None,
+    ) -> Dict[str, Any]:
+        """
+        Geração estruturada em LOTES. Delega para o GeminiService.
+        Se não houver Gemini configurado, devolve erro claro.
+        """
+        gemini = self._gemini
+        if user is not None:
+            try:
+                from .gemini_service import get_gemini_service_for_user
+                gemini = get_gemini_service_for_user(user)
+            except Exception as e:
+                print(f"[AIService] Erro ao obter Gemini do usuário (batch): {e}")
+                gemini = self._gemini
+
+        if gemini:
+            return gemini.generate_structured_batch(
+                task_type=task_type,
+                payload=payload,
+                batch_start=batch_start,
+                batch_end=batch_end,
+                total_aulas=total_aulas,
+                diferenciado=diferenciado,
+            )
+
+        if self._erro_gemini:
+            return {"erro": f"IA não configurada corretamente: {self._erro_gemini}"}
+
+        return {"erro": "Geração em lotes exige a IA real (Gemini). Mock não suportado."}
+
     async def generate_structured_stream(self, task_type: str, payload: Dict[str, Any]):
         """Streaming estruturado. Só funciona se o Gemini estiver ativo."""
         if self._gemini:

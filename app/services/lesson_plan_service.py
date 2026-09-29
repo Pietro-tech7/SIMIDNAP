@@ -124,3 +124,117 @@ def delete_lesson_plan(db: Session, user_id: str, plan_id: str):
         db.delete(plan)
         db.commit()
     return plan
+
+
+# ============================================================
+# MODO PLANEJAMENTO — Geração em LOTES (Bloco D10-fix-3a)
+# ============================================================
+def generate_planejamento_lote(
+    db: Session,
+    user_id: str,
+    title: str,
+    subject: str = None,
+    grade: str = None,
+    content: str = None,
+    objetivo: str = None,
+    batch_start: int = 1,
+    batch_end: int = 4,
+    total_aulas: int = 4,
+    extra: Dict[str, Any] = None,
+    diferenciado: bool = False,
+    user=None,
+) -> Dict[str, Any]:
+    """
+    Gera UM LOTE de aulas para o Modo Planejamento.
+    NÃO salva no banco — devolve o JSON parcial para o frontend acumular.
+    O salvamento é feito depois por `save_planejamento_completo`.
+    """
+    ai = get_ai_service()
+
+    payload = {
+        "title": title,
+        "subject": subject,
+        "grade": grade,
+        "content": content,
+        "objetivo": objetivo,
+        "periodo_tipo": (extra or {}).get("periodo_tipo"),
+        "periodo_inicio": (extra or {}).get("periodo_inicio"),
+        "periodo_fim": (extra or {}).get("periodo_fim"),
+        "tempo_aula_minutos": (extra or {}).get("tempo_aula_minutos"),
+        "aulas_por_dia": (extra or {}).get("aulas_por_dia"),
+        "dias_por_semana": (extra or {}).get("dias_por_semana"),
+        "total_aulas": total_aulas,
+        "habilidades": (extra or {}).get("habilidades"),
+        "descritores": (extra or {}).get("descritores"),
+        "referenciais": (extra or {}).get("referenciais"),
+        "batch_start": batch_start,
+        "batch_end": batch_end,
+    }
+
+    structured_data = ai.generate_structured_batch(
+        task_type="planejamento",
+        payload=payload,
+        batch_start=batch_start,
+        batch_end=batch_end,
+        total_aulas=total_aulas,
+        diferenciado=diferenciado,
+        user=user,
+    )
+    return structured_data
+
+
+def save_planejamento_completo(
+    db: Session,
+    user_id: str,
+    title: str,
+    subject: str = None,
+    grade: str = None,
+    content: str = None,
+    objective: str = None,
+    structured_data: Dict[str, Any] = None,
+    extra: Dict[str, Any] = None,
+) -> LessonPlan:
+    """
+    Salva no banco um planejamento COMPLETO já montado pelo frontend
+    (após acumular todos os lotes). Não chama a IA.
+    """
+    extra = extra or {}
+
+    MODO_POR_PLAN_TYPE = {
+        "neuroaula": "aula",
+        "aula_que_funciona": "aula",
+        "planejamento": "planejamento",
+        "coordenacao": "coordenacao",
+    }
+    plan_type = extra.get("plan_type", "planejamento")
+    modo = extra.get("modo") or MODO_POR_PLAN_TYPE.get(plan_type, "planejamento")
+    periodo_tipo = extra.get("periodo_tipo")
+    total_aulas = extra.get("total_aulas")
+
+    def _parse_data(valor):
+        if not valor:
+            return None
+        try:
+            return datetime.strptime(str(valor), "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            return None
+
+    plan = LessonPlan(
+        user_id=user_id,
+        plan_type=plan_type,
+        title=title,
+        subject=subject,
+        grade=grade,
+        content=content,
+        objective=objective,
+        structured_data=structured_data or {},
+        modo=modo,
+        periodo_tipo=periodo_tipo,
+        periodo_inicio=_parse_data(extra.get("periodo_inicio")),
+        periodo_fim=_parse_data(extra.get("periodo_fim")),
+        total_aulas=total_aulas,
+    )
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return plan
