@@ -53,6 +53,26 @@ const conteudoModulos = {
       'Gerar versão diferenciada (principal + adaptada)',
     ],
   },
+  planejador: {
+    icon: '🧠',
+    nome: 'PLANEJADOR SIMIDNAPE — O Professor Inesquecível',
+    cor: 'from-blue-600 via-indigo-600 to-purple-700',
+    resumo: 'Três modos. Um copiloto pedagógico. Do plano de uma aula ao bimestre inteiro.',
+    explicacao:
+      'Você não precisa mais perder o domingo planejando, nem improvisar aula porque o tempo acabou. O PLANEJADOR SIMIDNAPE é o único assistente pedagógico brasileiro que combina neuroeducação, ciência da aprendizagem e BNCC para entregar planejamentos que funcionam de verdade. Você escolhe entre três modos: Modo Aula (script cronometrado, minuto a minuto, com falas exatas e princípios cognitivos em cada bloco), Modo Planejamento (sequência didática completa para 1 aula, 1 semana, 1 mês ou 1 bimestre, com progressão cognitiva em cada aula) e Modo Coordenação (6 tipos de plano para o coordenador que lidera a aprendizagem na escola).',
+    exemplo:
+      'Exemplo: "Preciso planejar Matemática do 5º ano para o mês inteiro, com foco em frações." O sistema gera uma sequência didática completa, com 4 aulas progressivas — cada uma com objetivo, metodologia, atividades, avaliação e princípios de neuroeducação.',
+    acoes: [
+      'Gerar script cronometrado com falas, ações e princípios de neuroeducação',
+      'Planejar 1 aula, 1 semana, 1 mês ou o bimestre inteiro',
+      'Criar planos de coordenação em 6 tipos de ação',
+      'Adaptar tudo para alunos autistas, com TDAH, dislexia e outras necessidades',
+      'Gerar versão diferenciada (principal + adaptada)',
+      'Reabrir, editar, duplicar e excluir seus planejamentos a qualquer momento',
+      'Compartilhar com outros professores no Banco Público',
+      'Baixar tudo em PDF profissional com a marca SIMIDNAPE',
+    ],
+  },
   meu_aluno: {
     icon: '📊',
     nome: 'Meu Aluno',
@@ -196,6 +216,14 @@ const ModuloIntro = () => {
               className="inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-semibold px-6 py-2.5 rounded-lg transition"
             >
               Começar a usar
+            </Link>
+          )}
+          {modulo === 'planejador' && (
+            <Link
+              to="/planejador"
+              className="inline-block bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white font-semibold px-6 py-2.5 rounded-lg transition"
+            >
+              🚀 Abrir o Planejador
             </Link>
           )}
           {modulo === 'professor_inteiro' && (
