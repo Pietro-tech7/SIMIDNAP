@@ -68,6 +68,7 @@ const Layout = () => {
     { path: '/modulo/neuroaula', label: 'NeuroAula', icon: '🧠' },
     { path: '/modulo/professor_inteiro', label: 'Terapia Pedagógica', icon: '❤️' },
     { path: '/modulo/planejador', label: 'PLANEJADOR SIMIDNAPE', icon: '🧠' },
+    { path: '/meus-planejamentos', label: 'Meus Planejamentos', icon: '📚' },
     { path: '/modulo/meu_aluno', label: 'Meu Aluno', icon: '📊' },
     { path: '/modulo/ia_para_professor', label: 'Gerador de Materiais', icon: '📄' },
     { path: '/modulo/praticas_exitosas', label: 'Práticas Exitosas', icon: '🏆' },
@@ -90,6 +91,12 @@ const Layout = () => {
     }
     if (path === '/modulo/meu_aluno') {
       return location.pathname === path || location.pathname.startsWith('/meu-aluno');
+    }
+    if (path === '/modulo/planejador') {
+      return location.pathname.startsWith('/planejador');
+    }
+    if (path === '/meus-planejamentos') {
+      return location.pathname.startsWith('/meus-planejamentos');
     }
     if (path === '/modulo/praticas_exitosas') {
       return location.pathname === path || location.pathname.startsWith('/praticas-exitosas');

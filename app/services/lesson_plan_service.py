@@ -183,6 +183,62 @@ def generate_planejamento_lote(
     return structured_data
 
 
+def update_lesson_plan(
+    db: Session,
+    user_id: str,
+    plan_id: str,
+    title: str = None,
+    objective: str = None,
+) -> LessonPlan:
+    """Edita título e/ou objetivo de um plano (Bloco D11)."""
+    plan = get_lesson_plan(db, user_id, plan_id)
+    if not plan:
+        return None
+    if title is not None:
+        plan.title = title
+    if objective is not None:
+        plan.objective = objective
+    db.commit()
+    db.refresh(plan)
+    return plan
+
+
+def duplicate_lesson_plan(
+    db: Session,
+    user_id: str,
+    plan_id: str,
+) -> LessonPlan:
+    """
+    Duplica um plano. Cria uma cópia idêntica com id novo (Bloco D11).
+    A cópia NÃO herda o `publico=True` — quem duplica decide depois
+    se quer publicar de novo.
+    """
+    original = get_lesson_plan(db, user_id, plan_id)
+    if not original:
+        return None
+
+    copia = LessonPlan(
+        user_id=user_id,
+        plan_type=original.plan_type,
+        title=f"{original.title} (cópia)",
+        subject=original.subject,
+        grade=original.grade,
+        content=original.content,
+        objective=original.objective,
+        structured_data=original.structured_data,
+        modo=original.modo,
+        periodo_tipo=original.periodo_tipo,
+        periodo_inicio=original.periodo_inicio,
+        periodo_fim=original.periodo_fim,
+        total_aulas=original.total_aulas,
+        publico=False,
+    )
+    db.add(copia)
+    db.commit()
+    db.refresh(copia)
+    return copia
+
+
 def save_planejamento_completo(
     db: Session,
     user_id: str,

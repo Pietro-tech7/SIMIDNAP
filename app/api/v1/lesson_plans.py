@@ -8,6 +8,7 @@ from ...schemas.lesson_plan import (
     LessonPlanOut,
     LessonPlanGenerateBatch,
     LessonPlanSaveComplete,
+    LessonPlanUpdate,
 )
 from ...services.lesson_plan_service import (
     generate_lesson_plan,
@@ -16,6 +17,8 @@ from ...services.lesson_plan_service import (
     delete_lesson_plan,
     generate_planejamento_lote,
     save_planejamento_completo,
+    update_lesson_plan,
+    duplicate_lesson_plan,
 )
 from ...services.bncc_service import obter_habilidade
 from ...services.subscription_service import verificar_creditos, consumir_creditos
@@ -251,6 +254,46 @@ def save_complete(
         extra=data.extra or {},
     )
     return plan
+
+
+# ============================================================
+# MEUS PLANEJAMENTOS — Editar e Duplicar (Bloco D11)
+# ============================================================
+@router.patch("/{plan_id}", response_model=LessonPlanOut)
+def update_one(
+    plan_id: str,
+    data: LessonPlanUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Edita título e/ou objetivo de um plano do usuário."""
+    plan = update_lesson_plan(
+        db=db,
+        user_id=str(current_user.id),
+        plan_id=plan_id,
+        title=data.title,
+        objective=data.objective,
+    )
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plano não encontrado.")
+    return plan
+
+
+@router.post("/{plan_id}/duplicate", response_model=LessonPlanOut, status_code=201)
+def duplicate_one(
+    plan_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cria uma cópia do plano. A cópia NÃO é pública."""
+    nova = duplicate_lesson_plan(
+        db=db,
+        user_id=str(current_user.id),
+        plan_id=plan_id,
+    )
+    if not nova:
+        raise HTTPException(status_code=404, detail="Plano não encontrado.")
+    return nova
 
 
 @router.get("/{plan_id}", response_model=LessonPlanOut)

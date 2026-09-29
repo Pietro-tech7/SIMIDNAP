@@ -121,3 +121,10 @@ class LessonPlanSaveComplete(BaseModel):
     objective: Optional[str] = None
     structured_data: Dict[str, Any]
     extra: Optional[Dict[str, Any]] = None
+
+
+class LessonPlanUpdate(BaseModel):
+    """Edição de um plano (D11). Só título e objetivo por enquanto —
+    a edição do conteúdo estruturado fica para um bloco futuro."""
+    title: Optional[str] = None
+    objective: Optional[str] = None
