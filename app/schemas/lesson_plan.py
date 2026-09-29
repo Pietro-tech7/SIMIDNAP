@@ -99,3 +99,25 @@ class LessonPlanOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ============================================================
+# PLANEJADOR SIMIDNAPE — Schemas dos lotes (Bloco D10-fix-3b)
+# ============================================================
+
+class LessonPlanGenerateBatch(LessonPlanGenerate):
+    """Geração em LOTES do Modo Planejamento. Herda todos os campos
+    de LessonPlanGenerate e adiciona os índices do lote."""
+    batch_start: int = 1
+    batch_end: int = 4
+
+
+class LessonPlanSaveComplete(BaseModel):
+    """Salva no banco um planejamento COMPLETO já montado pelo frontend."""
+    title: str
+    subject: Optional[str] = None
+    grade: Optional[str] = None
+    content: Optional[str] = None
+    objective: Optional[str] = None
+    structured_data: Dict[str, Any]
+    extra: Optional[Dict[str, Any]] = None

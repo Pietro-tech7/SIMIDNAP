@@ -69,6 +69,8 @@ const PlanejadorModoPlanejamento = () => {
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
   const [resultado, setResultado] = useState(null);
+  // Progresso da geração em lotes
+  const [progressoLote, setProgressoLote] = useState(null);
 
   // Rascunho automático
   const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
@@ -281,7 +283,7 @@ const PlanejadorModoPlanejamento = () => {
   // ============================================================
   // Gerar planejamento
   // ============================================================
-  const gerar = async () => {
+    const gerar = async () => {
     setErro(''); setSucesso(''); setResultado(null);
 
     if (!titulo.trim()) { setErro('Dê um título ao planejamento.'); return; }
@@ -303,7 +305,7 @@ const PlanejadorModoPlanejamento = () => {
       }))),
     }));
 
-    const payload = {
+    const payloadBase = {
       plan_type: 'planejamento',
       modo: 'planejamento',
       title: titulo.trim(),
@@ -322,17 +324,108 @@ const PlanejadorModoPlanejamento = () => {
       referenciais,
     };
 
+    // Geração em LOTES — mesmo padrão do Motor 9.
+    // Cada request dura < 60s, evitando o timeout do Railway.
+    const BATCH_SIZE = 4;
+    const total = Number(totalAulas);
+
     setGerando(true);
+    setProgressoLote({ atual: 0, total });
+
+    // Estrutura acumuladora — começa vazia e recebe o conteúdo de cada lote
+    const acumulado = {
+      cabecalho: null,
+      objetivos_gerais: '',
+      objetivos_especificos: [],
+      habilidades: [],
+      justificativa: '',
+      sequencia_didatica: [],
+      avaliacao_geral: {},
+      adaptacoes_inclusivas: [],
+      consideracoes_finais: '',
+      referencias: [],
+    };
+
     try {
-      const res = await api.post('/lesson-plans/generate', payload);
-      setResultado(res.data);
-      setSucesso(`Planejamento gerado com ${res.data?.structured_data?.sequencia_didatica?.length || 0} aula(s).`);
+      let batchStart = 1;
+      while (batchStart <= total) {
+        const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, total);
+
+        const res = await api.post('/lesson-plans/generate-batch', {
+          ...payloadBase,
+          batch_start: batchStart,
+          batch_end: batchEnd,
+        });
+
+        const sd = res.data?.structured_data || {};
+
+        // Mescla: usa o conteúdo do primeiro lote que tiver cada campo
+        if (!acumulado.cabecalho && sd.cabecalho) acumulado.cabecalho = sd.cabecalho;
+        if (!acumulado.objetivos_gerais && sd.objetivos_gerais) acumulado.objetivos_gerais = sd.objetivos_gerais;
+        if ((!acumulado.objetivos_especificos || acumulado.objetivos_especificos.length === 0)
+            && sd.objetivos_especificos?.length) {
+          acumulado.objetivos_especificos = sd.objetivos_especificos;
+        }
+        if ((!acumulado.habilidades || acumulado.habilidades.length === 0) && sd.habilidades?.length) {
+          acumulado.habilidades = sd.habilidades;
+        }
+        if (!acumulado.justificativa && sd.justificativa) acumulado.justificativa = sd.justificativa;
+        if (sd.sequencia_didatica?.length) {
+          acumulado.sequencia_didatica.push(...sd.sequencia_didatica);
+        }
+        if ((!acumulado.avaliacao_geral || !acumulado.avaliacao_geral.instrumentos)
+            && sd.avaliacao_geral) {
+          acumulado.avaliacao_geral = sd.avaliacao_geral;
+        }
+        if ((!acumulado.adaptacoes_inclusivas || acumulado.adaptacoes_inclusivas.length === 0)
+            && sd.adaptacoes_inclusivas?.length) {
+          acumulado.adaptacoes_inclusivas = sd.adaptacoes_inclusivas;
+        }
+        if (!acumulado.consideracoes_finais && sd.consideracoes_finais) {
+          acumulado.consideracoes_finais = sd.consideracoes_finais;
+        }
+        if ((!acumulado.referencias || acumulado.referencias.length === 0) && sd.referencias?.length) {
+          acumulado.referencias = sd.referencias;
+        }
+
+        setProgressoLote({ atual: acumulado.sequencia_didatica.length, total });
+        batchStart = batchEnd + 1;
+      }
+
+      // Ordena as aulas por número (garantia)
+      acumulado.sequencia_didatica.sort((a, b) => (a.numero_aula || 0) - (b.numero_aula || 0));
+
+      // Salva o planejamento completo
+      const resSalvar = await api.post('/lesson-plans/save-complete', {
+        title: titulo.trim(),
+        subject: componentes.find(c => c.codigo === componente)?.nome || componente,
+        grade: `${ano}º ano`,
+        content: habPayload.map(h => h.texto).join(' | '),
+        objective: '',
+        structured_data: acumulado,
+        extra: {
+          plan_type: 'planejamento',
+          modo: 'planejamento',
+          periodo_tipo: periodoTipo,
+          periodo_inicio: periodoInicio || null,
+          periodo_fim: periodoFim || null,
+          tempo_aula_minutos: Number(tempoAula),
+          aulas_por_dia: Number(aulasPorDia),
+          dias_por_semana: Number(diasPorSemana),
+          total_aulas: total,
+          referenciais,
+        },
+      });
+
+      setResultado(resSalvar.data);
+      setSucesso(`Planejamento gerado com ${acumulado.sequencia_didatica.length} aula(s).`);
       window.dispatchEvent(new CustomEvent('subscription-updated'));
     } catch (err) {
       if (err?.response?.status === 402) setErro('Créditos insuficientes. Faça upgrade do seu plano.');
       else setErro(err?.response?.data?.detail || 'Erro ao gerar o planejamento. Tente novamente.');
     } finally {
       setGerando(false);
+      setProgressoLote(null);
     }
   };
 
@@ -734,7 +827,11 @@ const PlanejadorModoPlanejamento = () => {
             onClick={gerar} disabled={gerando || totalAulas < 1}
             className="bg-white text-blue-700 hover:bg-blue-50 disabled:bg-blue-300 disabled:text-white font-bold px-6 py-3 rounded-xl transition"
           >
-            {gerando ? '✨ Gerando planejamento...' : '✨ Gerar planejamento'}
+            {gerando
+              ? (progressoLote
+                  ? `✨ Gerando... ${progressoLote.atual}/${progressoLote.total} aulas`
+                  : '✨ Iniciando geração...')
+              : '✨ Gerar planejamento'}
           </button>
         </div>
       </div>
