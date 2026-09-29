@@ -39,15 +39,26 @@ def generate(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if data.plan_type not in ("neuroaula", "aula_que_funciona"):
+    # Modos suportados pelo Planejador SIMIDNAPE
+    MODOS_VALIDOS = ("neuroaula", "aula_que_funciona", "planejamento", "coordenacao")
+    if data.plan_type not in MODOS_VALIDOS:
         raise HTTPException(status_code=400, detail="Tipo de plano inválido.")
+
+    # Para os modos novos, o custo em créditos é o mesmo do "aula_que_funciona"
+    # (1 crédito; 2 se diferenciado). Assim não precisamos alterar a tabela de
+    # custos existente. Quando quisermos cobrar diferente, mudamos só aqui.
+    plan_type_credito = (
+        "aula_que_funciona"
+        if data.plan_type in ("planejamento", "coordenacao")
+        else data.plan_type
+    )
 
     # Verifica créditos ANTES de gerar (considerando diferenciado)
     diferenciado = data.diferenciado or False
     pode, custo = verificar_creditos(
         db,
         str(current_user.id),
-        data.plan_type,
+        plan_type_credito,
         diferenciado=diferenciado,
     )
     if not pode:
@@ -61,6 +72,32 @@ def generate(
         habilidade = obter_habilidade(data.bncc_codigo)
         if habilidade and habilidade.get("texto"):
             bncc_texto = habilidade["texto"]
+
+    # ============================================================
+    # Monta o `extra` com os campos do Planejador SIMIDNAPE (Bloco D5).
+    # O service mescla tudo isso no payload que vai para a IA
+    # e usa os metadados (modo, período, total de aulas) para salvar
+    # na tabela lesson_plans.
+    # ============================================================
+    extra_completo = {**(data.extra or {})}
+    if data.modo is not None:                extra_completo["modo"] = data.modo
+    if data.periodo_tipo is not None:        extra_completo["periodo_tipo"] = data.periodo_tipo
+    if data.periodo_inicio is not None:      extra_completo["periodo_inicio"] = data.periodo_inicio
+    if data.periodo_fim is not None:         extra_completo["periodo_fim"] = data.periodo_fim
+    if data.tempo_aula_minutos is not None:  extra_completo["tempo_aula_minutos"] = data.tempo_aula_minutos
+    if data.aulas_por_dia is not None:       extra_completo["aulas_por_dia"] = data.aulas_por_dia
+    if data.dias_por_semana is not None:     extra_completo["dias_por_semana"] = data.dias_por_semana
+    if data.total_aulas is not None:         extra_completo["total_aulas"] = data.total_aulas
+    if data.habilidades is not None:         extra_completo["habilidades"] = data.habilidades
+    if data.descritores is not None:         extra_completo["descritores"] = data.descritores
+    if data.referenciais is not None:        extra_completo["referenciais"] = data.referenciais
+    if data.tipo_acao is not None:           extra_completo["tipo_acao"] = data.tipo_acao
+    if data.publico_alvo is not None:        extra_completo["publico_alvo"] = data.publico_alvo
+    if data.objetivo_pedagogico is not None: extra_completo["objetivo_pedagogico"] = data.objetivo_pedagogico
+    if data.mostrar_nome is not None:        extra_completo["mostrar_nome"] = data.mostrar_nome
+    if data.mostrar_escola is not None:      extra_completo["mostrar_escola"] = data.mostrar_escola
+    if data.mostrar_municipio is not None:   extra_completo["mostrar_municipio"] = data.mostrar_municipio
+    if data.mostrar_titulo is not None:      extra_completo["mostrar_titulo"] = data.mostrar_titulo
 
     plan = generate_lesson_plan(
         db=db,
@@ -80,11 +117,11 @@ def generate(
         conhecimentos_previos=data.conhecimentos_previos,
         necessidades_especificas=data.necessidades_especificas,
         diferenciado=diferenciado,
-        extra=data.extra,
+        extra=extra_completo if extra_completo else None,
     )
 
     # Só consome créditos se gerou com sucesso
-    consumir_creditos(db, str(current_user.id), data.plan_type, custo)
+    consumir_creditos(db, str(current_user.id), plan_type_credito, custo)
     return plan
 
 

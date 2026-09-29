@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
 from ..models.lesson_plan import LessonPlan
 from .ai_service import get_ai_service
 from typing import Dict, Any
@@ -51,6 +52,35 @@ def generate_lesson_plan(
         diferenciado=diferenciado,
     )
 
+    # ============================================================
+    # Metadados do Planejador SIMIDNAPE (Bloco D5).
+    # Extrai modo, período e total de aulas do `extra` e salva na
+    # tabela. Campos antigos continuam com o comportamento padrão.
+    # ============================================================
+    extra = extra or {}
+
+    MODO_POR_PLAN_TYPE = {
+        "neuroaula": "aula",
+        "aula_que_funciona": "aula",
+        "planejamento": "planejamento",
+        "coordenacao": "coordenacao",
+    }
+    modo = extra.get("modo") or MODO_POR_PLAN_TYPE.get(plan_type, "aula")
+    periodo_tipo = extra.get("periodo_tipo")
+    total_aulas = extra.get("total_aulas")
+
+    def _parse_data(valor):
+        """Converte 'YYYY-MM-DD' em objeto date. Retorna None se inválido."""
+        if not valor:
+            return None
+        try:
+            return datetime.strptime(str(valor), "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            return None
+
+    periodo_inicio = _parse_data(extra.get("periodo_inicio"))
+    periodo_fim = _parse_data(extra.get("periodo_fim"))
+
     plan = LessonPlan(
         user_id=user_id,
         plan_type=plan_type,
@@ -60,6 +90,11 @@ def generate_lesson_plan(
         content=content,
         objective=objective,
         structured_data=structured_data,
+        modo=modo,
+        periodo_tipo=periodo_tipo,
+        periodo_inicio=periodo_inicio,
+        periodo_fim=periodo_fim,
+        total_aulas=total_aulas,
     )
     db.add(plan)
     db.commit()
