@@ -31,9 +31,9 @@ const PlanejadorSimidnape = () => {
       descricao:
         'Sequência didática completa para o período escolhido, com progressão cognitiva em cada aula, objetivos, metodologia, avaliação e princípios de neuroeducação. Alinhado a BNCC, SAEB e SAEPI.',
       cor: 'from-blue-600 via-indigo-600 to-purple-700',
-      rota: null,
-      disponivel: false,
-      cta: '🚧 Em breve',
+      rota: '/planejador/planejamento',
+      disponivel: true,
+      cta: 'Abrir Modo Planejamento',
     },
     {
       id: 'coordenacao',
