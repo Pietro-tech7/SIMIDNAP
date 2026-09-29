@@ -43,9 +43,9 @@ const PlanejadorSimidnape = () => {
       descricao:
         'Plano de Formação, Acompanhamento, Intervenção, Ação Pedagógica, Análise de Indicadores e Reunião. Para o coordenador que lidera a aprendizagem na escola.',
       cor: 'from-emerald-500 to-teal-600',
-      rota: null,
-      disponivel: false,
-      cta: '🚧 Em breve',
+      rota: '/planejador/coordenacao',
+      disponivel: true,
+      cta: 'Abrir Modo Coordenação',
     },
   ];
 

@@ -11,6 +11,7 @@ import NeuroAula from './pages/NeuroAula';
 import AulaQueFunciona from './pages/AulaQueFunciona';
 import PlanejadorSimidnape from './pages/PlanejadorSimidnape';
 import PlanejadorModoPlanejamento from './pages/PlanejadorModoPlanejamento';
+import PlanejadorModoCoordenacao from './pages/PlanejadorModoCoordenacao';
 import TerapiaPedagogica from './pages/TerapiaPedagogica';
 import GeradorMateriais from './pages/GeradorMateriais';
 import MeuAluno from './pages/MeuAluno';
@@ -93,6 +94,7 @@ function AppRoutes() {
         <Route path="/aula-que-funciona" element={<AulaQueFunciona />} />
         <Route path="/planejador" element={<PlanejadorSimidnape />} />
         <Route path="/planejador/planejamento" element={<PlanejadorModoPlanejamento />} />
+        <Route path="/planejador/coordenacao" element={<PlanejadorModoCoordenacao />} />
         <Route path="/terapia-pedagogica" element={<TerapiaPedagogica />} />
         <Route path="/gerador-materiais" element={<GeradorMateriais />} />
         <Route path="/praticas-exitosas" element={<PraticasExitosas />} />
