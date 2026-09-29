@@ -161,7 +161,7 @@ SCHEMAS = {
 {
   "cabecalho": {"titulo": "string", "ano": "string", "disciplina": "string", "bncc": {"codigo": "string", "texto": "string"}, "objetivo": "string", "duracao": "string", "num_alunos": 0},
   "checklist": ["string"],
-  "roteiro": [{"tempo": "string", "titulo": "string", "faca": "string", "fale": "string", "pergunte": "string", "alunos": "string"}],
+  "roteiro": [{"tempo": "string", "titulo": "string", "faca": "string", "fale": "string", "pergunte": "string", "alunos": "string", "principio_relacionado": "string (opcional — princípio cognitivo, pedagógico ou emocional que dá base a este bloco. Ex: 'Atenção e Curiosidade', 'Carga Cognitiva', 'Recuperação Ativa', 'Clima Emocional'. Se nenhum se aplicar claramente, deixe vazio.)"}],
   "adaptacoes": ["string"],
   "intervencao": "string"
 }
@@ -340,13 +340,13 @@ SCHEMA_DIFERENCIADO = {
   "cabecalho": {"titulo": "string", "ano": "string", "disciplina": "string", "bncc": {"codigo": "string", "texto": "string"}, "objetivo": "string", "duracao": "string", "num_alunos": 0},
   "versao_principal": {
     "checklist": ["string"],
-    "roteiro": [{"tempo": "string", "titulo": "string", "faca": "string", "fale": "string", "pergunte": "string", "alunos": "string"}],
+    "roteiro": [{"tempo": "string", "titulo": "string", "faca": "string", "fale": "string", "pergunte": "string", "alunos": "string", "principio_relacionado": "string (opcional — princípio cognitivo, pedagógico ou emocional que dá base a este bloco. Ex: 'Atenção e Curiosidade', 'Carga Cognitiva', 'Recuperação Ativa', 'Clima Emocional'. Se nenhum se aplicar claramente, deixe vazio.)"}],
     "adaptacoes": ["string"],
     "intervencao": "string"
   },
   "versao_adaptada": {
     "checklist_adaptado": ["string"],
-    "roteiro_adaptado": [{"tempo": "string (blocos mais curtos)", "titulo": "string", "faca": "string (instrução curta)", "fale": "string (frase simples)", "pergunte": "string (pergunta única)", "alunos": "string", "apoio_visual": "string"}],
+    "roteiro_adaptado": [{"tempo": "string (blocos mais curtos)", "titulo": "string", "faca": "string (instrução curta)", "fale": "string (frase simples)", "pergunte": "string (pergunta única)", "alunos": "string", "apoio_visual": "string", "principio_relacionado": "string (opcional — princípio que dá base a este bloco adaptado)"}],
     "adaptacoes_especificas": ["string"],
     "intervencao_adaptada": "string"
   }
@@ -463,7 +463,7 @@ O QUE NÃO FAZER:
 
 Retorne APENAS um JSON válido, sem texto adicional, seguindo a estrutura especificada.""",
 
-    "aula_que_funciona": """Você é um especialista em PLANEJAMENTO DE EXECUÇÃO DE AULA.
+"aula_que_funciona": """Você é um especialista em PLANEJAMENTO DE EXECUÇÃO DE AULA, com domínio profundo de NEUROEDUCAÇÃO, CIÊNCIA DA APRENDIZAGEM e PSICOLOGIA EDUCACIONAL.
 
 FINALIDADE:
 Produzir um SCRIPT CRONOMETRADO que o professor consiga seguir DURANTE a aula. Não é uma explicação teórica. É um roteiro de ação.
@@ -473,6 +473,37 @@ IMPORTANTE — DIFERENÇA EM RELAÇÃO AO NEUROAULA:
 - Aula que Funciona = COMO EXECUTAR essa aula, passo a passo e no tempo.
 
 Este motor NÃO compete com o NeuroAula. Ele é o MOTOR DE EXECUÇÃO.
+
+═══════════════════════════════════════════════════════════════
+DIFERENCIAL — CADA BLOCO TEM UMA FUNÇÃO COGNITIVA
+═══════════════════════════════════════════════════════════════
+O roteiro NÃO é uma linha do tempo genérica. Cada bloco é desenhado por um princípio cognitivo, pedagógico ou emocional que faz a aprendizagem acontecer de verdade. Você não precisa explicar o princípio no texto do bloco — mas DEVE desenhar cada bloco com ele em mente, e indicar o princípio no campo `principio_relacionado`.
+
+PRINCÍPIOS QUE ORIENTAM O DESENHO DE CADA BLOCO:
+
+1. ABERTURA — ATENÇÃO E CURIOSIDADE
+   O cérebro aprende o que ele presta atenção. Comece com novidade, surpresa, pergunta intrigante ou objeto inusitado. Os primeiros 2 minutos definem se a turma engata.
+
+2. CONEXÃO — CONHECIMENTOS PRÉVIOS
+   Aprendizagem nova só se ancora no que o aluno já sabe. Pergunte o que eles já sabem. Faça a ponte explícita. Sem isso, a informação vira decoreba.
+
+3. EXPLICAÇÃO — GESTÃO DA CARGA COGNITIVA
+   A memória de trabalho processa 3 a 4 elementos por vez. Apresente UMA ideia por bloco. Faça pausas. Repita. Não sobrecarregue.
+
+4. REPRESENTAÇÃO — DUPLA CODIFICAÇÃO
+   Combine fala com apoio visual. Diga E mostre. Duas rotas de memória são mais fortes que uma.
+
+5. PRÁTICA — RECUPERAÇÃO ATIVA
+   O cérebro retém o que ele recupera ativamente. Peça que o aluno explique com as próprias palavras. Explicar para o colega consolida a memória.
+
+6. TRANSFERÊNCIA — APLICAÇÃO EM SITUAÇÃO NOVA
+   A aprendizagem se consolida quando o aluno aplica em situação nova do cotidiano. Apresente um desafio inédito no final.
+
+7. FECHAMENTO — METACOGNIÇÃO
+   Peça ao aluno que reflita sobre o que aprendeu. Metacognição aumenta a retenção futura.
+
+8. CLIMA EMOCIONAL — SEGURANÇA PSICOLÓGICA
+   Sala segura ativa o córtex pré-frontal (aprendizagem) e reduz o sequestro da amígdala (medo, vergonha). Use linguagem acolhedora, não exponha erros, não faça ranking.
 
 DADOS QUE VOCÊ RECEBE:
 - título, disciplina, ano/série, duração
@@ -491,13 +522,15 @@ O QUE PRIORIZAR NA SAÍDA:
 - transição entre atividades
 - verificação rápida
 - encerramento
+- princípio relacionado a cada bloco
 
 COMO ESTRUTURAR:
 Um roteiro que o professor consiga acompanhar durante a aula. Cada bloco de tempo deve ser claro. Se o professor atrasar ou adiantar, ele precisa entender o que pode ajustar.
 
 EXEMPLO DE QUALIDADE:
 "00-05 min — ACOLHIMENTO E PERGUNTA DISPARADORA
-AÇÃO: Escreva na lousa a pergunta 'Por que a água da poça desaparece?'. Não explique ainda.
+principio_relacionado: Atenção e Curiosidade
+AÇÃO: Escreva na lousa a pergunta 'Por que a água da poça desaparece?'. Não explique ainda. Fique em silêncio por 5 segundos olhando para a turma.
 DIGA: 'Vou começar com uma pergunta. Não precisa acertar. Quero ouvir o que vocês pensam.'
 ALUNOS: Pensam por 30 segundos e levantam a mão para compartilhar hipóteses."
 
@@ -505,6 +538,8 @@ O QUE NÃO FAZER:
 - Não transforme em explicação teórica de neuroeducação.
 - Não faça tratado sobre aprendizagem.
 - Não entregue um relatório — entregue um roteiro.
+- Não use neuromitos ("somos visuais/auditivos", "usamos 10% do cérebro").
+- Não classifique alunos por estilo de aprendizagem.
 - Não faça diagnóstico clínico.
 
 Retorne APENAS um JSON válido, sem texto adicional, seguindo a estrutura especificada.""",
