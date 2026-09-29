@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, func
+from sqlalchemy import Column, String, DateTime, Date, Boolean, Integer, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
 from ..core.database import Base
@@ -15,5 +15,18 @@ class LessonPlan(Base):
     content = Column(String, nullable=True)
     objective = Column(String, nullable=True)
     structured_data = Column(JSONB, nullable=False)
+
+    # ============================================================
+    # Campos novos (Planejador SIMIDNAPE — Bloco D1)
+    # Todos opcionais ou com default, para NÃO quebrar planos existentes.
+    # O conteúdo de cada modo continua no JSONB `structured_data`.
+    # ============================================================
+    modo = Column(String(20), nullable=False, server_default="aula", index=True)
+    periodo_tipo = Column(String(20), nullable=True, index=True)
+    periodo_inicio = Column(Date, nullable=True)
+    periodo_fim = Column(Date, nullable=True)
+    total_aulas = Column(Integer, nullable=True)
+    publico = Column(Boolean, nullable=False, server_default="false", index=True)
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
