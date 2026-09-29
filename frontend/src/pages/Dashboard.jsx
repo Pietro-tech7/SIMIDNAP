@@ -9,7 +9,7 @@ const Dashboard = () => {
   const modules = [
     { path: '/modulo/neuroaula', name: 'NeuroAula', icon: '🧠', desc: 'Transforme conteúdo em experiência de aprendizagem.', gradient: 'from-purple-500 to-indigo-500' },
     { path: '/modulo/professor_inteiro', name: 'Terapia Pedagógica', icon: '❤️', desc: 'Converse com um terapeuta pedagógico sobre seus desafios.', gradient: 'from-pink-500 to-rose-500' },
-    { path: '/modulo/aula_que_funciona', name: 'Aula que Funciona', icon: '🎯', desc: 'Planeje e melhore sua aula.', gradient: 'from-blue-500 to-cyan-500' },
+    { path: '/modulo/planejador', name: 'PLANEJADOR SIMIDNAPE', icon: '🧠', desc: 'Três modos em um só lugar: aula, planejamento de período e coordenação. Com base em neuroeducação e BNCC.', gradient: 'from-blue-600 via-indigo-600 to-purple-700' },
     { path: '/modulo/meu_aluno', name: 'Meu Aluno', icon: '📊', desc: 'Observe, acompanhe e intervenha.', gradient: 'from-green-500 to-emerald-500' },
     { path: '/modulo/ia_para_professor', name: 'IA para Professor', icon: '🤖', desc: 'Use IA para resolver tarefas pedagógicas.', gradient: 'from-orange-500 to-amber-500' },
     { path: '/modulo/praticas_exitosas', name: 'Práticas Exitosas', icon: '🏆', desc: 'Crie, melhore ou documente práticas pedagógicas que transformam.', gradient: 'from-teal-500 to-cyan-600' },
