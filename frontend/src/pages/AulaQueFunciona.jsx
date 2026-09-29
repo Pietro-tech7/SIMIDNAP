@@ -88,17 +88,23 @@ const AulaQueFunciona = () => {
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto">
       <div className="print:hidden">
-        <Link to="/modulo/aula_que_funciona" className="text-blue-600 text-sm hover:underline">
-          ← Voltar
+        <Link to="/planejador" className="text-blue-600 text-sm hover:underline">
+          ← Voltar ao Planejador
         </Link>
 
-        <div className="mt-6 mb-8 flex items-center gap-3">
-          <span className="text-4xl">🎯</span>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Aula que Funciona</h1>
-            <p className="text-gray-600">
-              Script prático de execução. Roteiro minuto a minuto, pronto para aplicar em sala.
-            </p>
+        <div className="mt-6 mb-8">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full mb-3">
+            <span>🧠</span>
+            <span>PLANEJADOR SIMIDNAPE · MODO AULA</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">🎯</span>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Aula que Funciona</h1>
+              <p className="text-gray-600">
+                Script prático de execução. Roteiro minuto a minuto, pronto para aplicar em sala.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -562,11 +568,21 @@ const RoteiroLista = ({ roteiro, adaptada = false }) => (
     <div className="space-y-4">
       {roteiro?.map((etapa, i) => (
         <div key={i} className="border border-gray-100 rounded-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 flex justify-between items-center">
+          <div className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 flex justify-between items-center flex-wrap gap-2">
             <span className="font-semibold">{etapa.titulo}</span>
-            <span className="text-xs bg-white bg-opacity-20 px-2 py-0.5 rounded font-mono">
-              {etapa.tempo}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {etapa.principio_relacionado && (
+                <span
+                  className="text-[10px] bg-white bg-opacity-25 px-2 py-0.5 rounded font-medium"
+                  title="Princípio cognitivo ou pedagógico que fundamenta este bloco"
+                >
+                  🧠 {etapa.principio_relacionado}
+                </span>
+              )}
+              <span className="text-xs bg-white bg-opacity-20 px-2 py-0.5 rounded font-mono">
+                {etapa.tempo}
+              </span>
+            </div>
           </div>
           <div className="p-4 space-y-3">
             {etapa.faca && (
