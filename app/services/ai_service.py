@@ -585,13 +585,25 @@ class AIService(BaseAIService):
         task_type: str,
         payload: Dict[str, Any],
         diferenciado: bool = False,
+        user=None,
     ) -> Dict[str, Any]:
         dificuldades = payload.get("dificuldades") or ""
         inclusao = gerar_adaptacoes_inclusivas(dificuldades)
 
-        if self._gemini:
+        # Multi-API key: se um usuário foi informado e tem chave própria
+        # cadastrada, usa o Gemini DELE. Caso contrário, cai na chave do sistema.
+        gemini = self._gemini
+        if user is not None:
             try:
-                resultado = self._gemini.generate_structured(
+                from .gemini_service import get_gemini_service_for_user
+                gemini = get_gemini_service_for_user(user)
+            except Exception as e:
+                print(f"[AIService] Erro ao obter Gemini do usuário: {e}")
+                gemini = self._gemini
+
+        if gemini:
+            try:
+                resultado = gemini.generate_structured(
                     task_type=task_type,
                     payload=payload,
                     diferenciado=diferenciado,

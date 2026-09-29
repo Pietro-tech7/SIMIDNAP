@@ -118,6 +118,7 @@ def generate(
         necessidades_especificas=data.necessidades_especificas,
         diferenciado=diferenciado,
         extra=extra_completo if extra_completo else None,
+        user=current_user,
     )
 
     # Só consome créditos se gerou com sucesso

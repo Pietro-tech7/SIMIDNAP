@@ -24,6 +24,7 @@ def generate_lesson_plan(
     necessidades_especificas: str = None,
     diferenciado: bool = False,
     extra: Dict[str, Any] = None,
+    user=None,
 ) -> LessonPlan:
 
     ai = get_ai_service()
@@ -50,6 +51,7 @@ def generate_lesson_plan(
         task_type=plan_type,
         payload=payload,
         diferenciado=diferenciado,
+        user=user,
     )
 
     # ============================================================
