@@ -38,6 +38,37 @@ function arquivoParaBase64(file) {
   });
 }
 
+// Converte SVG data URL em PNG data URL.
+// Motivo: o python-docx (Word) não suporta SVG e o html2canvas (PDF)
+// fica instável com SVG embutido. PNG funciona nos dois.
+// Se a imagem NÃO for SVG, devolve como veio (passa direto).
+function converterSvgParaPng(dataUrl) {
+  return new Promise((resolve) => {
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/svg+xml')) {
+      resolve(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const w = img.naturalWidth || img.width || 400;
+        const h = img.naturalHeight || img.height || 400;
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (e) {
+        console.warn('Falha ao converter SVG para PNG:', e);
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 
 const BancoQuestoesIA = () => {
   const { user } = useAuth();
@@ -697,14 +728,19 @@ const BancoQuestoesIA = () => {
   };
 
   // Fase 3 — Escolhe um SVG sugerido para a questão
-  const escolherSvg = (localId, caminho, dataUrl) => {
+  const escolherSvg = async (localId, caminho, dataUrl) => {
+    // Converte SVG → PNG antes de salvar.
+    // Motivo: python-docx (Word) não suporta SVG; html2canvas (PDF)
+    // tem problema com SVG embutido. PNG funciona nos dois.
+    const imagemFinal = await converterSvgParaPng(dataUrl);
+
     setMinhasQuestoes(prev => prev.map(q => {
       if (q._localId !== localId) return q;
       return {
         ...q,
         ilustracao: {
           ...(q.ilustracao || { tipo: 'automatica' }),
-          imagem: dataUrl,
+          imagem: imagemFinal,
           svg_escolhido: caminho,
         },
       };
