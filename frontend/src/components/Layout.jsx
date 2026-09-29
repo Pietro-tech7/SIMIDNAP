@@ -67,7 +67,7 @@ const Layout = () => {
     { path: '/dashboard', label: 'Início', icon: '🏠' },
     { path: '/modulo/neuroaula', label: 'NeuroAula', icon: '🧠' },
     { path: '/modulo/professor_inteiro', label: 'Terapia Pedagógica', icon: '❤️' },
-    { path: '/modulo/aula_que_funciona', label: 'Aula que Funciona', icon: '🎯' },
+    { path: '/modulo/planejador', label: 'PLANEJADOR SIMIDNAPE', icon: '🧠' },
     { path: '/modulo/meu_aluno', label: 'Meu Aluno', icon: '📊' },
     { path: '/modulo/ia_para_professor', label: 'Gerador de Materiais', icon: '📄' },
     { path: '/modulo/praticas_exitosas', label: 'Práticas Exitosas', icon: '🏆' },
