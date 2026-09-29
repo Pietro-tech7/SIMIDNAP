@@ -345,6 +345,36 @@ const Perfil = () => {
       {/* Multi-API Key — Cadastro da chave do Gemini */}
       <CadastroApiKey />
 
+      {/* Como funciona o bônus da API própria */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6">
+        <div className="flex items-start gap-3 mb-4">
+          <span className="text-3xl">💡</span>
+          <div>
+            <h3 className="text-lg font-bold text-blue-900">
+              Como funciona o bônus da API própria
+            </h3>
+            <p className="text-sm text-blue-700 mt-1">
+              Cadastre sua chave gratuita do Google Gemini e multiplique seus créditos mensais — sem custo adicional e sem trocar de plano.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-blue-100 rounded-lg p-4 mb-3">
+          <p className="text-sm text-gray-700 leading-relaxed">
+            Ao assinar, você tem uma cota de créditos mensais usando a infraestrutura do SIMIDNAPE.
+            Se você cadastrar sua própria chave do Google Gemini (gratuita), essa cota{' '}
+            <strong className="text-blue-700">multiplica automaticamente</strong> — sem custo
+            adicional e sem trocar de plano.
+          </p>
+        </div>
+
+        <div className="bg-white/70 border border-blue-100 rounded-lg p-3">
+          <p className="text-xs text-blue-800 leading-relaxed">
+            🔒 Sua chave é criptografada e fica só na sua conta. Você mantém total controle.
+          </p>
+        </div>
+      </div>
+
       {/* Assinatura atual */}
       {loading ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
