@@ -1453,9 +1453,13 @@ class GeminiService:
 
         if task_type not in TAREFAS_SEM_RAG:
             conteudo = payload.get("content") or payload.get("tema") or ""
-            conhecimento = self._buscar_conhecimento(conteudo)
-            if conhecimento:
-                system_prompt += f"\n\n=== CONHECIMENTO PEDAGÓGICO RELEVANTE ===\n{conhecimento}"
+            # Só busca RAG se houver conteúdo não-vazio. Para modos como
+            # `coordenacao`, o payload pode não ter `content` nem `tema`,
+            # e o EmbedContentRequest falha com "empty Part".
+            if conteudo and conteudo.strip():
+                conhecimento = self._buscar_conhecimento(conteudo)
+                if conhecimento:
+                    system_prompt += f"\n\n=== CONHECIMENTO PEDAGÓGICO RELEVANTE ===\n{conhecimento}"
 
         prompt = (
             f"Dados da solicitação:\n{json.dumps(payload, ensure_ascii=False, indent=2)}\n\n"

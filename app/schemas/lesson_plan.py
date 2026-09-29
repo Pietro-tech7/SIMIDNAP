@@ -1,7 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, Dict, Any, List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, date
 
 class LessonPlanGenerate(BaseModel):
     plan_type: str  # 'neuroaula', 'aula_que_funciona', 'planejamento', 'coordenacao'
@@ -79,6 +79,23 @@ class LessonPlanOut(BaseModel):
 
     created_at: datetime
     updated_at: Optional[datetime]
+
+    @field_validator("periodo_inicio", "periodo_fim", mode="before")
+    @classmethod
+    def _converter_date_para_str(cls, v):
+        """
+        O modelo SQLAlchemy guarda datas como `datetime.date`.
+        O schema expõe como string ISO ('YYYY-MM-DD') para o frontend.
+        Este validador converte qualquer valor (date, datetime ou str) em string ISO.
+        """
+        if v is None:
+            return None
+        if isinstance(v, str):
+            return v
+        try:
+            return v.isoformat()
+        except AttributeError:
+            return str(v)
 
     class Config:
         from_attributes = True
