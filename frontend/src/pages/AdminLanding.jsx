@@ -1159,6 +1159,39 @@ const EditorSistema = () => {
         help="Mensagem mostrada no lugar do botão quando o recurso está desligado."
       />
 
+      {/* ============================== */}
+      {/* WhatsApp — Botão de contato     */}
+      {/* ============================== */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6 mt-6">
+        <p className="text-sm font-bold text-emerald-900 mb-1">💬 WhatsApp — Botão de contato</p>
+        <p className="text-xs text-emerald-700 mb-3">
+          Quando ligado E com o número preenchido, aparece um botão de WhatsApp em pontos do site
+          (perfil do usuário, por exemplo). Ao clicar, abre o WhatsApp do visitante com a mensagem
+          já digitada — ele pode editar antes de enviar.
+        </p>
+        <Toggle
+          label={getValor('whatsapp_ativo', false) ? '🟢 LIGADO — Botão visível' : '⚪ DESLIGADO — Botão oculto'}
+          value={!!getValor('whatsapp_ativo', false)}
+          onChange={(v) => setValorLocal('whatsapp_ativo', v)}
+        />
+      </div>
+
+      <Input
+        label="Número do WhatsApp"
+        value={getValor('whatsapp_numero', '')}
+        onChange={(v) => setValorLocal('whatsapp_numero', v)}
+        placeholder="Ex: 5586999999999"
+        help="Somente dígitos. Inclua o código do país (55 = Brasil) + DDD. Sem espaços, traços ou parênteses."
+      />
+
+      <Textarea
+        label="Mensagem que já aparece digitada"
+        value={getValor('whatsapp_mensagem', '')}
+        onChange={(v) => setValorLocal('whatsapp_mensagem', v)}
+        rows={2}
+        help="Texto que o visitante verá ao abrir o WhatsApp. Ele pode editar antes de enviar."
+      />
+
       <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
         <button onClick={salvar} disabled={salvando}
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">

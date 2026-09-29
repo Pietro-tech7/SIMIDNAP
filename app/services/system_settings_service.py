@@ -31,6 +31,33 @@ DEFAULTS: Dict[str, Dict[str, Any]] = {
             "Mensagem exibida quando o recurso de geração de imagens IA está desligado."
         ),
     },
+    "whatsapp_ativo": {
+        "valor": "false",
+        "tipo": "bool",
+        "categoria": "feature_flag",
+        "descricao": (
+            "Liga/desliga o botão de WhatsApp para os usuários. "
+            "Só aparece no site se estiver ligado E o número estiver preenchido."
+        ),
+    },
+    "whatsapp_numero": {
+        "valor": "",
+        "tipo": "string",
+        "categoria": "texto",
+        "descricao": (
+            "Número do WhatsApp (somente dígitos, com código do país + DDD). "
+            "Exemplo: 5586999999999"
+        ),
+    },
+    "whatsapp_mensagem": {
+        "valor": "Olá! Desejo saber mais sobre o SIMIDNAPE PRO",
+        "tipo": "string",
+        "categoria": "texto",
+        "descricao": (
+            "Mensagem que já aparece digitada quando o usuário abre o WhatsApp. "
+            "Ele pode editar antes de enviar."
+        ),
+    },
 }
 
 
@@ -223,5 +250,16 @@ def listar_flags_publicas(db: Session) -> Dict[str, Any]:
             db,
             "texto_imagem_ia_indisponivel",
             default=DEFAULTS["texto_imagem_ia_indisponivel"]["valor"],
+        ),
+        "whatsapp_ativo": flag_ativa(db, "whatsapp_ativo", default=False),
+        "whatsapp_numero": obter_setting(
+            db,
+            "whatsapp_numero",
+            default=DEFAULTS["whatsapp_numero"]["valor"],
+        ),
+        "whatsapp_mensagem": obter_setting(
+            db,
+            "whatsapp_mensagem",
+            default=DEFAULTS["whatsapp_mensagem"]["valor"],
         ),
     }
