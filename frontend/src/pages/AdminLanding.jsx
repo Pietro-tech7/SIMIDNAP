@@ -231,6 +231,14 @@ const AdminLanding = () => {
                 {config.popup?.enabled ? '● ON' : '○ OFF'}
               </span>
             </button>
+            <button onClick={() => setSecaoAtiva('_sistema')}
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left mt-0.5 ${
+                secaoAtiva === '_sistema'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}>
+              <span>🧩</span><span className="flex-1">Sistema</span>
+            </button>
           </div>
         </div>
 
@@ -238,7 +246,8 @@ const AdminLanding = () => {
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           {secaoAtiva === '_global' && <EditorGlobal config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva === '_popup' && <EditorPopup config={config} setConfig={setConfig} salvando={salvando} />}
-          {secaoAtiva !== '_global' && secaoAtiva !== '_popup' && (
+          {secaoAtiva === '_sistema' && <EditorSistema />}
+          {secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
             <EditorSecao secao={secaoAtiva} data={config[secaoAtiva] || {}}
               onChange={updateField} onSave={salvarSecao} salvando={salvando} />
           )}
@@ -1035,6 +1044,119 @@ const EditorPopup = ({ config, setConfig, salvando }) => {
         <button onClick={salvar} disabled={salvando}
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
           {salvando ? 'Salvando...' : '💾 Salvar pop-up'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// EDITOR SISTEMA — Configurações globais (switch de imagens IA etc.)
+// ============================================================
+const EditorSistema = () => {
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  const carregar = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/system/admin/settings');
+      setSettings(res.data?.settings || []);
+    } catch (e) {
+      setMsg({ tipo: 'erro', texto: 'Erro ao carregar configurações do sistema.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { carregar(); }, []);
+
+  const getValor = (chave, padrao) => {
+    const item = (settings || []).find(s => s.chave === chave);
+    return item ? item.valor : padrao;
+  };
+
+  const setValorLocal = (chave, valor) => {
+    setSettings(prev => (prev || []).map(s =>
+      s.chave === chave ? { ...s, valor } : s
+    ));
+  };
+
+  const salvar = async () => {
+    setSalvando(true);
+    setMsg(null);
+    try {
+      const items = (settings || []).map(s => ({
+        chave: s.chave,
+        valor: s.valor,
+        tipo: s.tipo,
+        categoria: s.categoria,
+        descricao: s.descricao,
+      }));
+      await api.patch('/system/admin/settings/batch', { items });
+      window.dispatchEvent(new CustomEvent('system-flags-updated'));
+      setMsg({ tipo: 'sucesso', texto: 'Configurações salvas com sucesso!' });
+      setTimeout(() => setMsg(null), 3000);
+    } catch (e) {
+      setMsg({ tipo: 'erro', texto: 'Erro ao salvar configurações.' });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center text-slate-500">Carregando configurações...</div>;
+
+  const flagAtiva = getValor('feature_gerar_imagem_ia', false);
+  const textoIndisponivel = getValor('texto_imagem_ia_indisponivel', '');
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+        <span className="text-3xl">🧩</span>
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Configurações do Sistema</h2>
+          <p className="text-xs text-slate-500">Ligue/desligue recursos globais e edite textos exibidos aos usuários</p>
+        </div>
+      </div>
+
+      {msg && (
+        <div className={`rounded-lg p-3 mb-6 text-sm ${
+          msg.tipo === 'sucesso'
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {msg.tipo === 'sucesso' ? '✅' : '⚠️'} {msg.texto}
+        </div>
+      )}
+
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+        <p className="text-sm font-bold text-purple-900 mb-1">🎨 Geração de imagens com IA</p>
+        <p className="text-xs text-purple-700 mb-3">
+          Quando desligado, o botão "🎨 Gerar imagem com IA" não aparece para ninguém (nem super admin).
+          Quando ligado, aparece apenas para quem tem cota no plano (VIP: 5/mês, Premium: 10/mês).
+          Usuários com API key própria do Gemini têm uso ilimitado.
+        </p>
+        <Toggle
+          label={flagAtiva ? '🟢 LIGADO — Recurso visível para todos com cota' : '⚪ DESLIGADO — Recurso invisível'}
+          value={!!flagAtiva}
+          onChange={(v) => setValorLocal('feature_gerar_imagem_ia', v)}
+        />
+      </div>
+
+      <Textarea
+        label="Texto exibido quando o recurso está desligado"
+        value={textoIndisponivel}
+        onChange={(v) => setValorLocal('texto_imagem_ia_indisponivel', v)}
+        rows={3}
+        help="Mensagem mostrada no lugar do botão quando o recurso está desligado."
+      />
+
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
+        <button onClick={salvar} disabled={salvando}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
+          {salvando ? 'Salvando...' : '💾 Salvar configurações'}
         </button>
       </div>
     </div>
