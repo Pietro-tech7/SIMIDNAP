@@ -37,28 +37,6 @@ function slug(texto) {
 }
 
 // ============================================================
-// CARREGAR LOGO SIMIDNAPE COMO BASE64
-// Lê /logo-simidnape.png (em public/) e devolve data URL.
-// Se o arquivo não existir, devolve string vazia (fallback silencioso).
-// ============================================================
-async function carregarLogoBase64() {
-  try {
-    const res = await fetch('/logo-simidnape.png');
-    if (!res.ok) return '';
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result || '');
-      reader.onerror = () => resolve('');
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return '';
-  }
-}
-
-
-// ============================================================
 // RENDERIZAR BLOCO (HTML → Canvas)
 // ============================================================
 async function renderizarBloco(html) {
@@ -96,8 +74,7 @@ async function renderizarBloco(html) {
 //   frontend/public/logo-simidnape.png
 // e substitua o bloco do EMBLEMA CSS abaixo por:
 //   <img src="/logo-simidnape.png" style="width: 180px; height: auto; margin: 0 auto 20px;" />
-//
-function htmlCapa(cab, logoBase64 = '') {
+function htmlCapa(cab) {
   const nome = cab.nome_professor || '—';
   const escola = cab.nome_escola || '—';
   const muni = cab.municipio || '—';
@@ -110,142 +87,72 @@ function htmlCapa(cab, logoBase64 = '') {
   return `
     <div style="
       width: ${CANVAS_W_PX}px;
+      padding: 40px 50px;
+      background: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #0f172a;
       box-sizing: border-box;
-      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #eff6ff 100%);
-      padding: 30px;
     ">
-      <!-- Moldura dupla: navy externa + dourada interna -->
       <div style="
-        border: 3px solid #1e3a8a;
-        border-radius: 18px;
-        padding: 6px;
-        background: #ffffff;
+        border: 3px solid #1e40af;
+        border-radius: 16px;
+        padding: 50px 60px;
+        min-height: 700px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
       ">
-        <div style="
-          border: 2px solid #d4af37;
-          border-radius: 14px;
-          padding: 55px 65px;
-          background: #ffffff;
-        ">
-          <!-- Emblema: usa a logo SIMIDNAPE se estiver disponível -->
-          <div style="text-align: center; margin-bottom: 22px;">
-            ${logoBase64
-              ? `<img src="${logoBase64}" alt="SIMIDNAPE" style="width: 260px; height: auto; display: block; margin: 0 auto;" />`
-              : `<div style="
-                  width: 130px;
-                  height: 130px;
-                  border-radius: 50%;
-                  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-                  margin: 0 auto;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  border: 4px solid #d4af37;
-                  box-shadow: 0 8px 22px rgba(30,58,138,0.22);
-                ">
-                  <div style="
-                    font-family: Georgia, 'Times New Roman', serif;
-                    font-size: 68px;
-                    font-weight: bold;
-                    color: #d4af37;
-                    line-height: 1;
-                    letter-spacing: -2px;
-                  ">S</div>
-                </div>`
-            }
+        <div style="text-align: center;">
+          <div style="font-size: 62px; font-weight: bold; color: #1e40af; letter-spacing: 6px; line-height: 1;">
+            SIMIDNAPE
           </div>
-
-          <!-- Marca -->
-          <div style="text-align: center; margin-bottom: 22px;">
-            <div style="
-              font-family: Georgia, 'Times New Roman', serif;
-              font-size: 58px;
-              font-weight: bold;
-              color: #1e3a8a;
-              letter-spacing: 8px;
-              line-height: 1;
-            ">SIMIDNAPE</div>
-            <div style="
-              font-family: Georgia, 'Times New Roman', serif;
-              font-size: 32px;
-              font-weight: bold;
-              color: #d4af37;
-              letter-spacing: 12px;
-              margin-top: 6px;
-            ">P R O</div>
-            <div style="
-              font-family: Georgia, 'Times New Roman', serif;
-              font-style: italic;
-              font-size: 22px;
-              color: #64748b;
-              margin-top: 10px;
-            ">O Professor Inesquecível</div>
-            <div style="
-              font-family: monospace;
-              font-size: 13px;
-              color: #94a3b8;
-              margin-top: 6px;
-              letter-spacing: 2px;
-            ">simidnape.com.br</div>
+          <div style="font-size: 24px; font-weight: bold; color: #3b82f6; margin-top: 14px; letter-spacing: 1px;">
+            PLANEJADOR SIMIDNAPE
           </div>
-
-          <!-- Linha dourada separadora -->
-          <div style="
-            height: 2px;
-            background: linear-gradient(to right, transparent, #d4af37, transparent);
-            margin: 32px 0;
-          "></div>
-
-          <!-- Título do plano -->
-          <div style="text-align: center; margin-bottom: 36px;">
-            <div style="
-              display: inline-block;
-              background: #eff6ff;
-              color: #1e40af;
-              font-size: 12px;
-              font-weight: bold;
-              letter-spacing: 3px;
-              padding: 8px 20px;
-              border-radius: 999px;
-              margin-bottom: 22px;
-              border: 1px solid #bfdbfe;
-            ">PLANEJAMENTO PEDAGÓGICO</div>
-            <div style="
-              font-family: Georgia, 'Times New Roman', serif;
-              font-size: 34px;
-              font-weight: bold;
-              color: #0f172a;
-              line-height: 1.3;
-              max-width: 900px;
-              margin: 0 auto;
-            ">${escapeHtml(cab.titulo || 'Sem título')}</div>
+          <div style="font-size: 16px; color: #64748b; margin-top: 8px;">
+            O Professor Inesquecível
           </div>
+          <div style="font-size: 12px; color: #94a3b8; margin-top: 4px; font-family: monospace;">
+            simidnape.com.br
+          </div>
+        </div>
 
-          <!-- Linha dourada separadora -->
+        <div style="text-align: center; margin: 40px 0;">
           <div style="
-            height: 2px;
-            background: linear-gradient(to right, transparent, #d4af37, transparent);
-            margin: 0 0 32px;
-          "></div>
-
-          <!-- Dados -->
-          <div style="
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px 60px;
-            font-size: 15px;
-            color: #334155;
-            padding: 0 20px;
+            display: inline-block;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            margin-bottom: 22px;
           ">
-            <div><strong style="color: #1e3a8a;">Professor(a):</strong> ${escapeHtml(nome)}</div>
-            <div><strong style="color: #1e3a8a;">Componente:</strong> ${escapeHtml(comp)}</div>
-            <div><strong style="color: #1e3a8a;">Escola:</strong> ${escapeHtml(escola)}</div>
-            <div><strong style="color: #1e3a8a;">Ano/Série:</strong> ${escapeHtml(ano)}</div>
-            <div><strong style="color: #1e3a8a;">Município:</strong> ${escapeHtml(muni)} - ${escapeHtml(uf)}</div>
-            <div><strong style="color: #1e3a8a;">Período:</strong> ${escapeHtml(per)}</div>
-            <div></div>
-            <div><strong style="color: #1e3a8a;">Total de aulas:</strong> ${escapeHtml(String(total))}</div>
+            PLANEJAMENTO PEDAGÓGICO
           </div>
+          <div style="font-size: 34px; font-weight: bold; color: #0f172a; line-height: 1.3;">
+            ${escapeHtml(cab.titulo || 'Sem título')}
+          </div>
+        </div>
+
+        <div style="
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px 40px;
+          font-size: 15px;
+          color: #334155;
+          border-top: 1px solid #e2e8f0;
+          padding-top: 30px;
+        ">
+          <div><strong style="color: #0f172a;">Professor(a):</strong> ${escapeHtml(nome)}</div>
+          <div><strong style="color: #0f172a;">Componente:</strong> ${escapeHtml(comp)}</div>
+          <div><strong style="color: #0f172a;">Escola:</strong> ${escapeHtml(escola)}</div>
+          <div><strong style="color: #0f172a;">Ano/Série:</strong> ${escapeHtml(ano)}</div>
+          <div><strong style="color: #0f172a;">Município:</strong> ${escapeHtml(muni)} - ${escapeHtml(uf)}</div>
+          <div><strong style="color: #0f172a;">Período:</strong> ${escapeHtml(per)}</div>
+          <div></div>
+          <div><strong style="color: #0f172a;">Total de aulas:</strong> ${escapeHtml(String(total))}</div>
         </div>
       </div>
     </div>
@@ -255,7 +162,7 @@ function htmlCapa(cab, logoBase64 = '') {
 // ============================================================
 // BLOCO — CABEÇALHO DO PLANO
 // ============================================================
-function htmlCabecalhoPlano(sd, logoBase64 = '') {
+function htmlCabecalhoPlano(sd) {
   const cab = sd.cabecalho || {};
   return `
     <div style="
@@ -274,12 +181,9 @@ function htmlCabecalhoPlano(sd, logoBase64 = '') {
         padding-bottom: 12px;
         margin-bottom: 14px;
       ">
-        <div style="display: flex; align-items: center; gap: 14px;">
-          ${logoBase64 ? `<img src="${logoBase64}" alt="SIMIDNAPE" style="height: 42px; width: auto;" />` : ''}
-          <div>
-            <div style="font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #bfdbfe;">PLANEJADOR SIMIDNAPE</div>
-            <div style="font-size: 11px; color: #dbeafe;">O Professor Inesquecível</div>
-          </div>
+        <div>
+          <div style="font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #bfdbfe;">PLANEJADOR SIMIDNAPE</div>
+          <div style="font-size: 11px; color: #dbeafe;">O Professor Inesquecível</div>
         </div>
         <div style="font-family: monospace; font-size: 12px; color: #bfdbfe;">simidnape.com.br</div>
       </div>
@@ -561,14 +465,11 @@ export async function gerarPdfPlanejamento(plano) {
   const sd = plano.structured_data;
   const cab = sd.cabecalho || {};
 
-  // Carrega a logo SIMIDNAPE (uma vez) para usar na capa e no cabeçalho
-  const logoBase64 = await carregarLogoBase64();
-
   // 1. PDF vazio (A4 paisagem)
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
   // 2. Capa (página 1)
-  const canvasCapa = await renderizarBloco(htmlCapa(cab, logoBase64));
+  const canvasCapa = await renderizarBloco(htmlCapa(cab));
   const capaRatio = CONTENT_W_MM / canvasCapa.width;
   const capaAlturaMM = Math.min(canvasCapa.height * capaRatio, CONTENT_H_MM);
   pdf.addImage(
@@ -582,7 +483,7 @@ export async function gerarPdfPlanejamento(plano) {
 
   // 3. Prepara os blocos do corpo (cada bloco é uma unidade atômica)
   const blocosHtml = [
-    htmlCabecalhoPlano(sd, logoBase64),
+    htmlCabecalhoPlano(sd),
     htmlBlocoMacro(sd),
     ...(sd.sequencia_didatica || []).map((a, i) => htmlBlocoAula(a, i)),
     htmlBlocoFinal(sd),
