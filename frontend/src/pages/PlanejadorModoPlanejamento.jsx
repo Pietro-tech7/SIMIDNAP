@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
+import { gerarPdfPlanejamento } from '../utils/gerarPdfPlanejamento';
 
 // Lista de UFs do Brasil (para o campo de estado no cabeçalho)
 const UFS = [
@@ -1093,9 +1094,33 @@ const PlanejadorModoPlanejamento = () => {
 const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }) => {
   const sd = resultado.structured_data || {};
   const cab = sd.cabecalho || {};
+  const [gerandoPdf, setGerandoPdf] = React.useState(false);
+
+  const baixarPdf = async () => {
+    setGerandoPdf(true);
+    try {
+      await gerarPdfPlanejamento(resultado);
+    } catch (e) {
+      console.error('Erro ao gerar PDF:', e);
+      alert('Erro ao gerar o PDF. Tente novamente.');
+    } finally {
+      setGerandoPdf(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
+      {/* BOTÃO PDF (topo) */}
+      <div className="flex justify-end">
+        <button
+          onClick={baixarPdf}
+          disabled={gerandoPdf}
+          className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold text-sm px-5 py-2.5 rounded-lg transition shadow-sm"
+        >
+          {gerandoPdf ? '⏳ Gerando PDF...' : '📥 Baixar PDF'}
+        </button>
+      </div>
+
       {/* CABEÇALHO */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-5 text-white">
         {/* Marca SIMIDNAPE */}

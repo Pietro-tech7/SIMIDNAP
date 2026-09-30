@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { gerarPdfPlanejamento } from '../utils/gerarPdfPlanejamento';
 
 /**
  * Modal que mostra um planejamento e permite editá-lo inline.
@@ -17,8 +18,21 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
     JSON.parse(JSON.stringify(plano.structured_data || {}))
   );
   const [salvando, setSalvando] = useState(false);
+  const [gerandoPdf, setGerandoPdf] = useState(false);
 
   const modoPlano = plano.modo || 'aula';
+
+  const baixarPdf = async () => {
+    setGerandoPdf(true);
+    try {
+      await gerarPdfPlanejamento(plano);
+    } catch (e) {
+      console.error('Erro ao gerar PDF:', e);
+      alert('Erro ao gerar o PDF. Tente novamente.');
+    } finally {
+      setGerandoPdf(false);
+    }
+  };
 
   // ============================================================
   // EDIÇÃO — Modo Aula
@@ -1161,12 +1175,21 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
               </>
             )}
             {modo === 'ver' && (
-              <button
-                onClick={onFechar}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm px-5 py-2 rounded-lg transition"
-              >
-                Fechar
-              </button>
+              <>
+                <button
+                  onClick={baixarPdf}
+                  disabled={gerandoPdf}
+                  className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-medium text-sm px-4 py-2 rounded-lg transition"
+                >
+                  {gerandoPdf ? '⏳ Gerando...' : '📥 Baixar PDF'}
+                </button>
+                <button
+                  onClick={onFechar}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm px-5 py-2 rounded-lg transition"
+                >
+                  Fechar
+                </button>
+              </>
             )}
           </div>
         </div>
