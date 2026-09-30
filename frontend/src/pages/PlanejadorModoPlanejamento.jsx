@@ -183,6 +183,16 @@ const PlanejadorModoPlanejamento = () => {
       .catch(() => setHabilidadesDisponiveis([]));
   }, [componente, ano]);
 
+  // ============================================================
+  // CORREÇÃO (D9-fix-2a) — Invalidar cache de objetos quando
+  // componente ou ano mudam. Sem isso, o cache antigo continua
+  // mostrando objetos do ano anterior (bug reportado).
+  // ============================================================
+  useEffect(() => {
+    setObjetosPorUnidade({});
+    setUnidadesTematicas([]);
+  }, [componente, ano]);
+
   const carregarObjetos = async (unidade) => {
     if (!unidade || objetosPorUnidade[unidade]) return;
     try {
@@ -685,7 +695,11 @@ const PlanejadorModoPlanejamento = () => {
                 const doObjeto = habilidadesDisponiveis.filter(hab => {
                   const mu = !h.unidade_tematica || hab.unidade_tematica === h.unidade_tematica;
                   const mo = !h.objeto_conhecimento || hab.objeto_conhecimento === h.objeto_conhecimento;
-                  return mu && mo;
+                  // Filtro defensivo (D9-fix-2a): garante que só apareçam
+                  // habilidades do ano selecionado, mesmo que o backend
+                  // ou o cache tragam algo errado.
+                  const ma = hab.ano === undefined || hab.ano === null || hab.ano === ano;
+                  return mu && mo && ma;
                 });
                 const termo = (h.busca || '').toLowerCase().trim();
                 const comBusca = termo
@@ -735,7 +749,10 @@ const PlanejadorModoPlanejamento = () => {
                         <option value="">Clique para escolher...</option>
                         {doObjeto.map(hab => (
                           <option key={hab.codigo} value={hab.codigo}>
-                            {hab.codigo} — {(hab.texto || '').slice(0, 60)}
+                            {hab.codigo}
+                            {hab.ano ? ` (${hab.ano}º ano)` : ''}
+                            {' — '}
+                            {(hab.texto || '').slice(0, 60)}
                           </option>
                         ))}
                       </select>
