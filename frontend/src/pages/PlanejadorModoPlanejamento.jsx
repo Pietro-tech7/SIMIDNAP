@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
+import { useAuth } from '../contexts/AuthContext';
+
+// Lista de UFs do Brasil (para o campo de estado no cabeçalho)
+const UFS = [
+  ['AC', 'Acre'], ['AL', 'Alagoas'], ['AP', 'Amapá'], ['AM', 'Amazonas'],
+  ['BA', 'Bahia'], ['CE', 'Ceará'], ['DF', 'Distrito Federal'], ['ES', 'Espírito Santo'],
+  ['GO', 'Goiás'], ['MA', 'Maranhão'], ['MT', 'Mato Grosso'], ['MS', 'Mato Grosso do Sul'],
+  ['MG', 'Minas Gerais'], ['PA', 'Pará'], ['PB', 'Paraíba'], ['PR', 'Paraná'],
+  ['PE', 'Pernambuco'], ['PI', 'Piauí'], ['RJ', 'Rio de Janeiro'], ['RN', 'Rio Grande do Norte'],
+  ['RS', 'Rio Grande do Sul'], ['RO', 'Rondônia'], ['RR', 'Roraima'], ['SC', 'Santa Catarina'],
+  ['SP', 'São Paulo'], ['SE', 'Sergipe'], ['TO', 'Tocantins'],
+];
 
 const STORAGE_KEY = 'simidnape_rascunho_planejamento_v2';
 
@@ -35,13 +47,27 @@ const PERIODOS_EI = [
 ];
 
 const PlanejadorModoPlanejamento = () => {
+  const { user } = useAuth();
+
   // ============================================================
-  // ESTADO — Identificação
+  // ESTADO — Identificação (D9-REBUILD-3b: cabeçalho completo)
   // ============================================================
+  const [nomeProfessor, setNomeProfessor] = useState(user?.full_name || '');
+  const [nomeEscola, setNomeEscola] = useState('');
+  const [municipio, setMunicipio] = useState('');
+  const [estado, setEstado] = useState('PI');
   const [titulo, setTitulo] = useState('');
   const [etapa, setEtapa] = useState('EF');
   const [ano, setAno] = useState(5);
   const [componente, setComponente] = useState('');
+
+  // Preenche nome do professor quando o usuário carrega (pode chegar depois)
+  useEffect(() => {
+    if (user?.full_name && !nomeProfessor) {
+      setNomeProfessor(user.full_name);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // ============================================================
   // ESTADO — Referenciais
@@ -116,6 +142,10 @@ const PlanejadorModoPlanejamento = () => {
             `📋 Você tem um planejamento em andamento:\n\n"${d.titulo || 'Sem título'}"\n\nDeseja continuar de onde parou?`
           );
           if (continuar) {
+            if (d.nomeProfessor !== undefined) setNomeProfessor(d.nomeProfessor);
+            if (d.nomeEscola !== undefined) setNomeEscola(d.nomeEscola);
+            if (d.municipio !== undefined) setMunicipio(d.municipio);
+            if (d.estado !== undefined) setEstado(d.estado);
             if (d.titulo !== undefined) setTitulo(d.titulo);
             if (d.etapa !== undefined) setEtapa(d.etapa);
             if (d.ano !== undefined) setAno(d.ano);
@@ -149,6 +179,7 @@ const PlanejadorModoPlanejamento = () => {
     if (!rascunhoCarregado) return;
     try {
       const dados = {
+        nomeProfessor, nomeEscola, municipio, estado,
         titulo, etapa, ano, componente, referenciais, habilidades,
         periodoTipo, tempoAula, aulasPorSemana, totalAulas, totalEditadoManualmente,
         numAlunos, conhecimentosPrevios, dificuldades, diferenciado,
@@ -162,7 +193,9 @@ const PlanejadorModoPlanejamento = () => {
       console.warn('Erro ao salvar rascunho:', e);
     }
   }, [
-    rascunhoCarregado, titulo, etapa, ano, componente, referenciais, habilidades,
+    rascunhoCarregado,
+    nomeProfessor, nomeEscola, municipio, estado,
+    titulo, etapa, ano, componente, referenciais, habilidades,
     periodoTipo, tempoAula, aulasPorSemana, totalAulas, totalEditadoManualmente,
     numAlunos, conhecimentosPrevios, dificuldades, diferenciado,
   ]);
@@ -353,6 +386,12 @@ const PlanejadorModoPlanejamento = () => {
       etapa,
       componente,
       subject: componenteNome,
+      extra: {
+        nome_professor: nomeProfessor.trim() || null,
+        nome_escola: nomeEscola.trim() || null,
+        municipio: municipio.trim() || null,
+        estado: estado || null,
+      },
       grade: etapa === 'EI' ? 'Educação Infantil' : (etapa === 'EM' ? `${ano}ª série` : `${ano}º ano`),
       content: habPayload.map(h => h.texto).join(' | '),
       objetivo: '',
@@ -452,6 +491,10 @@ const PlanejadorModoPlanejamento = () => {
         extra: {
           plan_type: 'planejamento',
           modo: 'planejamento',
+          nome_professor: nomeProfessor.trim() || null,
+          nome_escola: nomeEscola.trim() || null,
+          municipio: municipio.trim() || null,
+          estado: estado || null,
           periodo_tipo: periodoTipo,
           tempo_aula_minutos: Number(tempoAula),
           aulas_por_semana: Number(aulasPorSemana),
@@ -475,6 +518,8 @@ const PlanejadorModoPlanejamento = () => {
   const limparTudo = () => {
     if (!window.confirm('Limpar todas as escolhas e começar de novo?')) return;
     localStorage.removeItem(STORAGE_KEY);
+    setNomeProfessor(user?.full_name || '');
+    setNomeEscola(''); setMunicipio(''); setEstado('PI');
     setTitulo(''); setEtapa('EF'); setAno(5); setComponente('');
     setReferenciais(['bncc']);
     setHabilidades([{
@@ -529,6 +574,57 @@ const PlanejadorModoPlanejamento = () => {
       {/* PASSO 1 — IDENTIFICAÇÃO */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">📋 Passo 1 — Identificação</h2>
+
+        {/* Cabeçalho: dados do professor e da escola (D9-REBUILD-3b) */}
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
+          <p className="text-xs font-semibold text-blue-900 mb-3">
+            🎓 Quem está planejando — esses dados aparecem no cabeçalho do plano
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Seu nome *</label>
+              <input
+                type="text" value={nomeProfessor} onChange={(e) => setNomeProfessor(e.target.value)}
+                placeholder="Ex: Maria Silva"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome da escola *</label>
+              <input
+                type="text" value={nomeEscola} onChange={(e) => setNomeEscola(e.target.value)}
+                placeholder="Ex: EMEF João Paulo II"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              />
+              <p className="text-[10px] text-blue-700 mt-1">
+                Se você dá aula em várias escolas, preencha aqui a que corresponde a este plano.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Município *</label>
+              <input
+                type="text" value={municipio} onChange={(e) => setMunicipio(e.target.value)}
+                placeholder="Ex: Teresina"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">UF *</label>
+              <select
+                value={estado} onChange={(e) => setEstado(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              >
+                {UFS.map(([uf, nome]) => (
+                  <option key={uf} value={uf}>{uf} — {nome}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Título do planejamento *</label>

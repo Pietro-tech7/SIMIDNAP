@@ -157,13 +157,17 @@ def generate_planejamento_lote(
         "grade": grade,
         "content": content,
         "objetivo": objetivo,
+        # Cabeçalho — dados do professor e da escola (D9-REBUILD-3b)
+        "nome_professor": (extra or {}).get("nome_professor"),
+        "nome_escola": (extra or {}).get("nome_escola"),
+        "municipio": (extra or {}).get("municipio"),
+        "estado": (extra or {}).get("estado"),
+        # Período
         "periodo_tipo": (extra or {}).get("periodo_tipo"),
-        "periodo_inicio": (extra or {}).get("periodo_inicio"),
-        "periodo_fim": (extra or {}).get("periodo_fim"),
         "tempo_aula_minutos": (extra or {}).get("tempo_aula_minutos"),
-        "aulas_por_dia": (extra or {}).get("aulas_por_dia"),
-        "dias_por_semana": (extra or {}).get("dias_por_semana"),
+        "aulas_por_semana": (extra or {}).get("aulas_por_semana"),
         "total_aulas": total_aulas,
+        # Currículo
         "habilidades": (extra or {}).get("habilidades"),
         "descritores": (extra or {}).get("descritores"),
         "referenciais": (extra or {}).get("referenciais"),
