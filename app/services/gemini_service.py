@@ -258,6 +258,29 @@ Antes de planejar as atividades, raciocine na ordem reversa:
 É proibido começar pelo conteúdo ou pela atividade. Comece pelo RESULTADO.
 O campo `evidencia_de_aprendizagem` é OBRIGATÓRIO e deve descrever o que o professor VÊ o aluno fazer.
 
+REGRA CRÍTICA — O CAMPO `evidencia_de_aprendizagem` DEVE SER ESPECÍFICO E OBSERVÁVEL:
+
+   ❌ RUIM (vago — proibido):
+      - "Registro escrito no caderno"
+      - "Participação nas discussões"
+      - "Compreensão do conteúdo"
+      - "Demonstração de respeito"
+      - "Observação do professor"
+
+   ✅ BOM (específico, observável, com critério):
+      - "Ao final, cada aluno escreve UMA frase no caderno explicando com as próprias palavras por que 3/4 > 1/4"
+      - "Cada dupla produz uma lista com 3 convergências identificadas entre as tradições estudadas, registradas na lousa"
+      - "O aluno desenha uma barra de chocolate, divide em 4 partes iguais, pinta 1 e escreve 1/4 ao lado"
+      - "Cada aluno explica para o colega, em voz alta, como decidiu qual fração é maior"
+
+   A evidência deve responder: "O que o professor vê o aluno PRODUZIR ou DIZER que prova que ele aprendeu?"
+
+   PADRÕES DE QUALIDADE:
+   - Deve ter um PRODUTO (escrito, desenhado, falado, construído)
+   - Deve ter um CRITÉRIO (o que conta como "aprendeu")
+   - Deve ser VISÍVEL em 5 minutos de observação
+   - Deve estar ligado ao OBJETIVO da aula
+
 ═══════════════════════════════════════════════════════════════
 PERGUNTA PROBLEMATIZADORA E CONEXÃO COM A VIDA (Paulo Freire)
 ═══════════════════════════════════════════════════════════════
@@ -285,6 +308,23 @@ O campo `diferenciacao` responde duas perguntas:
 Isso vale para TODAS as aulas, não só quando há aluno com laudo. Diferenciação é a regra, não a exceção.
 
 Exemplo: "Se o aluno travar, oferecer tiras de papel já divididas; se avançar, propor comparação com denominadores diferentes."
+
+REGRA CRÍTICA — DIFERENCIAÇÃO SEMPRE EM DUAS DIREÇÕES (apoio + aprofundamento):
+
+   ❌ RUIM (vago, uma direção só, ou genérico — proibido):
+      - "Tempo flexível para o registro escrito"
+      - "Acompanhamento individualizado"
+      - "Adaptação conforme necessidade"
+      - "Oferecer apoio aos que precisarem"
+
+   ✅ BOM (concreto, com apoio E aprofundamento):
+      - "Se o aluno travar na dobradura, oferecer uma tira já marcada com linhas tracejadas; se avançar, propor dobrar em 8 partes e identificar oito avos"
+      - "Se o aluno não identificar o tema da notícia, reler o primeiro parágrafo em voz alta e dar 3 opções de tema para escolher; se avançar, propor identificar o tema de uma segunda notícia sem ajuda"
+      - "Se o aluno confundir numerador e denominador, voltar à barra de chocolate e perguntar qual número indica as partes coloridas; se avançar, propor comparar 3/4 com 5/8 (denominadores diferentes)"
+
+   A diferenciação DEVE sempre responder DUAS perguntas:
+      1. O que faço se o aluno NÃO conseguir? (apoio concreto)
+      2. O que faço se o aluno TERMINAR antes / AVANÇAR? (aprofundamento concreto)
 
 ═══════════════════════════════════════════════════════════════
 CABEÇALHO (dados que o professor fornece no formulário)
