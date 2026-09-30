@@ -21,12 +21,20 @@ const PERIODOS = [
 ];
 
 const ANOS_EF = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const ANOS_EM = [1, 2, 3];
+
+const ETAPAS = [
+  { value: 'EI', label: 'Educação Infantil' },
+  { value: 'EF', label: 'Ensino Fundamental' },
+  { value: 'EM', label: 'Ensino Médio' },
+];
 
 const PlanejadorModoPlanejamento = () => {
   const navigate = useNavigate();
 
   // Identificação
   const [titulo, setTitulo] = useState('');
+  const [etapa, setEtapa] = useState('EF');
   const [componente, setComponente] = useState('');
   const [ano, setAno] = useState(5);
 
@@ -156,32 +164,32 @@ const PlanejadorModoPlanejamento = () => {
   // Carregar componentes
   // ============================================================
   useEffect(() => {
-    api.get('/bncc/componentes?etapa=EF')
+    api.get(`/bncc/componentes?etapa=${etapa}`)
       .then(res => setComponentes(res.data || []))
       .catch(() => setComponentes([]));
-  }, []);
+  }, [etapa]);
 
   // ============================================================
   // Carregar unidades temáticas
   // ============================================================
   useEffect(() => {
     if (!componente) { setUnidadesTematicas([]); return; }
-    const params = { componente, etapa: 'EF', ano };
+    const params = { componente, etapa, ano };
     api.get('/bncc-estrutura/unidades-tematicas', { params })
       .then(res => setUnidadesTematicas(res.data?.unidades || []))
       .catch(() => setUnidadesTematicas([]));
-  }, [componente, ano]);
+  }, [componente, ano, etapa]);
 
   // ============================================================
   // Carregar habilidades disponíveis
   // ============================================================
   useEffect(() => {
     if (!componente) { setHabilidadesDisponiveis([]); return; }
-    const params = { componente, etapa: 'EF', ano };
+    const params = { componente, etapa, ano };
     api.get('/bncc-estrutura/habilidades', { params })
       .then(res => setHabilidadesDisponiveis(res.data?.habilidades || []))
       .catch(() => setHabilidadesDisponiveis([]));
-  }, [componente, ano]);
+  }, [componente, ano, etapa]);
 
   // ============================================================
   // CORREÇÃO (D9-fix-2a) — Invalidar cache de objetos quando
@@ -191,12 +199,12 @@ const PlanejadorModoPlanejamento = () => {
   useEffect(() => {
     setObjetosPorUnidade({});
     setUnidadesTematicas([]);
-  }, [componente, ano]);
+  }, [componente, ano, etapa]);
 
   const carregarObjetos = async (unidade) => {
     if (!unidade || objetosPorUnidade[unidade]) return;
     try {
-      const params = { componente, unidade_tematica: unidade, etapa: 'EF', ano };
+      const params = { componente, unidade_tematica: unidade, etapa, ano };
       const res = await api.get('/bncc-estrutura/objetos-conhecimento', { params });
       setObjetosPorUnidade(prev => ({ ...prev, [unidade]: res.data?.objetos || [] }));
     } catch {
@@ -491,37 +499,96 @@ const PlanejadorModoPlanejamento = () => {
         </div>
       )}
 
-      {/* PASSO 1 — IDENTIFICAÇÃO */}
+      {/* PASSO 1 — IDENTIFICAÇÃO (cascata: etapa → ano → componente) */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">📋 Passo 1 — Identificação</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Título do planejamento *</label>
-            <input
-              type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)}
-              placeholder="Ex: Frações — Matemática 5º ano — Outubro"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
+
+        {/* Título em linha própria */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Título do planejamento *</label>
+          <input
+            type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Ex: Frações — Matemática 5º ano — Outubro"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+
+        {/* Cascata: Etapa → Ano → Componente */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Componente *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Etapa *</label>
             <select
-              value={componente} onChange={(e) => setComponente(e.target.value)}
+              value={etapa}
+              onChange={(e) => {
+                const nova = e.target.value;
+                setEtapa(nova);
+                // Resetar dependentes ao trocar de etapa
+                setComponente('');
+                setHabilidades([{
+                  unidade_tematica: '', objeto_conhecimento: '', codigo: '', texto: '',
+                  descritores: [], descritoresCorrelacionados: [], complementosPi: [],
+                  carregandoDescritores: false, busca: '',
+                }]);
+                // Definir ano padrão por etapa
+                if (nova === 'EI') setAno(null);
+                else if (nova === 'EM') setAno(1);
+                else setAno(5);
+              }}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
             >
-              <option value="">Selecione...</option>
-              {componentes.map(c => <option key={c.codigo} value={c.codigo}>{c.nome}</option>)}
+              {ETAPAS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ano *</label>
-            <select
-              value={ano} onChange={(e) => setAno(Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
-            >
-              {ANOS_EF.map(a => <option key={a} value={a}>{a}º ano</option>)}
-            </select>
-          </div>
+
+          {etapa === 'EF' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ano *</label>
+              <select
+                value={ano || 5} onChange={(e) => setAno(Number(e.target.value))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              >
+                {ANOS_EF.map(a => <option key={a} value={a}>{a}º ano</option>)}
+              </select>
+            </div>
+          )}
+
+          {etapa === 'EM' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Série *</label>
+              <select
+                value={ano || 1} onChange={(e) => setAno(Number(e.target.value))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              >
+                {ANOS_EM.map(a => <option key={a} value={a}>{a}ª série</option>)}
+              </select>
+            </div>
+          )}
+
+          {etapa === 'EI' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Campo de Experiência *</label>
+              <select
+                value={componente} onChange={(e) => setComponente(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              >
+                <option value="">Selecione...</option>
+                {componentes.map(c => <option key={c.codigo} value={c.codigo}>{c.nome}</option>)}
+              </select>
+            </div>
+          )}
+
+          {etapa !== 'EI' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Componente *</label>
+              <select
+                value={componente} onChange={(e) => setComponente(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              >
+                <option value="">Selecione...</option>
+                {componentes.map(c => <option key={c.codigo} value={c.codigo}>{c.nome}</option>)}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
