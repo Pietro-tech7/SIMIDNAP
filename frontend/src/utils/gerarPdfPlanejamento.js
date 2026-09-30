@@ -2,6 +2,18 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
 
 // ============================================================
+// CONSTANTES DE LAYOUT — A4 PAISAGEM
+// ============================================================
+const PDF_W = 297;            // mm
+const PDF_H = 210;            // mm
+const MARGEM = 12;            // mm
+const RODAPE_ALTURA = 10;     // mm
+const GAP_ENTRE_BLOCOS = 4;   // mm
+const CONTENT_W_MM = PDF_W - MARGEM * 2;                       // 273 mm
+const CONTENT_H_MM = PDF_H - MARGEM - RODAPE_ALTURA - 2;       // 186 mm
+const CANVAS_W_PX = 1600;     // largura lógica do canvas
+
+// ============================================================
 // HELPERS
 // ============================================================
 function escapeHtml(texto) {
@@ -25,8 +37,44 @@ function slug(texto) {
 }
 
 // ============================================================
-// HTML DA CAPA
+// RENDERIZAR BLOCO (HTML → Canvas)
 // ============================================================
+async function renderizarBloco(html) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    position: fixed; left: -99999px; top: 0;
+    width: ${CANVAS_W_PX}px;
+    background: #ffffff;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #0f172a;
+    box-sizing: border-box;
+  `;
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  try {
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      windowWidth: el.scrollWidth,
+      windowHeight: el.scrollHeight,
+    });
+    return canvas;
+  } finally {
+    document.body.removeChild(el);
+  }
+}
+
+// ============================================================
+// CAPA PREMIUM
+// ============================================================
+//
+// LOGO: quando você tiver o PNG da logo SIMIDNAPE, coloque em
+//   frontend/public/logo-simidnape.png
+// e substitua o bloco do EMBLEMA CSS abaixo por:
+//   <img src="/logo-simidnape.png" style="width: 180px; height: auto; margin: 0 auto 20px;" />
+//
 function htmlCapa(cab) {
   const nome = cab.nome_professor || '—';
   const escola = cab.nome_escola || '—';
@@ -39,76 +87,140 @@ function htmlCapa(cab) {
 
   return `
     <div style="
-      width: 1080px;
-      padding: 50px;
-      background: #ffffff;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #0f172a;
+      width: ${CANVAS_W_PX}px;
       box-sizing: border-box;
+      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #eff6ff 100%);
+      padding: 30px;
     ">
+      <!-- Moldura dupla: navy externa + dourada interna -->
       <div style="
-        border: 3px solid #1e40af;
-        border-radius: 16px;
-        padding: 60px 70px;
-        min-height: 640px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        border: 3px solid #1e3a8a;
+        border-radius: 18px;
+        padding: 6px;
+        background: #ffffff;
       ">
-        <!-- Topo: marca -->
-        <div style="text-align: center;">
-          <div style="font-size: 56px; font-weight: bold; color: #1e40af; letter-spacing: 6px; line-height: 1;">
-            SIMIDNAPE
-          </div>
-          <div style="font-size: 22px; font-weight: bold; color: #3b82f6; margin-top: 14px; letter-spacing: 1px;">
-            PLANEJADOR SIMIDNAPE
-          </div>
-          <div style="font-size: 15px; color: #64748b; margin-top: 6px;">
-            O Professor Inesquecível
-          </div>
-          <div style="font-size: 12px; color: #94a3b8; margin-top: 4px; font-family: monospace;">
-            simidnape.com.br
-          </div>
-        </div>
-
-        <!-- Meio: título -->
-        <div style="text-align: center; margin: 40px 0;">
-          <div style="
-            display: inline-block;
-            background: #eff6ff;
-            color: #1e40af;
-            font-size: 11px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            padding: 6px 16px;
-            border-radius: 999px;
-            margin-bottom: 20px;
-          ">
-            PLANEJAMENTO PEDAGÓGICO
-          </div>
-          <div style="font-size: 32px; font-weight: bold; color: #0f172a; line-height: 1.3;">
-            ${escapeHtml(cab.titulo || 'Sem título')}
-          </div>
-        </div>
-
-        <!-- Rodapé: dados -->
         <div style="
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 14px 40px;
-          font-size: 14px;
-          color: #334155;
-          border-top: 1px solid #e2e8f0;
-          padding-top: 30px;
+          border: 2px solid #d4af37;
+          border-radius: 14px;
+          padding: 55px 65px;
+          background: #ffffff;
         ">
-          <div><strong style="color: #0f172a;">Professor(a):</strong> ${escapeHtml(nome)}</div>
-          <div><strong style="color: #0f172a;">Componente:</strong> ${escapeHtml(comp)}</div>
-          <div><strong style="color: #0f172a;">Escola:</strong> ${escapeHtml(escola)}</div>
-          <div><strong style="color: #0f172a;">Ano/Série:</strong> ${escapeHtml(ano)}</div>
-          <div><strong style="color: #0f172a;">Município:</strong> ${escapeHtml(muni)} - ${escapeHtml(uf)}</div>
-          <div><strong style="color: #0f172a;">Período:</strong> ${escapeHtml(per)}</div>
-          <div></div>
-          <div><strong style="color: #0f172a;">Total de aulas:</strong> ${escapeHtml(String(total))}</div>
+          <!-- Emblema (placeholder até ter a logo PNG) -->
+          <div style="text-align: center; margin-bottom: 22px;">
+            <div style="
+              width: 130px;
+              height: 130px;
+              border-radius: 50%;
+              background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+              margin: 0 auto;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border: 4px solid #d4af37;
+              box-shadow: 0 8px 22px rgba(30,58,138,0.22);
+            ">
+              <div style="
+                font-family: Georgia, 'Times New Roman', serif;
+                font-size: 68px;
+                font-weight: bold;
+                color: #d4af37;
+                line-height: 1;
+                letter-spacing: -2px;
+              ">S</div>
+            </div>
+          </div>
+
+          <!-- Marca -->
+          <div style="text-align: center; margin-bottom: 22px;">
+            <div style="
+              font-family: Georgia, 'Times New Roman', serif;
+              font-size: 58px;
+              font-weight: bold;
+              color: #1e3a8a;
+              letter-spacing: 8px;
+              line-height: 1;
+            ">SIMIDNAPE</div>
+            <div style="
+              font-family: Georgia, 'Times New Roman', serif;
+              font-size: 32px;
+              font-weight: bold;
+              color: #d4af37;
+              letter-spacing: 12px;
+              margin-top: 6px;
+            ">P R O</div>
+            <div style="
+              font-family: Georgia, 'Times New Roman', serif;
+              font-style: italic;
+              font-size: 22px;
+              color: #64748b;
+              margin-top: 10px;
+            ">O Professor Inesquecível</div>
+            <div style="
+              font-family: monospace;
+              font-size: 13px;
+              color: #94a3b8;
+              margin-top: 6px;
+              letter-spacing: 2px;
+            ">simidnape.com.br</div>
+          </div>
+
+          <!-- Linha dourada separadora -->
+          <div style="
+            height: 2px;
+            background: linear-gradient(to right, transparent, #d4af37, transparent);
+            margin: 32px 0;
+          "></div>
+
+          <!-- Título do plano -->
+          <div style="text-align: center; margin-bottom: 36px;">
+            <div style="
+              display: inline-block;
+              background: #eff6ff;
+              color: #1e40af;
+              font-size: 12px;
+              font-weight: bold;
+              letter-spacing: 3px;
+              padding: 8px 20px;
+              border-radius: 999px;
+              margin-bottom: 22px;
+              border: 1px solid #bfdbfe;
+            ">PLANEJAMENTO PEDAGÓGICO</div>
+            <div style="
+              font-family: Georgia, 'Times New Roman', serif;
+              font-size: 34px;
+              font-weight: bold;
+              color: #0f172a;
+              line-height: 1.3;
+              max-width: 900px;
+              margin: 0 auto;
+            ">${escapeHtml(cab.titulo || 'Sem título')}</div>
+          </div>
+
+          <!-- Linha dourada separadora -->
+          <div style="
+            height: 2px;
+            background: linear-gradient(to right, transparent, #d4af37, transparent);
+            margin: 0 0 32px;
+          "></div>
+
+          <!-- Dados -->
+          <div style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 60px;
+            font-size: 15px;
+            color: #334155;
+            padding: 0 20px;
+          ">
+            <div><strong style="color: #1e3a8a;">Professor(a):</strong> ${escapeHtml(nome)}</div>
+            <div><strong style="color: #1e3a8a;">Componente:</strong> ${escapeHtml(comp)}</div>
+            <div><strong style="color: #1e3a8a;">Escola:</strong> ${escapeHtml(escola)}</div>
+            <div><strong style="color: #1e3a8a;">Ano/Série:</strong> ${escapeHtml(ano)}</div>
+            <div><strong style="color: #1e3a8a;">Município:</strong> ${escapeHtml(muni)} - ${escapeHtml(uf)}</div>
+            <div><strong style="color: #1e3a8a;">Período:</strong> ${escapeHtml(per)}</div>
+            <div></div>
+            <div><strong style="color: #1e3a8a;">Total de aulas:</strong> ${escapeHtml(String(total))}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -116,171 +228,189 @@ function htmlCapa(cab) {
 }
 
 // ============================================================
-// HTML DO CORPO (macro + aulas detalhadas)
+// BLOCO — CABEÇALHO DO PLANO
 // ============================================================
-function htmlCorpo(sd) {
+function htmlCabecalhoPlano(sd) {
   const cab = sd.cabecalho || {};
-
-  // Lógica pedagógica + eixos + descritores
-  const logicaHtml = sd.logica_pedagogica ? `
+  return `
     <div style="
-      background: #eff6ff;
-      border-left: 5px solid #1e40af;
-      padding: 14px 18px;
-      border-radius: 8px;
-      margin-bottom: 18px;
+      width: ${CANVAS_W_PX}px;
+      box-sizing: border-box;
+      padding: 22px 32px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: #ffffff;
+      border-radius: 12px;
     ">
-      <div style="font-size: 11px; font-weight: bold; color: #1e40af; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">
-        Lógica pedagógica do período
-      </div>
-      <div style="font-size: 13px; color: #1e3a8a; line-height: 1.6; font-style: italic;">
-        ${escapeHtml(sd.logica_pedagogica)}
-      </div>
-    </div>
-  ` : '';
-
-  const eixosHtml = (sd.eixos_predominantes || []).length > 0 ? `
-    <div style="margin-bottom: 16px;">
-      <div style="font-size: 11px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
-        Eixos predominantes
-      </div>
-      ${sd.eixos_predominantes.map(e => `
-        <div style="display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; font-size: 12px;">
-          <span style="background: #f1f5f9; color: #334155; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 11px;">${escapeHtml(e.periodo || '')}</span>
-          <span style="color: #334155;">${escapeHtml(e.eixo || '')}</span>
+      <div style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.3);
+        padding-bottom: 12px;
+        margin-bottom: 14px;
+      ">
+        <div>
+          <div style="font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #bfdbfe;">PLANEJADOR SIMIDNAPE</div>
+          <div style="font-size: 11px; color: #dbeafe;">O Professor Inesquecível</div>
         </div>
-      `).join('')}
-    </div>
-  ` : '';
-
-  const descritoresHtml = (sd.descritores_trabalhados || []).length > 0 ? `
-    <div style="margin-bottom: 18px;">
-      <div style="font-size: 11px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
-        Descritores trabalhados
+        <div style="font-family: monospace; font-size: 12px; color: #bfdbfe;">simidnape.com.br</div>
       </div>
-      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-        ${sd.descritores_trabalhados.map(d => `
-          <span style="background: #dbeafe; color: #1e40af; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; font-family: monospace;">
-            ${escapeHtml(d)}
-          </span>
+      <div style="font-size: 24px; font-weight: bold; margin-bottom: 8px; font-family: Georgia, serif;">${escapeHtml(cab.titulo || '')}</div>
+      <div style="font-size: 12px; color: #dbeafe; margin-bottom: 4px;">
+        ${cab.nome_professor ? `<strong style="color:#fff;">Professor(a):</strong> ${escapeHtml(cab.nome_professor)}` : ''}
+        ${cab.nome_escola ? ` · <strong style="color:#fff;">Escola:</strong> ${escapeHtml(cab.nome_escola)}` : ''}
+        ${cab.municipio ? ` · <strong style="color:#fff;">Município:</strong> ${escapeHtml(cab.municipio)}` : ''}
+        ${cab.estado ? ` - ${escapeHtml(cab.estado)}` : ''}
+      </div>
+      <div style="font-size: 12px; color: #dbeafe;">
+        <strong style="color:#fff;">Componente:</strong> ${escapeHtml(cab.componente || '')} · 
+        <strong style="color:#fff;">Ano:</strong> ${escapeHtml(cab.ano || '')} · 
+        <strong style="color:#fff;">Período:</strong> ${escapeHtml(cab.periodo_texto || '')} · 
+        <strong style="color:#fff;">Total de aulas:</strong> ${escapeHtml(String(cab.total_aulas || ''))}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// BLOCO — MACRO (lógica + eixos + descritores + objetivos + justificativa)
+// ============================================================
+function htmlBlocoMacro(sd) {
+  const partes = [];
+
+  if (sd.logica_pedagogica) {
+    partes.push(`
+      <div style="background: #eff6ff; border-left: 5px solid #1e40af; padding: 14px 18px; border-radius: 8px; margin-bottom: 14px;">
+        <div style="font-size: 11px; font-weight: bold; color: #1e40af; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">Lógica pedagógica do período</div>
+        <div style="font-size: 13px; color: #1e3a8a; line-height: 1.6; font-style: italic;">${escapeHtml(sd.logica_pedagogica)}</div>
+      </div>
+    `);
+  }
+
+  if ((sd.eixos_predominantes || []).length > 0) {
+    partes.push(`
+      <div style="margin-bottom: 14px;">
+        <div style="font-size: 11px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Eixos predominantes</div>
+        ${sd.eixos_predominantes.map(e => `
+          <div style="display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; font-size: 12px;">
+            <span style="background: #f1f5f9; color: #334155; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 11px;">${escapeHtml(e.periodo || '')}</span>
+            <span style="color: #334155;">${escapeHtml(e.eixo || '')}</span>
+          </div>
         `).join('')}
       </div>
+    `);
+  }
+
+  if ((sd.descritores_detalhados || []).length > 0) {
+    partes.push(`
+      <div style="margin-bottom: 14px;">
+        <div style="font-size: 11px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Descritores trabalhados no período</div>
+        ${sd.descritores_detalhados.map(d => `
+          <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; font-size: 12px;">
+            <span style="background: #dbeafe; color: #1e40af; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-family: monospace; flex-shrink: 0;">${escapeHtml(d.codigo)}</span>
+            ${d.fonte ? `<span style="background: #e0e7ff; color: #3730a3; padding: 3px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; text-transform: uppercase; flex-shrink: 0;">${escapeHtml(d.fonte)}</span>` : ''}
+            <span style="color: #334155; line-height: 1.5;">${escapeHtml(d.texto)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `);
+  } else if ((sd.descritores_trabalhados || []).length > 0) {
+    partes.push(`
+      <div style="margin-bottom: 14px;">
+        <div style="font-size: 11px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Descritores trabalhados</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          ${sd.descritores_trabalhados.map(d => `<span style="background: #dbeafe; color: #1e40af; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; font-family: monospace;">${escapeHtml(d)}</span>`).join('')}
+        </div>
+      </div>
+    `);
+  }
+
+  if (sd.objetivos_gerais) {
+    partes.push(`
+      <div style="margin-bottom: 14px;">
+        <div style="font-size: 11px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Objetivos gerais</div>
+        <div style="font-size: 12px; color: #0f172a; line-height: 1.6; margin-bottom: 8px;">${escapeHtml(sd.objetivos_gerais)}</div>
+        ${(sd.objetivos_especificos || []).map(o => `
+          <div style="font-size: 12px; color: #334155; line-height: 1.6;">✓ ${escapeHtml(o)}</div>
+        `).join('')}
+      </div>
+    `);
+  }
+
+  if (sd.justificativa) {
+    partes.push(`
+      <div style="background: #f8fafc; border-left: 4px solid #64748b; padding: 12px 16px; border-radius: 6px; margin-bottom: 14px;">
+        <div style="font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">Justificativa</div>
+        <div style="font-size: 12px; color: #334155; line-height: 1.6;">${escapeHtml(sd.justificativa)}</div>
+      </div>
+    `);
+  }
+
+  if (partes.length === 0) return '';
+
+  return `
+    <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 20px 32px; background: #ffffff;">
+      ${partes.join('')}
+    </div>
+  `;
+}
+
+// ============================================================
+// BLOCO — UMA AULA
+// ============================================================
+function htmlBlocoAula(aula, index) {
+  const bloco = (titulo, conteudo, cor = '#475569', bg = '#ffffff') => conteudo ? `
+    <div style="background: ${bg}; border-left: 3px solid ${cor}; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
+      <div style="font-size: 10px; font-weight: bold; color: ${cor}; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">${titulo}</div>
+      <div style="font-size: 12px; color: #1e293b; line-height: 1.55;">${escapeHtml(conteudo)}</div>
     </div>
   ` : '';
 
-  const objetivosHtml = sd.objetivos_gerais ? `
-    <div style="margin-bottom: 18px;">
-      <div style="font-size: 11px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
-        Objetivos gerais
-      </div>
-      <div style="font-size: 12px; color: #0f172a; line-height: 1.6; margin-bottom: 8px;">
-        ${escapeHtml(sd.objetivos_gerais)}
-      </div>
-      ${(sd.objetivos_especificos || []).map(o => `
-        <div style="font-size: 12px; color: #334155; line-height: 1.6;">✓ ${escapeHtml(o)}</div>
-      `).join('')}
-    </div>
-  ` : '';
-
-  const justificativaHtml = sd.justificativa ? `
+  return `
     <div style="
-      background: #f8fafc;
-      border-left: 4px solid #64748b;
-      padding: 12px 16px;
-      border-radius: 6px;
-      margin-bottom: 18px;
+      width: ${CANVAS_W_PX}px;
+      box-sizing: border-box;
+      padding: 16px 32px;
+      background: #ffffff;
     ">
-      <div style="font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">
-        Justificativa
-      </div>
-      <div style="font-size: 12px; color: #334155; line-height: 1.6;">
-        ${escapeHtml(sd.justificativa)}
-      </div>
-    </div>
-  ` : '';
-
-  // ============================================================
-  // AULAS
-  // ============================================================
-  const aulasHtml = (sd.sequencia_didatica || []).map((aula, i) => {
-    const bloco = (titulo, conteudo, cor = '#475569', bg = '#ffffff') => conteudo ? `
-      <div style="
-        background: ${bg};
-        border-left: 3px solid ${cor};
-        padding: 8px 12px;
-        border-radius: 4px;
-        margin-bottom: 8px;
-      ">
-        <div style="font-size: 10px; font-weight: bold; color: ${cor}; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">
-          ${titulo}
-        </div>
-        <div style="font-size: 12px; color: #1e293b; line-height: 1.55;">
-          ${escapeHtml(conteudo)}
-        </div>
-      </div>
-    ` : '';
-
-    return `
       <div style="
         border: 1px solid #cbd5e1;
         border-radius: 10px;
         overflow: hidden;
-        margin-bottom: 14px;
-        page-break-inside: avoid;
       ">
-        <!-- Header da aula -->
+        <!-- Header -->
         <div style="
           background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
           color: #ffffff;
-          padding: 10px 16px;
+          padding: 12px 18px;
           display: flex;
           justify-content: space-between;
           align-items: center;
         ">
-          <div>
+          <div style="flex: 1; min-width: 0;">
             <div style="font-size: 10px; font-weight: bold; color: #bfdbfe; letter-spacing: 1.5px;">
-              ${aula.semana ? 'SEMANA ' + aula.semana + ' · ' : ''}AULA ${aula.numero_aula || i + 1}
+              ${aula.semana ? 'SEMANA ' + aula.semana + ' · ' : ''}AULA ${aula.numero_aula || index + 1}
             </div>
-            <div style="font-size: 15px; font-weight: bold; margin-top: 2px;">
+            <div style="font-size: 16px; font-weight: bold; margin-top: 3px;">
               ${escapeHtml(aula.titulo || '')}
             </div>
           </div>
-          <div style="display: flex; gap: 6px;">
-            ${aula.principio_cognitivo ? `
-              <span style="background: rgba(255,255,255,0.25); color: #ffffff; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px solid rgba(255,255,255,0.4);">
-                🧠 ${escapeHtml(aula.principio_cognitivo)}
-              </span>
-            ` : ''}
-            ${aula.duracao_minutos ? `
-              <span style="background: rgba(255,255,255,0.25); color: #ffffff; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px solid rgba(255,255,255,0.4); font-family: monospace;">
-                ${aula.duracao_minutos} min
-              </span>
-            ` : ''}
+          <div style="display: flex; gap: 6px; flex-shrink: 0; margin-left: 14px;">
+            ${aula.principio_cognitivo ? `<span style="background: rgba(255,255,255,0.25); color: #fff; padding: 4px 11px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px solid rgba(255,255,255,0.4); white-space: nowrap;">🧠 ${escapeHtml(aula.principio_cognitivo)}</span>` : ''}
+            ${aula.duracao_minutos ? `<span style="background: rgba(255,255,255,0.25); color: #fff; padding: 4px 11px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px solid rgba(255,255,255,0.4); font-family: monospace; white-space: nowrap;">${aula.duracao_minutos} min</span>` : ''}
           </div>
         </div>
 
-        <!-- Corpo da aula -->
-        <div style="padding: 12px 16px;">
+        <!-- Corpo -->
+        <div style="padding: 14px 18px;">
 
-          <!-- Pergunta problematizadora -->
           ${aula.pergunta_problematizadora ? `
-            <div style="
-              background: #fef9c3;
-              border-left: 4px solid #eab308;
-              padding: 10px 14px;
-              border-radius: 6px;
-              margin-bottom: 10px;
-            ">
-              <div style="font-size: 10px; font-weight: bold; color: #854d0e; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px;">
-                ❓ Pergunta problematizadora
-              </div>
-              <div style="font-size: 13px; font-weight: 600; color: #713f12; font-style: italic; line-height: 1.5;">
-                "${escapeHtml(aula.pergunta_problematizadora)}"
-              </div>
+            <div style="background: #fef9c3; border-left: 4px solid #eab308; padding: 11px 15px; border-radius: 6px; margin-bottom: 10px;">
+              <div style="font-size: 10px; font-weight: bold; color: #854d0e; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 5px;">❓ Pergunta problematizadora</div>
+              <div style="font-size: 13px; font-weight: 600; color: #713f12; font-style: italic; line-height: 1.5;">"${escapeHtml(aula.pergunta_problematizadora)}"</div>
             </div>
           ` : ''}
 
-          <!-- Grid de metadados -->
           <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
             ${aula.habilidade_foco ? `<span style="background: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;">🎯 ${escapeHtml(aula.habilidade_foco)}</span>` : ''}
             ${aula.foco ? `<span style="background: #f1f5f9; color: #475569; padding: 3px 10px; border-radius: 4px; font-size: 11px;">📌 ${escapeHtml(aula.foco)}</span>` : ''}
@@ -288,19 +418,18 @@ function htmlCorpo(sd) {
           </div>
 
           ${bloco('🎯 Objetivo', aula.objetivo_da_aula, '#059669')}
+          ${bloco('📖 Conteúdo', aula.conteudo, '#475569')}
           ${bloco('🎨 Estratégia concreta', aula.estrategia, '#7c3aed', '#faf5ff')}
-          ${bloco('👨‍🏫 Metodologia', aula.metodologia)}
+          ${bloco('👨‍🏫 Metodologia', aula.metodologia, '#475569')}
 
           ${(aula.atividades || []).length > 0 ? `
             <div style="margin-bottom: 8px;">
-              <div style="font-size: 10px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
-                👥 Atividades dos alunos
-              </div>
+              <div style="font-size: 10px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">👥 Atividades dos alunos</div>
               ${aula.atividades.map(a => `<div style="font-size: 12px; color: #334155; line-height: 1.5;">• ${escapeHtml(a)}</div>`).join('')}
             </div>
           ` : ''}
 
-          ${bloco('📦 Recursos', (aula.recursos || []).join(' · '))}
+          ${(aula.recursos || []).length > 0 ? bloco('📦 Recursos', (aula.recursos || []).join(' · '), '#475569') : ''}
           ${bloco('✅ Avaliação da aula', aula.avaliacao_da_aula, '#059669', '#ecfdf5')}
           ${bloco('🎯 Evidência de aprendizagem', aula.evidencia_de_aprendizagem, '#0d9488', '#f0fdfa')}
           ${bloco('⚠️ Onde pode travar', aula.onde_pode_travar, '#b45309', '#fffbeb')}
@@ -311,156 +440,90 @@ function htmlCorpo(sd) {
           ${bloco('🌍 Conexão com a vida', aula.conexao_com_a_vida, '#c2410c', '#fff7ed')}
         </div>
       </div>
-    `;
-  }).join('');
-
-  // ============================================================
-  // AVALIAÇÃO GERAL + ADAPTAÇÕES + CONSIDERAÇÕES FINAIS
-  // ============================================================
-  const avalGeral = sd.avaliacao_geral || {};
-  const avalHtml = (avalGeral.instrumentos || avalGeral.indicadores_de_sucesso || avalGeral.como_acompanhar) ? `
-    <div style="
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin-bottom: 14px;
-      page-break-inside: avoid;
-    ">
-      <div style="font-size: 14px; font-weight: bold; color: #0f172a; margin-bottom: 10px;">
-        📊 Avaliação geral do período
-      </div>
-      ${(avalGeral.instrumentos || []).length > 0 ? `
-        <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Instrumentos</div>
-        ${avalGeral.instrumentos.map(x => `<div style="font-size: 12px; color: #334155; line-height: 1.5;">• ${escapeHtml(x)}</div>`).join('')}
-      ` : ''}
-      ${(avalGeral.indicadores_de_sucesso || []).length > 0 ? `
-        <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 4px;">Indicadores de sucesso</div>
-        ${avalGeral.indicadores_de_sucesso.map(x => `<div style="font-size: 12px; color: #334155; line-height: 1.5;">• ${escapeHtml(x)}</div>`).join('')}
-      ` : ''}
-      ${avalGeral.como_acompanhar ? `
-        <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 4px;">Como acompanhar</div>
-        <div style="font-size: 12px; color: #334155; line-height: 1.5;">${escapeHtml(avalGeral.como_acompanhar)}</div>
-      ` : ''}
-    </div>
-  ` : '';
-
-  const adaptHtml = (sd.adaptacoes_inclusivas || []).length > 0 ? `
-    <div style="
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin-bottom: 14px;
-      page-break-inside: avoid;
-    ">
-      <div style="font-size: 14px; font-weight: bold; color: #1e3a8a; margin-bottom: 10px;">
-        🧩 Adaptações inclusivas
-      </div>
-      ${sd.adaptacoes_inclusivas.map(a => `
-        <div style="margin-bottom: 10px;">
-          <div style="font-size: 12px; font-weight: bold; color: #1e3a8a; margin-bottom: 3px;">${escapeHtml(a.necessidade || '')}</div>
-          ${(a.estrategias || []).map(e => `<div style="font-size: 12px; color: #1e3a8a; line-height: 1.5;">• ${escapeHtml(e)}</div>`).join('')}
-        </div>
-      `).join('')}
-    </div>
-  ` : '';
-
-  const consHtml = sd.consideracoes_finais ? `
-    <div style="
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin-bottom: 14px;
-      page-break-inside: avoid;
-    ">
-      <div style="font-size: 14px; font-weight: bold; color: #854d0e; margin-bottom: 6px;">
-        📌 Considerações finais
-      </div>
-      <div style="font-size: 12px; color: #713f12; line-height: 1.6;">
-        ${escapeHtml(sd.consideracoes_finais)}
-      </div>
-    </div>
-  ` : '';
-
-  // ============================================================
-  // HTML final
-  // ============================================================
-  return `
-    <div style="
-      width: 1080px;
-      padding: 30px 40px;
-      background: #ffffff;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #0f172a;
-      box-sizing: border-box;
-    ">
-      <!-- Cabeçalho pequeno -->
-      <div style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 2px solid #1e40af;
-        padding-bottom: 10px;
-        margin-bottom: 20px;
-      ">
-        <div>
-          <div style="font-size: 16px; font-weight: bold; color: #1e40af;">PLANEJADOR SIMIDNAPE</div>
-          <div style="font-size: 10px; color: #64748b;">O Professor Inesquecível</div>
-        </div>
-        <div style="text-align: right; font-size: 11px; color: #475569;">
-          <div><strong>${escapeHtml(cab.titulo || '')}</strong></div>
-          <div>${escapeHtml(cab.componente || '')} · ${escapeHtml(cab.ano || '')} · ${escapeHtml(cab.periodo_texto || '')}</div>
-        </div>
-      </div>
-
-      ${logicaHtml}
-      ${eixosHtml}
-      ${descritoresHtml}
-      ${objetivosHtml}
-      ${justificativaHtml}
-
-      <div style="
-        font-size: 14px;
-        font-weight: bold;
-        color: #0f172a;
-        margin: 20px 0 12px;
-        padding-top: 10px;
-        border-top: 1px solid #e2e8f0;
-      ">
-        📋 Sequência didática — ${(sd.sequencia_didatica || []).length} aula(s)
-      </div>
-
-      ${aulasHtml}
-
-      ${avalHtml}
-      ${adaptHtml}
-      ${consHtml}
     </div>
   `;
 }
 
 // ============================================================
-// RODAPÉ EM CADA PÁGINA
+// BLOCO FINAL (avaliação geral + adaptações + considerações)
 // ============================================================
-function desenharRodape(pdf, pdfW, pdfH, MARGEM, RODAPE_ALTURA, numPagina) {
+function htmlBlocoFinal(sd) {
+  const partes = [];
+  const aval = sd.avaliacao_geral || {};
+
+  if (aval.instrumentos?.length || aval.indicadores_de_sucesso?.length || aval.como_acompanhar) {
+    partes.push(`
+      <div style="border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px;">
+        <div style="font-size: 15px; font-weight: bold; color: #0f172a; margin-bottom: 10px;">📊 Avaliação geral do período</div>
+        ${(aval.instrumentos || []).length > 0 ? `
+          <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Instrumentos</div>
+          ${aval.instrumentos.map(x => `<div style="font-size: 12px; color: #334155; line-height: 1.5;">• ${escapeHtml(x)}</div>`).join('')}
+        ` : ''}
+        ${(aval.indicadores_de_sucesso || []).length > 0 ? `
+          <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 4px;">Indicadores de sucesso</div>
+          ${aval.indicadores_de_sucesso.map(x => `<div style="font-size: 12px; color: #334155; line-height: 1.5;">• ${escapeHtml(x)}</div>`).join('')}
+        ` : ''}
+        ${aval.como_acompanhar ? `
+          <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 4px;">Como acompanhar</div>
+          <div style="font-size: 12px; color: #334155; line-height: 1.5;">${escapeHtml(aval.como_acompanhar)}</div>
+        ` : ''}
+      </div>
+    `);
+  }
+
+  if ((sd.adaptacoes_inclusivas || []).length > 0) {
+    partes.push(`
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px;">
+        <div style="font-size: 15px; font-weight: bold; color: #1e3a8a; margin-bottom: 10px;">🧩 Adaptações inclusivas</div>
+        ${sd.adaptacoes_inclusivas.map(a => `
+          <div style="margin-bottom: 10px;">
+            <div style="font-size: 12px; font-weight: bold; color: #1e3a8a; margin-bottom: 4px;">${escapeHtml(a.necessidade || '')}</div>
+            ${(a.estrategias || []).map(e => `<div style="font-size: 12px; color: #1e3a8a; line-height: 1.5;">• ${escapeHtml(e)}</div>`).join('')}
+          </div>
+        `).join('')}
+      </div>
+    `);
+  }
+
+  if (sd.consideracoes_finais) {
+    partes.push(`
+      <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px;">
+        <div style="font-size: 15px; font-weight: bold; color: #854d0e; margin-bottom: 6px;">📌 Considerações finais</div>
+        <div style="font-size: 12px; color: #713f12; line-height: 1.6;">${escapeHtml(sd.consideracoes_finais)}</div>
+      </div>
+    `);
+  }
+
+  if (partes.length === 0) return '';
+
+  return `
+    <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 16px 32px; background: #ffffff;">
+      ${partes.join('')}
+    </div>
+  `;
+}
+
+// ============================================================
+// RODAPÉ
+// ============================================================
+function desenharRodape(pdf, numPagina) {
   pdf.setFontSize(8);
   pdf.setTextColor(120, 120, 120);
   pdf.text(
     'SIMIDNAPE PRO · O Professor Inesquecível · simidnape.com.br',
     MARGEM,
-    pdfH - 5
+    PDF_H - 4
   );
   pdf.text(
     `Página ${numPagina}`,
-    pdfW - MARGEM,
-    pdfH - 5,
+    PDF_W - MARGEM,
+    PDF_H - 4,
     { align: 'right' }
   );
 }
 
 // ============================================================
-// FUNÇÃO PÚBLICA
+// FUNÇÃO PRINCIPAL
 // ============================================================
 export async function gerarPdfPlanejamento(plano) {
   if (!plano || !plano.structured_data) {
@@ -470,132 +533,122 @@ export async function gerarPdfPlanejamento(plano) {
   const sd = plano.structured_data;
   const cab = sd.cabecalho || {};
 
-  // ------------------------------------------------------------
-  // 1. Monta os containers ocultos
-  // ------------------------------------------------------------
-  const capaEl = document.createElement('div');
-  capaEl.style.cssText = 'position: fixed; left: -99999px; top: 0; width: 1080px; background: #fff;';
-  capaEl.innerHTML = htmlCapa(cab);
-  document.body.appendChild(capaEl);
+  // 1. PDF vazio (A4 paisagem)
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-  const corpoEl = document.createElement('div');
-  corpoEl.style.cssText = 'position: fixed; left: -99999px; top: 0; width: 1080px; background: #fff;';
-  corpoEl.innerHTML = htmlCorpo(sd);
-  document.body.appendChild(corpoEl);
+  // 2. Capa (página 1)
+  const canvasCapa = await renderizarBloco(htmlCapa(cab));
+  const capaRatio = CONTENT_W_MM / canvasCapa.width;
+  const capaAlturaMM = Math.min(canvasCapa.height * capaRatio, CONTENT_H_MM);
+  pdf.addImage(
+    canvasCapa.toDataURL('image/jpeg', 0.95),
+    'JPEG',
+    MARGEM,
+    MARGEM,
+    CONTENT_W_MM,
+    capaAlturaMM
+  );
 
-  try {
-    // ----------------------------------------------------------
-    // 2. Captura os canvases
-    // ----------------------------------------------------------
-    const canvasCapa = await html2canvas(capaEl, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      windowWidth: capaEl.scrollWidth,
-      windowHeight: capaEl.scrollHeight,
-    });
+  // 3. Prepara os blocos do corpo (cada bloco é uma unidade atômica)
+  const blocosHtml = [
+    htmlCabecalhoPlano(sd),
+    htmlBlocoMacro(sd),
+    ...(sd.sequencia_didatica || []).map((a, i) => htmlBlocoAula(a, i)),
+    htmlBlocoFinal(sd),
+  ].filter(Boolean);
 
-    const canvasCorpo = await html2canvas(corpoEl, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      windowWidth: corpoEl.scrollWidth,
-      windowHeight: corpoEl.scrollHeight,
-    });
+  // 4. Coloca cada bloco no PDF
+  let yAtual = MARGEM;
+  let paginaAtual = 1;
 
-    // ----------------------------------------------------------
-    // 3. PDF em A4 paisagem
-    // ----------------------------------------------------------
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const pdfW = pdf.internal.pageSize.getWidth();   // 297
-    const pdfH = pdf.internal.pageSize.getHeight();  // 210
-    const MARGEM = 10;
-    const RODAPE_ALTURA = 8;
-    const usableW = pdfW - MARGEM * 2;
-    const usableH = pdfH - MARGEM - RODAPE_ALTURA - 2;
+  for (const html of blocosHtml) {
+    const canvas = await renderizarBloco(html);
+    const ratio = CONTENT_W_MM / canvas.width;
+    const alturaMM = canvas.height * ratio;
 
-    // ----------------------------------------------------------
-    // 4. Página 1 — CAPA
-    // ----------------------------------------------------------
-    const ratioCapa = usableW / canvasCapa.width;
-    const capaHeightInPdf = Math.min(canvasCapa.height * ratioCapa, usableH);
-    const capaImgData = canvasCapa.toDataURL('image/jpeg', 0.95);
-    pdf.addImage(capaImgData, 'JPEG', MARGEM, MARGEM, usableW, capaHeightInPdf);
-    desenharRodape(pdf, pdfW, pdfH, MARGEM, RODAPE_ALTURA, 1);
-
-    // ----------------------------------------------------------
-    // 5. Páginas 2+ — CORPO com slicing
-    // ----------------------------------------------------------
-    const ratio = usableW / canvasCorpo.width;
-    const alturaPaginaEmPx = usableH / ratio;
-    const ctx = canvasCorpo.getContext('2d');
-    const canvasW = canvasCorpo.width;
-    const canvasH = canvasCorpo.height;
-
-    // Detecta linha branca (para não cortar no meio de texto)
-    const linhaBranca = (y) => {
-      if (y < 0 || y >= canvasH) return false;
-      const data = ctx.getImageData(0, y, canvasW, 1).data;
-      let escuros = 0;
-      for (let i = 0; i < data.length; i += 16) {
-        const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-        if (lum < 220) escuros++;
-      }
-      return (escuros / (data.length / 16)) < 0.01;
-    };
-
-    const acharCorte = (yInicial, yMinimo) => {
-      let y = yInicial;
-      let t = 0;
-      while (y > yMinimo && t < 300) {
-        if (linhaBranca(y)) return y;
-        y--;
-        t++;
-      }
-      return yInicial;
-    };
-
-    let posY = 0;
-    let pageIndex = 1; // já foi a capa
-
-    while (posY < canvasH) {
-      const corteCru = Math.min(posY + alturaPaginaEmPx, canvasH);
-      let corteFinal = corteCru;
-      if (corteCru < canvasH) {
-        corteFinal = acharCorte(corteCru, posY + alturaPaginaEmPx * 0.55);
-      }
-      const sliceHeight = corteFinal - posY;
-
-      // Cria canvas temporário
-      const pageCanvas = document.createElement('canvas');
-      pageCanvas.width = canvasW;
-      pageCanvas.height = sliceHeight;
-      const pctx = pageCanvas.getContext('2d');
-      pctx.fillStyle = '#ffffff';
-      pctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-      pctx.drawImage(canvasCorpo, 0, posY, canvasW, sliceHeight, 0, 0, canvasW, sliceHeight);
-
-      const imgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-      const sliceHeightInPdf = sliceHeight * ratio;
-
-      pdf.addPage('a4', 'landscape');
-      pdf.addImage(imgData, 'JPEG', MARGEM, MARGEM, usableW, sliceHeightInPdf);
-      pageIndex++;
-      desenharRodape(pdf, pdfW, pdfH, MARGEM, RODAPE_ALTURA, pageIndex);
-
-      posY = corteFinal;
+    // Caso A — Cabe na página atual
+    if (yAtual + alturaMM <= MARGEM + CONTENT_H_MM + 0.5) {
+      pdf.addImage(
+        canvas.toDataURL('image/jpeg', 0.95),
+        'JPEG',
+        MARGEM,
+        yAtual,
+        CONTENT_W_MM,
+        alturaMM
+      );
+      yAtual += alturaMM + GAP_ENTRE_BLOCOS;
     }
+    // Caso B — Não cabe, mas o bloco inteiro cabe em uma página nova
+    else if (alturaMM <= CONTENT_H_MM + 0.5) {
+      pdf.addPage('a4', 'landscape');
+      paginaAtual++;
+      yAtual = MARGEM;
+      pdf.addImage(
+        canvas.toDataURL('image/jpeg', 0.95),
+        'JPEG',
+        MARGEM,
+        yAtual,
+        CONTENT_W_MM,
+        alturaMM
+      );
+      yAtual += alturaMM + GAP_ENTRE_BLOCOS;
+    }
+    // Caso C — Bloco é maior que uma página inteira → fatia
+    else {
+      // Se ainda tem conteúdo na página atual, começa nova
+      if (yAtual > MARGEM + 1) {
+        pdf.addPage('a4', 'landscape');
+        paginaAtual++;
+        yAtual = MARGEM;
+      }
 
-    // ----------------------------------------------------------
-    // 6. Salva
-    // ----------------------------------------------------------
-    pdf.save(`${slug(cab.titulo)}_PLANEJAMENTO.pdf`);
-  } finally {
-    document.body.removeChild(capaEl);
-    document.body.removeChild(corpoEl);
+      const alturaPaginaPx = CONTENT_H_MM / ratio;
+      let posY = 0;
+
+      while (posY < canvas.height) {
+        const restante = canvas.height - posY;
+        const fatiaPx = Math.min(alturaPaginaPx, restante);
+
+        const fatiaCanvas = document.createElement('canvas');
+        fatiaCanvas.width = canvas.width;
+        fatiaCanvas.height = Math.ceil(fatiaPx);
+        const fctx = fatiaCanvas.getContext('2d');
+        fctx.fillStyle = '#ffffff';
+        fctx.fillRect(0, 0, fatiaCanvas.width, fatiaCanvas.height);
+        fctx.drawImage(canvas, 0, posY, canvas.width, fatiaPx, 0, 0, canvas.width, fatiaPx);
+
+        const fatiaAlturaMM = fatiaPx * ratio;
+        pdf.addImage(
+          fatiaCanvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          MARGEM,
+          yAtual,
+          CONTENT_W_MM,
+          fatiaAlturaMM
+        );
+
+        posY += fatiaPx;
+
+        if (posY < canvas.height) {
+          pdf.addPage('a4', 'landscape');
+          paginaAtual++;
+          yAtual = MARGEM;
+        } else {
+          yAtual += fatiaAlturaMM + GAP_ENTRE_BLOCOS;
+        }
+      }
+    }
   }
+
+  // 5. Rodapé em todas as páginas (desenha por cima)
+  const totalPaginas = pdf.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPaginas; i++) {
+    pdf.setPage(i);
+    desenharRodape(pdf, i);
+  }
+
+  // 6. Salva
+  pdf.save(`${slug(cab.titulo)}_PLANEJAMENTO.pdf`);
 }
 
 export default gerarPdfPlanejamento;
