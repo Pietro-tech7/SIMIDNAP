@@ -2109,7 +2109,7 @@ SCHEMAS = {
     "tipo_acao": "string ('formacao' | 'acompanhamento' | 'intervencao' | 'acao_pedagogica' | 'indicadores' | 'reuniao')",
     "tipo_acao_nome": "string (nome legível da ação, ex: 'Plano de Formação Continuada')",
     "publico_alvo": "string (ex: 'professores do 5º ano', 'toda a equipe docente')",
-    "periodo_texto": "string (ex: '02/09/2026 a 30/09/2026')",
+    "periodo_texto": "string (ex: 'Setembro/2026')",
     "objetivo_pedagogico": "string (o que se espera transformar)"
   },
   "contexto": "string (diagnóstico breve que fundamenta a ação — use dados informados, nunca invente estatísticas)",
@@ -2121,11 +2121,16 @@ SCHEMAS = {
     {
       "numero": 1,
       "titulo": "string (nome curto e claro da ação)",
-      "descricao": "string (o que será feito, como, com quem)",
+      "descricao": "string (o que será feito, como, com quem — CONCRETO e EXECUTÁVEL)",
       "responsavel": "string (ex: 'coordenador(a)', 'professores do 5º ano', 'equipe gestora')",
       "prazo": "string (ex: 'semana 1', 'até 15/10')",
       "recursos": ["string"],
-      "como_avaliar": "string (o que observar para saber se a ação funcionou)"
+      "como_avaliar": "string (o que observar para saber se a ação funcionou)",
+      "principio_pedagogico": "string (princípio de andragogia, neuroeducação ou psicologia educacional que fundamenta esta ação. Ex: 'Aprendizagem entre pares', 'Uso pedagógico de dados', 'Aprendizagem por descoberta', 'Avaliação formativa')",
+      "leitura_relacional": "string (leitura psicanalítica ESPECÍFICA e ÚNICA do vínculo coordenador-professor nesta ação. Deve falar do vínculo, não do conteúdo. Ex: 'Ao colocar o professor como analista — não como aluno — validamos sua expertise e reduzimos a resistência à formação')",
+      "onde_pode_resistir": "string (antecipação: onde o professor/equipe provavelmente vai resistir + o que o coordenador faz se isso acontecer)",
+      "momento_de_encantamento": "string (o momento 'uau' da ação — o instante em que o professor percebe que a ação vale a pena)",
+      "resultado_visivel": "string (o que o professor SABERÁ, SABERÁ FAZER e SENTIRÁ ao final)"
     }
   ],
   "cronograma": [
@@ -2140,8 +2145,7 @@ SCHEMAS = {
     "indicadores": ["string (ex: 'aumento de 15% no desempenho do descritor D01')"],
     "como_registrar_evidencias": ["string (ex: 'fotos da formação', 'ata de reunião', 'planilha de acompanhamento')"]
   },
-  "consideracoes_finais": "string (orientações para o coordenador executar a ação)",
-  "referencias": ["string (documentos legais, normativas, avaliações)"]
+  "consideracoes_finais": "string (orientações para o coordenador executar a ação)"
 }
 """,
 }
@@ -3392,9 +3396,12 @@ class GeminiService:
         if task_type not in SCHEMAS:
             return {"erro": f"Tipo não suportado: {task_type}"}
 
-        # Modo Planejamento usa prompt em camadas (BASE + adaptadores)
+        # Modos Planejamento e Coordenação usam prompts em camadas
+        # (BASE + adaptadores específicos).
         if task_type == "planejamento":
             system_prompt = _montar_prompt_planejamento(payload)
+        elif task_type == "coordenacao":
+            system_prompt = _montar_prompt_coordenacao(payload)
         else:
             system_prompt = _system_para_task(task_type, diferenciado=diferenciado)
 
