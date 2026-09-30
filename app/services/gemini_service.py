@@ -2151,7 +2151,15 @@ SCHEMAS = {
       "eixo": "string (ex: 'Números, sequências e operações')"
     }
   ],
-  "descritores_trabalhados": ["string (ex: 'D01', 'D02', ... — todos os descritores do período)"],
+  "descritores_trabalhados": ["string (ex: 'D01', 'D02', ... — códigos curtos)"],
+  "descritores_detalhados": [
+    {
+      "codigo": "string (ex: 'D01')",
+      "texto": "string (texto COMPLETO do descritor, copiado exatamente da matriz SAEB/SAEPI informada pelo professor)",
+      "tema": "string (ex: 'Números', 'Leitura', 'Geometria')",
+      "fonte": "string ('saeb' | 'saepi')"
+    }
+  ],
   "objetivos_gerais": "string (o que se espera ao final do período)",
   "objetivos_especificos": ["string (desdobramentos por bloco de aprendizagem)"],
   "habilidades": [
@@ -2986,7 +2994,11 @@ O QUE PRIORIZAR NA SAÍDA
 - CABEÇALHO: componente, ano, período, total de aulas, tempo por aula
 - LÓGICA PEDAGÓGICA: a espinha dorsal
 - EIXOS PREDOMINANTES: por período/semana/mês
-- DESCRITORES TRABALHADOS: todos os do período
+- DESCRITORES TRABALHADOS: os códigos curtos (ex: D01, D02)
+- DESCRITORES DETALHADOS: para CADA código, o texto COMPLETO e o tema.
+  Você recebe os descritores no payload (com texto). Use-os LITERALMENTE.
+  NUNCA invente o texto. Se você recebeu `{codigo: 'D01', texto: '...'}`,
+  copie exatamente. Se não recebeu, deixe o campo `texto` vazio.
 - OBJETIVOS: geral + específicos
 - HABILIDADES: código + texto
 - JUSTIFICATIVA: por que esse plano importa para essa turma

@@ -175,6 +175,8 @@ def generate_planejamento_lote(
         # Currículo
         "habilidades": (extra or {}).get("habilidades"),
         "descritores": (extra or {}).get("descritores"),
+        # Descrições completas dos descritores (para a IA usar o texto exato)
+        "descritores_detalhados": (extra or {}).get("descritores_detalhados"),
         "referenciais": (extra or {}).get("referenciais"),
         "batch_start": batch_start,
         "batch_end": batch_end,

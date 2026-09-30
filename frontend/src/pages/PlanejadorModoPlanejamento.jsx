@@ -378,6 +378,25 @@ const PlanejadorModoPlanejamento = () => {
       }))),
     }));
 
+    // Descritores detalhados (código + texto + tema + fonte) — para a IA
+    // preencher o texto exato no plano.
+    const descritoresDetalhados = [];
+    const vistos = new Set();
+    habilidades.forEach(h => {
+      (h.descritoresCorrelacionados || []).forEach(d => {
+        const chave = `${d.fonte}:${d.codigo}`;
+        if (h.descritores?.includes(chave) && !vistos.has(chave)) {
+          vistos.add(chave);
+          descritoresDetalhados.push({
+            codigo: d.codigo,
+            texto: d.texto || '',
+            tema: d.tema || '',
+            fonte: d.fonte || '',
+          });
+        }
+      });
+    });
+
     const componenteNome = componentes.find(c => c.codigo === componente)?.nome || componente;
 
     const payloadBase = {
@@ -392,6 +411,7 @@ const PlanejadorModoPlanejamento = () => {
         nome_escola: nomeEscola.trim() || null,
         municipio: municipio.trim() || null,
         estado: estado || null,
+        descritores_detalhados: descritoresDetalhados,
       },
       grade: etapa === 'EI' ? 'Educação Infantil' : (etapa === 'EM' ? `${ano}ª série` : `${ano}º ano`),
       content: habPayload.map(h => h.texto).join(' | '),
@@ -1200,15 +1220,33 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
             </div>
           </div>
         )}
-        {sd.descritores_trabalhados?.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h3 className="font-semibold text-gray-800 mb-3">📊 Descritores trabalhados</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {sd.descritores_trabalhados.map((d, i) => (
-                <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono font-semibold">
-                  {d}
-                </span>
-              ))}
+        {(sd.descritores_detalhados?.length > 0 || sd.descritores_trabalhados?.length > 0) && (
+          <div className="bg-white rounded-xl border border-gray-100 p-5 md:col-span-2">
+            <h3 className="font-semibold text-gray-800 mb-3">📊 Descritores trabalhados no período</h3>
+            <div className="space-y-2">
+              {(sd.descritores_detalhados || []).length > 0 ? (
+                sd.descritores_detalhados.map((d, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm">
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono font-semibold flex-shrink-0">
+                      {d.codigo}
+                    </span>
+                    {d.fonte && (
+                      <span className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-semibold uppercase flex-shrink-0 mt-0.5">
+                        {d.fonte}
+                      </span>
+                    )}
+                    <span className="text-gray-700 leading-snug">{d.texto}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {sd.descritores_trabalhados.map((d, i) => (
+                    <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono font-semibold">
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1247,7 +1285,7 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
           </h3>
           <div className="space-y-5">
             {sd.sequencia_didatica.map((aula, i) => (
-              <AulaCard key={i} aula={aula} index={i} />
+              <AulaCard key={i} aula={aula} index={i} sd={sd} />
             ))}
           </div>
         </div>
@@ -1315,7 +1353,7 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
 // ============================================================
 // CARD DE AULA — exibe cada aula com todos os campos novos
 // ============================================================
-const AulaCard = ({ aula, index }) => {
+const AulaCard = ({ aula, index, sd }) => {
   const [expandido, setExpandido] = useState(false);
 
   return (
@@ -1377,11 +1415,19 @@ const AulaCard = ({ aula, index }) => {
                 📌 {aula.foco}
               </span>
             )}
-            {(aula.descritores || []).map((d, i) => (
-              <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-semibold">
-                {d}
-              </span>
-            ))}
+            {(aula.descritores || []).map((d, i) => {
+              // Procura o texto completo desse descritor no cabeçalho
+              const detalhe = (sd.descritores_detalhados || []).find(x => x.codigo === d);
+              return (
+                <span
+                  key={i}
+                  className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-semibold"
+                  title={detalhe?.texto || ''}
+                >
+                  {d}
+                </span>
+              );
+            })}
           </div>
 
           {aula.objetivo_da_aula && (
