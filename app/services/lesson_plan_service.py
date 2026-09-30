@@ -189,8 +189,9 @@ def update_lesson_plan(
     plan_id: str,
     title: str = None,
     objective: str = None,
+    structured_data: Dict[str, Any] = None,
 ) -> LessonPlan:
-    """Edita título e/ou objetivo de um plano (Bloco D11)."""
+    """Edita título, objetivo e/ou o conteúdo estruturado de um plano (Bloco D11b)."""
     plan = get_lesson_plan(db, user_id, plan_id)
     if not plan:
         return None
@@ -198,6 +199,8 @@ def update_lesson_plan(
         plan.title = title
     if objective is not None:
         plan.objective = objective
+    if structured_data is not None:
+        plan.structured_data = structured_data
     db.commit()
     db.refresh(plan)
     return plan

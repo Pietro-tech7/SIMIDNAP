@@ -124,7 +124,8 @@ class LessonPlanSaveComplete(BaseModel):
 
 
 class LessonPlanUpdate(BaseModel):
-    """Edição de um plano (D11). Só título e objetivo por enquanto —
-    a edição do conteúdo estruturado fica para um bloco futuro."""
+    """Edição de um plano (D11b). Aceita título, objetivo e o conteúdo
+    estruturado completo (edição inline pelo usuário)."""
     title: Optional[str] = None
     objective: Optional[str] = None
+    structured_data: Optional[Dict[str, Any]] = None

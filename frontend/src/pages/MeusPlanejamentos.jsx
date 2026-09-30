@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
+import ModalPlano from '../components/ModalPlano';
 
 const MODOS = [
   { value: 'todos', label: 'Todos', icon: '📋' },
@@ -58,20 +59,37 @@ const MeusPlanejamentos = () => {
     setNovoTitulo(plano.title);
   };
 
-  const salvarEdicao = async () => {
-    if (!planoEditando || !novoTitulo.trim()) return;
-    setSalvandoEdicao(true);
-    try {
-      const res = await api.patch(`/lesson-plans/${planoEditando.id}`, {
-        title: novoTitulo.trim(),
+  const salvarEdicaoCompleta = async ({ title, structured_data, comoNovo }) => {
+    if (!planoAberto) return;
+
+    if (comoNovo) {
+      // Salva como novo: cria uma cópia editada, preserva o original
+      const copia = await api.post('/lesson-plans/save-complete', {
+        title,
+        subject: planoAberto.subject,
+        grade: planoAberto.grade,
+        content: planoAberto.content,
+        objective: planoAberto.objective,
+        structured_data,
+        extra: {
+          plan_type: planoAberto.plan_type,
+          modo: planoAberto.modo,
+          periodo_tipo: planoAberto.periodo_tipo,
+          periodo_inicio: planoAberto.periodo_inicio,
+          periodo_fim: planoAberto.periodo_fim,
+          total_aulas: planoAberto.total_aulas,
+        },
       });
-      setPlanos(prev => prev.map(p => p.id === planoEditando.id ? res.data : p));
-      setPlanoEditando(null);
-      setNovoTitulo('');
-    } catch {
-      alert('Erro ao salvar.');
-    } finally {
-      setSalvandoEdicao(false);
+      setPlanos(prev => [copia.data, ...prev]);
+      setPlanoAberto(copia.data);
+    } else {
+      // Salva no original
+      const res = await api.patch(`/lesson-plans/${planoAberto.id}`, {
+        title,
+        structured_data,
+      });
+      setPlanos(prev => prev.map(p => p.id === planoAberto.id ? res.data : p));
+      setPlanoAberto(res.data);
     }
   };
 
@@ -272,38 +290,13 @@ const MeusPlanejamentos = () => {
         </div>
       )}
 
-      {/* MODAL — Reabrir */}
+      {/* MODAL — Ver e Editar */}
       {planoAberto && (
-        <ModalVisualizar plano={planoAberto} onFechar={() => setPlanoAberto(null)} />
-      )}
-
-      {/* MODAL — Editar título */}
-      {planoEditando && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">✏️ Editar título</h2>
-            <input
-              type="text" value={novoTitulo}
-              onChange={(e) => setNovoTitulo(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => { setPlanoEditando(null); setNovoTitulo(''); }}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm px-4 py-2 rounded-lg"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={salvarEdicao} disabled={salvandoEdicao || !novoTitulo.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium text-sm px-4 py-2 rounded-lg"
-              >
-                {salvandoEdicao ? 'Salvando...' : 'Salvar'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalPlano
+          plano={planoAberto}
+          onFechar={() => setPlanoAberto(null)}
+          onSalvar={salvarEdicaoCompleta}
+        />
       )}
     </div>
   );

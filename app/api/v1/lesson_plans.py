@@ -273,6 +273,7 @@ def update_one(
         plan_id=plan_id,
         title=data.title,
         objective=data.objective,
+        structured_data=data.structured_data,
     )
     if not plan:
         raise HTTPException(status_code=404, detail="Plano não encontrado.")
