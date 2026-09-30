@@ -720,9 +720,90 @@ const PlanejadorModoPlanejamento = () => {
         </div>
       </div>
 
-      {/* PASSO 2 — REFERENCIAIS */}
+      {/* PASSO 2 — PERÍODO E TEMPO (sem datas) */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">📚 Passo 2 — Referenciais curriculares</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">📅 Passo 2 — Período e tempo</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Duração do planejamento</label>
+            <select
+              value={periodoTipo} onChange={(e) => { setPeriodoTipo(e.target.value); setTotalEditadoManualmente(false); }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+            >
+              {periodosDisponiveis.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tempo por aula</label>
+            <select
+              value={tempoAula} onChange={(e) => setTempoAula(Number(e.target.value))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+            >
+              <option value={50}>50 minutos</option>
+              <option value={60}>1 hora (60 min)</option>
+            </select>
+          </div>
+        </div>
+
+        {periodoTipo !== 'aula' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Aulas por semana *
+              </label>
+              <input
+                type="number" min="1" max="40" value={aulasPorSemana}
+                onChange={(e) => { setAulasPorSemana(Number(e.target.value) || 1); setTotalEditadoManualmente(false); }}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Ex: professor 20h costuma ter 13 aulas/semana; 40h, 26 aulas/semana. Ajuste conforme sua lotação.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex flex-wrap justify-between items-center gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-blue-700 font-semibold">Total de aulas no período</p>
+              <p className="text-3xl font-bold text-blue-900 mt-1">{totalAulas}</p>
+              <p className="text-xs text-blue-700 mt-1">
+                {periodoTipo === 'aula' && '1 aula única'}
+                {periodoTipo === 'semana' && `${aulasPorSemana} aula(s) em 1 semana`}
+                {periodoTipo === 'mes' && `${aulasPorSemana} × 4 semanas = ${aulasPorSemana * 4} aulas`}
+                {periodoTipo === 'bimestre' && `${aulasPorSemana} × 8 semanas = ${aulasPorSemana * 8} aulas`}
+              </p>
+            </div>
+            {periodoTipo !== 'aula' && (
+              <div className="text-right">
+                <label className="block text-xs font-medium text-blue-800 mb-1">
+                  Ajustar manualmente (opcional)
+                </label>
+                <input
+                  type="number" min="1" max="200" value={totalAulas}
+                  onChange={(e) => { setTotalAulas(Number(e.target.value) || 1); setTotalEditadoManualmente(true); }}
+                  className="w-24 border-2 border-blue-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-blue-800"
+                />
+                {totalEditadoManualmente && (
+                  <button
+                    type="button"
+                    onClick={() => setTotalEditadoManualmente(false)}
+                    className="block mt-1 text-xs text-blue-700 hover:text-blue-900 font-medium ml-auto"
+                  >
+                    Recalcular automático
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* PASSO 3 — REFERENCIAIS */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">📚 Passo 3 — Referenciais curriculares</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
           {REFERENCIAIS.map(r => {
             const ativo = referenciais.includes(r.value);
@@ -754,9 +835,9 @@ const PlanejadorModoPlanejamento = () => {
         </div>
       </div>
 
-      {/* PASSO 3 — HABILIDADES */}
+      {/* PASSO 4 — HABILIDADES */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">🎯 Passo 3 — Habilidades e descritores</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">🎯 Passo 4 — Habilidades e descritores</h2>
         <p className="text-sm text-gray-600 mb-4">
           Adicione uma ou várias habilidades. Cada aula da sequência didática usará estas habilidades como base.
         </p>
@@ -932,87 +1013,6 @@ const PlanejadorModoPlanejamento = () => {
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-lg text-sm">
             ➕ Adicionar outra habilidade
           </button>
-        </div>
-      </div>
-
-      {/* PASSO 4 — PERÍODO E TEMPO (sem datas) */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">📅 Passo 4 — Período e tempo</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Duração do planejamento</label>
-            <select
-              value={periodoTipo} onChange={(e) => { setPeriodoTipo(e.target.value); setTotalEditadoManualmente(false); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
-            >
-              {periodosDisponiveis.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tempo por aula</label>
-            <select
-              value={tempoAula} onChange={(e) => setTempoAula(Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
-            >
-              <option value={50}>50 minutos</option>
-              <option value={60}>1 hora (60 min)</option>
-            </select>
-          </div>
-        </div>
-
-        {periodoTipo !== 'aula' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Aulas por semana *
-              </label>
-              <input
-                type="number" min="1" max="40" value={aulasPorSemana}
-                onChange={(e) => { setAulasPorSemana(Number(e.target.value) || 1); setTotalEditadoManualmente(false); }}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Ex: professor 20h costuma ter 13 aulas/semana; 40h, 26 aulas/semana. Ajuste conforme sua lotação.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex flex-wrap justify-between items-center gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-wider text-blue-700 font-semibold">Total de aulas no período</p>
-              <p className="text-3xl font-bold text-blue-900 mt-1">{totalAulas}</p>
-              <p className="text-xs text-blue-700 mt-1">
-                {periodoTipo === 'aula' && '1 aula única'}
-                {periodoTipo === 'semana' && `${aulasPorSemana} aula(s) em 1 semana`}
-                {periodoTipo === 'mes' && `${aulasPorSemana} × 4 semanas = ${aulasPorSemana * 4} aulas`}
-                {periodoTipo === 'bimestre' && `${aulasPorSemana} × 8 semanas = ${aulasPorSemana * 8} aulas`}
-              </p>
-            </div>
-            {periodoTipo !== 'aula' && (
-              <div className="text-right">
-                <label className="block text-xs font-medium text-blue-800 mb-1">
-                  Ajustar manualmente (opcional)
-                </label>
-                <input
-                  type="number" min="1" max="200" value={totalAulas}
-                  onChange={(e) => { setTotalAulas(Number(e.target.value) || 1); setTotalEditadoManualmente(true); }}
-                  className="w-24 border-2 border-blue-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-blue-800"
-                />
-                {totalEditadoManualmente && (
-                  <button
-                    type="button"
-                    onClick={() => setTotalEditadoManualmente(false)}
-                    className="block mt-1 text-xs text-blue-700 hover:text-blue-900 font-medium ml-auto"
-                  >
-                    Recalcular automático
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
