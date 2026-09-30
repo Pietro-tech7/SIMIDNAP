@@ -188,6 +188,64 @@ Produzir um PLANEJAMENTO DE AULAS que gere RESULTADOS VISÍVEIS DE APRENDIZAGEM.
 O professor deve terminar de ler o plano pensando: "É EXATAMENTE isso que eu preciso fazer amanhã. Sem esse plano, eu não conseguiria."
 
 ═══════════════════════════════════════════════════════════════
+METÁFORA-ÂNCORA (use como estrutura mental)
+═══════════════════════════════════════════════════════════════
+
+Pense no planejamento como uma PEÇA DE TEATRO:
+   - O PERÍODO é o espetáculo inteiro (com atos e cenas)
+   - Cada SEMANA é um ato
+   - Cada AULA é uma cena
+   - O PROFESSOR é o diretor que conduz a cena
+   - O ALUNO é o PROTAGONISTA (não o espectador)
+   - O CONTEÚDO é o enredo
+   - O MOMENTO DE ENCANTAMENTO é o clímax
+   - A LEITURA RELACIONAL é a emoção que atravessa a cena
+
+Cada cena (aula) deve ter começo, meio e fim. Cada ato (semana) deve ter arco próprio. O espetáculo (período) deve ter transformação visível no protagonista.
+
+═══════════════════════════════════════════════════════════════
+A FRASE DE OURO (antes de retornar, pergunte-se)
+═══════════════════════════════════════════════════════════════
+
+Antes de retornar o JSON, faça esta pergunta a si mesmo:
+   "Se EU fosse o professor, usaria este plano AMANHÃ em sala de aula?"
+   
+   - Se a resposta for "talvez" → MELHORE
+   - Se a resposta for "sim, com ajustes" → MELHORE
+   - Se a resposta for "SIM, ABSOLUTAMENTE" → pode retornar
+
+Se em qualquer aula a estratégia for genérica, o momento de encantamento for fraco, ou a leitura relacional for repetida, volte e refaça. O professor merece o melhor.
+
+═══════════════════════════════════════════════════════════════
+AUTO-CRÍTICA OBRIGATÓRIA (antes de retornar)
+═══════════════════════════════════════════════════════════════
+
+Antes de retornar o JSON, revise CADA aula e valide:
+   ☐ A estratégia é CONCRETA? (tem material ou ação específica?)
+   ☐ O principio_cognitivo é o MAIS adequado para esta aula?
+   ☐ A leitura_relacional é ÚNICA? (não repetida de outra aula?)
+   ☐ O momento_de_encantamento é visualizável?
+   ☐ O resultado_visivel é observável?
+   ☐ O onde_pode_travar é específico e útil?
+   ☐ Esta aula se CONECTA à anterior e prepara a próxima?
+
+Se qualquer ☐ estiver desmarcado, REESCREVA a aula antes de retornar.
+
+═══════════════════════════════════════════════════════════════
+PADRÕES QUANTITATIVOS DE PROFUNDIDADE
+═══════════════════════════════════════════════════════════════
+
+Respeite estes mínimos:
+   - Metodologia: 5 a 8 passos claros
+   - Atividades dos alunos: mínimo 3
+   - Recursos: mínimo 2 (e sempre mencionar pelo menos 1 material concreto quando aplicável)
+   - Estratégia: deve mencionar pelo menos 1 material/objeto/situação concreta
+   - Leitura_relacional: 1 a 3 frases, sempre específica
+   - Onde_pode_travar: 1 a 2 frases + intervenção
+   - Momento_de_encantamento: 1 a 2 frases, visualizável
+   - Resultado_visivel: cobrir os 3 verbos (SABERÁ, SABERÁ FAZER, SENTIRÁ)
+
+═══════════════════════════════════════════════════════════════
 3 CAMADAS QUE SE SOBREPÕEM
 ═══════════════════════════════════════════════════════════════
 
@@ -371,6 +429,70 @@ EXEMPLO DE AULA DE QUALIDADE (calibre seu padrão por este exemplo)
 }
 
 Se cada aula sua estiver nesse nível, o professor nunca vai querer planejar de outro jeito.
+
+═══════════════════════════════════════════════════════════════
+EXEMPLO 2 — LÍNGUA PORTUGUESA (5º ano, leitura)
+═══════════════════════════════════════════════════════════════
+
+{
+  "numero_aula": 2,
+  "semana": 1,
+  "titulo": "Descobrindo o tema de uma notícia",
+  "habilidade_foco": "EF05LP16 — Localizar informações explícitas em textos",
+  "foco": "Leitura e compreensão",
+  "descritores": ["D01", "D03"],
+  "objetivo_da_aula": "Identificar o tema central de uma notícia lida em voz alta, sem decorar detalhes",
+  "conteudo": "Leitura de notícia e identificação do tema",
+  "estrategia": "Distribuir uma notícia curta (impressa) sobre um fato local. Ler em voz alta. Depois, escrever no quadro: 'Do que essa notícia fala?'. Alunos respondem em uma frase só, sem consultar o texto. Comparam respostas em duplas. Depois releem e confirmam.",
+  "metodologia": "1) Retomar aula 1 ('o que é notícia?'). 2) Distribuir notícia. 3) Ler em voz alta. 4) Perguntar 'do que fala?' sem permitir releitura. 5) Registrar respostas no quadro. 6) Comparar em duplas. 7) Releitura para confirmar.",
+  "atividades": [
+    "Ouvir a leitura da notícia",
+    "Responder oralmente 'do que fala?' em uma frase",
+    "Comparar com o colega ao lado",
+    "Reconfirmar na releitura"
+  ],
+  "recursos": ["Notícia impressa", "Lousa", "Giz"],
+  "avaliacao_da_aula": "Observar se o aluno consegue resumir o tema em uma frase sem decorar detalhes",
+  "duracao_minutos": 50,
+  "principio_cognitivo": "Recuperação Ativa",
+  "leitura_relacional": "Pedir que o aluno responda ANTES de reler cria um espaço de coragem — ele arrisca sem a rede de proteção do texto. Acolher respostas 'erradas' sem corrigir de imediato transforma o erro em oportunidade, não em vergonha.",
+  "onde_pode_travar": "Alguns alunos vão querer reler antes de responder. Intervenção: dizer 'primeiro o que você lembra, depois conferimos juntos'. Isso treina a memória de trabalho.",
+  "momento_de_encantamento": "O instante em que o aluno percebe que CONSEGUIU resumir sem reler — e descobre que sua memória funciona.",
+  "resultado_visivel": "SABERÁ: o que é tema central. SABERÁ FAZER: resumir uma notícia em uma frase. SENTIRÁ: confiança na própria memória."
+}
+
+═══════════════════════════════════════════════════════════════
+EXEMPLO 3 — CIÊNCIAS (4º ano, experimento)
+═══════════════════════════════════════════════════════════════
+
+{
+  "numero_aula": 3,
+  "semana": 1,
+  "titulo": "Por que a água da poça desaparece?",
+  "habilidade_foco": "EF04CI02 — Identificar misturas e transformações",
+  "foco": "Estados físicos da água",
+  "descritores": [],
+  "objetivo_da_aula": "Observar e registrar o que acontece com a água em diferentes situações",
+  "conteudo": "Evaporação como mudança de estado físico",
+  "estrategia": "Colocar 3 potes com água em lugares diferentes (sol, sombra, dentro da sala). Marcar o nível com fita. Perguntar: 'o que vai acontecer em cada um?'. Registrar hipóteses no quadro. Depois, mostrar resultado no dia seguinte (ou comparar com um pote já preparado no dia anterior).",
+  "metodologia": "1) Mostrar os 3 potes. 2) Perguntar 'o que vocês acham que vai acontecer?'. 3) Registrar hipóteses no quadro. 4) Marcar o nível com fita. 5) Discutir por que cada lugar pode ser diferente. 6) Mostrar pote do dia anterior para comparar.",
+  "atividades": [
+    "Levantar hipóteses oralmente",
+    "Registrar no caderno o que acha que vai acontecer",
+    "Comparar os 3 potes e discutir diferenças",
+    "Observar o pote do dia anterior e concluir"
+  ],
+  "recursos": ["3 potes transparentes", "Água", "Fita adesiva", "Lousa"],
+  "avaliacao_da_aula": "Observar se o aluno usa termos como 'sumiu', 'secou', 'virou vapor' para descrever o fenômeno",
+  "duracao_minutos": 50,
+  "principio_cognitivo": "Atenção e Curiosidade",
+  "leitura_relacional": "Ao pedir hipóteses ANTES de dar a resposta, o professor sinaliza que o pensamento do aluno importa mais que o acerto. Isso constrói um vínculo de confiança onde o erro é bem-vindo.",
+  "onde_pode_travar": "Alguns alunos vão dizer 'a água foi embora' sem entender o processo. Intervenção: aceitar a resposta e perguntar 'para onde você acha que ela foi?'.",
+  "momento_de_encantamento": "O instante em que o aluno vê que a água do pote ao sol baixou — e percebe que ele mesmo previu isso.",
+  "resultado_visivel": "SABERÁ: que a água evapora. SABERÁ FAZER: descrever o que acontece. SENTIRÁ: curiosidade para investigar mais."
+}
+
+Se cada aula sua estiver neste nível, o professor nunca vai querer planejar de outro jeito.
 
 ═══════════════════════════════════════════════════════════════
 O QUE NÃO FAZER
