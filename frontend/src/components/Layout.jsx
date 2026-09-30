@@ -69,6 +69,7 @@ const Layout = () => {
     { path: '/modulo/professor_inteiro', label: 'Terapia Pedagógica', icon: '❤️' },
     { path: '/modulo/planejador', label: 'PLANEJADOR SIMIDNAPE', icon: '🧠' },
     { path: '/meus-planejamentos', label: 'Meus Planejamentos', icon: '📚' },
+    { path: '/comunidade', label: 'Comunidade', icon: '🌐' },
     { path: '/modulo/meu_aluno', label: 'Meu Aluno', icon: '📊' },
     { path: '/modulo/ia_para_professor', label: 'Gerador de Materiais', icon: '📄' },
     { path: '/modulo/praticas_exitosas', label: 'Práticas Exitosas', icon: '🏆' },
@@ -97,6 +98,9 @@ const Layout = () => {
     }
     if (path === '/meus-planejamentos') {
       return location.pathname.startsWith('/meus-planejamentos');
+    }
+    if (path === '/comunidade') {
+      return location.pathname.startsWith('/comunidade');
     }
     if (path === '/modulo/praticas_exitosas') {
       return location.pathname === path || location.pathname.startsWith('/praticas-exitosas');

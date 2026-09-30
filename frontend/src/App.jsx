@@ -13,6 +13,7 @@ import PlanejadorSimidnape from './pages/PlanejadorSimidnape';
 import PlanejadorModoPlanejamento from './pages/PlanejadorModoPlanejamento';
 import PlanejadorModoCoordenacao from './pages/PlanejadorModoCoordenacao';
 import MeusPlanejamentos from './pages/MeusPlanejamentos';
+import Comunidade from './pages/Comunidade';
 import TerapiaPedagogica from './pages/TerapiaPedagogica';
 import GeradorMateriais from './pages/GeradorMateriais';
 import MeuAluno from './pages/MeuAluno';
@@ -97,6 +98,7 @@ function AppRoutes() {
         <Route path="/planejador/planejamento" element={<PlanejadorModoPlanejamento />} />
         <Route path="/planejador/coordenacao" element={<PlanejadorModoCoordenacao />} />
         <Route path="/meus-planejamentos" element={<MeusPlanejamentos />} />
+        <Route path="/comunidade" element={<Comunidade />} />
         <Route path="/terapia-pedagogica" element={<TerapiaPedagogica />} />
         <Route path="/gerador-materiais" element={<GeradorMateriais />} />
         <Route path="/praticas-exitosas" element={<PraticasExitosas />} />
