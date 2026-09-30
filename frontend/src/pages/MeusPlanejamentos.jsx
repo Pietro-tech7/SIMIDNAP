@@ -17,10 +17,7 @@ const MeusPlanejamentos = () => {
   const [filtroModo, setFiltroModo] = useState('todos');
   const [busca, setBusca] = useState('');
   const [ordem, setOrdem] = useState('recentes');
-  const [planoAberto, setPlanoAberto] = useState(null); // modal de visualização
-  const [planoEditando, setPlanoEditando] = useState(null); // modal de edição de título
-  const [novoTitulo, setNovoTitulo] = useState('');
-  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const [planoAberto, setPlanoAberto] = useState(null); // modal de ver/editar
 
   // ============================================================
   // Carregar planos
@@ -54,10 +51,7 @@ const MeusPlanejamentos = () => {
     }
   };
 
-  const abrirEdicao = (plano) => {
-    setPlanoEditando(plano);
-    setNovoTitulo(plano.title);
-  };
+// (função removida no D11b-fix — a edição agora é feita dentro do ModalPlano)
 
   const salvarEdicaoCompleta = async ({ title, structured_data, comoNovo }) => {
     if (!planoAberto) return;
@@ -258,7 +252,7 @@ const MeusPlanejamentos = () => {
                       👁️ Reabrir
                     </button>
                     <button
-                      onClick={() => abrirEdicao(p)}
+                      onClick={() => setPlanoAberto(p)}
                       className="text-xs bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-medium px-3 py-1.5 rounded-lg transition"
                     >
                       ✏️ Editar
@@ -302,175 +296,4 @@ const MeusPlanejamentos = () => {
   );
 };
 
-// ============================================================
-// MODAL — Visualizador do plano
-// ============================================================
-const ModalVisualizar = ({ plano, onFechar }) => {
-  const sd = plano.structured_data || {};
-  const modo = plano.modo || 'aula';
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full my-8">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-xl z-10">
-          <div className="min-w-0">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">
-              {modo === 'aula' && '🎯 Aula'}
-              {modo === 'planejamento' && '📅 Planejamento'}
-              {modo === 'coordenacao' && '🎓 Coordenação'}
-            </p>
-            <h2 className="text-lg font-bold text-gray-900 truncate">{plano.title}</h2>
-          </div>
-          <button
-            onClick={onFechar}
-            className="text-gray-500 hover:text-gray-900 text-2xl w-8 h-8 flex items-center justify-center"
-            aria-label="Fechar"
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-          <Meta plano={plano} />
-
-          {/* AULA */}
-          {modo === 'aula' && sd.roteiro?.length > 0 && (
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">⏱️ Roteiro</h3>
-              <div className="space-y-3">
-                {sd.roteiro.map((b, i) => (
-                  <div key={i} className="border border-gray-200 rounded-lg p-3">
-                    <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-                      <span className="font-semibold text-sm text-gray-900">{b.titulo}</span>
-                      <div className="flex items-center gap-1.5">
-                        {b.principio_relacionado && (
-                          <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">
-                            🧠 {b.principio_relacionado}
-                          </span>
-                        )}
-                        {b.tempo && (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono">
-                            {b.tempo}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {b.faca && <p className="text-xs text-gray-700 mb-1"><strong>Faça:</strong> {b.faca}</p>}
-                    {b.fale && <p className="text-xs text-gray-700 mb-1"><strong>Fale:</strong> {b.fale}</p>}
-                    {b.pergunte && <p className="text-xs text-gray-700 mb-1"><strong>Pergunte:</strong> {b.pergunte}</p>}
-                    {b.alunos && <p className="text-xs text-gray-700"><strong>Alunos:</strong> {b.alunos}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* PLANEJAMENTO */}
-          {modo === 'planejamento' && sd.sequencia_didatica?.length > 0 && (
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">
-                ⏱️ Sequência didática ({sd.sequencia_didatica.length} aulas)
-              </h3>
-              <div className="space-y-3">
-                {sd.sequencia_didatica.map((a, i) => (
-                  <div key={i} className="border border-gray-200 rounded-lg p-3">
-                    <div className="flex justify-between items-center mb-1 flex-wrap gap-2">
-                      <span className="font-semibold text-sm text-gray-900">
-                        Aula {a.numero_aula || i + 1} — {a.titulo}
-                      </span>
-                      {a.principio_cognitivo && (
-                        <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">
-                          🧠 {a.principio_cognitivo}
-                        </span>
-                      )}
-                    </div>
-                    {a.objetivo_da_aula && <p className="text-xs text-gray-700 mb-1"><strong>Objetivo:</strong> {a.objetivo_da_aula}</p>}
-                    {a.conteudo && <p className="text-xs text-gray-700 mb-1"><strong>Conteúdo:</strong> {a.conteudo}</p>}
-                    {a.metodologia && <p className="text-xs text-gray-700 mb-1"><strong>Metodologia:</strong> {a.metodologia}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* COORDENAÇÃO */}
-          {modo === 'coordenacao' && sd.acoes?.length > 0 && (
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">
-                📋 Ações ({sd.acoes.length})
-              </h3>
-              <div className="space-y-3">
-                {sd.acoes.map((a, i) => (
-                  <div key={i} className="border border-gray-200 rounded-lg p-3">
-                    <div className="flex justify-between items-center mb-1 flex-wrap gap-2">
-                      <span className="font-semibold text-sm text-gray-900">
-                        Ação {a.numero || i + 1} — {a.titulo}
-                      </span>
-                      {a.prazo && (
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono">
-                          {a.prazo}
-                        </span>
-                      )}
-                    </div>
-                    {a.descricao && <p className="text-xs text-gray-700 mb-1">{a.descricao}</p>}
-                    {a.responsavel && <p className="text-xs text-gray-700"><strong>Responsável:</strong> {a.responsavel}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Fallback para modo não reconhecido */}
-          {modo === 'aula' && !sd.roteiro && !sd.etapas && (
-            <div className="text-gray-500 text-sm italic">
-              Não foi possível exibir o conteúdo deste plano.
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-3 flex justify-end rounded-b-xl">
-          <button
-            onClick={onFechar}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm px-5 py-2 rounded-lg"
-          >
-            Fechar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const Meta = ({ plano }) => (
-  <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-    {plano.subject && (
-      <div>
-        <p className="text-gray-500 uppercase tracking-wide">Componente</p>
-        <p className="font-semibold text-gray-800">{plano.subject}</p>
-      </div>
-    )}
-    {plano.grade && (
-      <div>
-        <p className="text-gray-500 uppercase tracking-wide">Ano</p>
-        <p className="font-semibold text-gray-800">{plano.grade}</p>
-      </div>
-    )}
-    {plano.periodo_tipo && (
-      <div>
-        <p className="text-gray-500 uppercase tracking-wide">Período</p>
-        <p className="font-semibold text-gray-800">{plano.periodo_tipo}</p>
-      </div>
-    )}
-    {plano.total_aulas && (
-      <div>
-        <p className="text-gray-500 uppercase tracking-wide">Total de aulas</p>
-        <p className="font-semibold text-gray-800">{plano.total_aulas}</p>
-      </div>
-    )}
-  </div>
-);
-
-export default MeusPlanejamentos;
+// (ModalVisualizar e Meta foram removidos no D11b-fix — substituídos pelo ModalPlano)
