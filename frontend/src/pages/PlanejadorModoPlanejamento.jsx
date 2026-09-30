@@ -1278,12 +1278,12 @@ const AulaCard = ({ aula, index }) => {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {aula.principio_cognitivo && (
-              <span className="text-[10px] bg-white bg-opacity-25 px-2 py-0.5 rounded font-medium">
+              <span className="text-[10px] bg-white/30 text-white px-2 py-0.5 rounded font-semibold border border-white/40">
                 🧠 {aula.principio_cognitivo}
               </span>
             )}
             {aula.duracao_minutos && (
-              <span className="text-xs bg-white bg-opacity-20 px-2 py-0.5 rounded font-mono">
+              <span className="text-xs bg-white/30 text-white px-2 py-0.5 rounded font-mono font-semibold border border-white/40">
                 {aula.duracao_minutos} min
               </span>
             )}
@@ -1295,6 +1295,18 @@ const AulaCard = ({ aula, index }) => {
       {/* Body */}
       {expandido && (
         <div className="p-4 space-y-3 text-sm bg-white">
+          {/* PERGUNTA PROBLEMATIZADORA — Freire */}
+          {aula.pergunta_problematizadora && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg p-3">
+              <p className="text-xs font-bold text-yellow-900 uppercase mb-1">
+                ❓ Pergunta problematizadora
+              </p>
+              <p className="text-yellow-900 font-semibold italic leading-relaxed">
+                "{aula.pergunta_problematizadora}"
+              </p>
+            </div>
+          )}
+
           {/* Foco + Habilidade + Descritores */}
           <div className="flex flex-wrap gap-2">
             {aula.habilidade_foco && (
@@ -1376,11 +1388,31 @@ const AulaCard = ({ aula, index }) => {
             </div>
           )}
 
+          {/* EVIDÊNCIA DE APRENDIZAGEM — Backward Design */}
+          {aula.evidencia_de_aprendizagem && (
+            <div className="bg-teal-50 border-l-4 border-teal-600 rounded-r-lg p-3">
+              <p className="text-xs font-bold text-teal-900 uppercase mb-1">
+                🎯 Evidência de aprendizagem (como saber que aprenderam)
+              </p>
+              <p className="text-teal-900 leading-relaxed text-xs">{aula.evidencia_de_aprendizagem}</p>
+            </div>
+          )}
+
           {/* ONDE PODE TRAVAR */}
           {aula.onde_pode_travar && (
             <div className="bg-amber-50 border border-amber-200 rounded p-3">
               <p className="text-xs font-semibold text-amber-900 uppercase mb-1">⚠️ Onde pode travar</p>
               <p className="text-amber-900 text-xs leading-relaxed">{aula.onde_pode_travar}</p>
+            </div>
+          )}
+
+          {/* DIFERENCIAÇÃO */}
+          {aula.diferenciacao && (
+            <div className="bg-fuchsia-50 border border-fuchsia-200 rounded p-3">
+              <p className="text-xs font-bold text-fuchsia-900 uppercase mb-1">
+                🎚️ Diferenciação (para quem trava e para quem avança)
+              </p>
+              <p className="text-fuchsia-900 text-xs leading-relaxed">{aula.diferenciacao}</p>
             </div>
           )}
 
@@ -1405,6 +1437,18 @@ const AulaCard = ({ aula, index }) => {
             <div className="bg-green-50 border border-green-200 rounded p-3">
               <p className="text-xs font-semibold text-green-900 uppercase mb-1">🎯 Resultado visível</p>
               <p className="text-green-900 text-xs leading-relaxed">{aula.resultado_visivel}</p>
+            </div>
+          )}
+
+          {/* CONEXÃO COM A VIDA — Freire */}
+          {aula.conexao_com_a_vida && (
+            <div className="bg-orange-50 border-l-4 border-orange-500 rounded-r-lg p-3">
+              <p className="text-xs font-bold text-orange-900 uppercase mb-1">
+                🌍 Conexão com a vida (como isso aparece no cotidiano do aluno)
+              </p>
+              <p className="text-orange-900 text-xs leading-relaxed italic">
+                {aula.conexao_com_a_vida}
+              </p>
             </div>
           )}
         </div>
