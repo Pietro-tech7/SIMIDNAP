@@ -37,6 +37,28 @@ function slug(texto) {
 }
 
 // ============================================================
+// CARREGAR LOGO SIMIDNAPE COMO BASE64
+// Lê /logo-simidnape.png (em public/) e devolve data URL.
+// Se o arquivo não existir, devolve string vazia (fallback silencioso).
+// ============================================================
+async function carregarLogoBase64() {
+  try {
+    const res = await fetch('/logo-simidnape.png');
+    if (!res.ok) return '';
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result || '');
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return '';
+  }
+}
+
+
+// ============================================================
 // RENDERIZAR BLOCO (HTML → Canvas)
 // ============================================================
 async function renderizarBloco(html) {
@@ -75,7 +97,7 @@ async function renderizarBloco(html) {
 // e substitua o bloco do EMBLEMA CSS abaixo por:
 //   <img src="/logo-simidnape.png" style="width: 180px; height: auto; margin: 0 auto 20px;" />
 //
-function htmlCapa(cab) {
+function htmlCapa(cab, logoBase64 = '') {
   const nome = cab.nome_professor || '—';
   const escola = cab.nome_escola || '—';
   const muni = cab.municipio || '—';
@@ -105,29 +127,32 @@ function htmlCapa(cab) {
           padding: 55px 65px;
           background: #ffffff;
         ">
-          <!-- Emblema (placeholder até ter a logo PNG) -->
+          <!-- Emblema: usa a logo SIMIDNAPE se estiver disponível -->
           <div style="text-align: center; margin-bottom: 22px;">
-            <div style="
-              width: 130px;
-              height: 130px;
-              border-radius: 50%;
-              background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-              margin: 0 auto;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              border: 4px solid #d4af37;
-              box-shadow: 0 8px 22px rgba(30,58,138,0.22);
-            ">
-              <div style="
-                font-family: Georgia, 'Times New Roman', serif;
-                font-size: 68px;
-                font-weight: bold;
-                color: #d4af37;
-                line-height: 1;
-                letter-spacing: -2px;
-              ">S</div>
-            </div>
+            ${logoBase64
+              ? `<img src="${logoBase64}" alt="SIMIDNAPE" style="width: 260px; height: auto; display: block; margin: 0 auto;" />`
+              : `<div style="
+                  width: 130px;
+                  height: 130px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                  margin: 0 auto;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border: 4px solid #d4af37;
+                  box-shadow: 0 8px 22px rgba(30,58,138,0.22);
+                ">
+                  <div style="
+                    font-family: Georgia, 'Times New Roman', serif;
+                    font-size: 68px;
+                    font-weight: bold;
+                    color: #d4af37;
+                    line-height: 1;
+                    letter-spacing: -2px;
+                  ">S</div>
+                </div>`
+            }
           </div>
 
           <!-- Marca -->
@@ -230,7 +255,7 @@ function htmlCapa(cab) {
 // ============================================================
 // BLOCO — CABEÇALHO DO PLANO
 // ============================================================
-function htmlCabecalhoPlano(sd) {
+function htmlCabecalhoPlano(sd, logoBase64 = '') {
   const cab = sd.cabecalho || {};
   return `
     <div style="
@@ -249,9 +274,12 @@ function htmlCabecalhoPlano(sd) {
         padding-bottom: 12px;
         margin-bottom: 14px;
       ">
-        <div>
-          <div style="font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #bfdbfe;">PLANEJADOR SIMIDNAPE</div>
-          <div style="font-size: 11px; color: #dbeafe;">O Professor Inesquecível</div>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          ${logoBase64 ? `<img src="${logoBase64}" alt="SIMIDNAPE" style="height: 42px; width: auto;" />` : ''}
+          <div>
+            <div style="font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #bfdbfe;">PLANEJADOR SIMIDNAPE</div>
+            <div style="font-size: 11px; color: #dbeafe;">O Professor Inesquecível</div>
+          </div>
         </div>
         <div style="font-family: monospace; font-size: 12px; color: #bfdbfe;">simidnape.com.br</div>
       </div>
@@ -533,11 +561,14 @@ export async function gerarPdfPlanejamento(plano) {
   const sd = plano.structured_data;
   const cab = sd.cabecalho || {};
 
+  // Carrega a logo SIMIDNAPE (uma vez) para usar na capa e no cabeçalho
+  const logoBase64 = await carregarLogoBase64();
+
   // 1. PDF vazio (A4 paisagem)
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
   // 2. Capa (página 1)
-  const canvasCapa = await renderizarBloco(htmlCapa(cab));
+  const canvasCapa = await renderizarBloco(htmlCapa(cab, logoBase64));
   const capaRatio = CONTENT_W_MM / canvasCapa.width;
   const capaAlturaMM = Math.min(canvasCapa.height * capaRatio, CONTENT_H_MM);
   pdf.addImage(
@@ -551,7 +582,7 @@ export async function gerarPdfPlanejamento(plano) {
 
   // 3. Prepara os blocos do corpo (cada bloco é uma unidade atômica)
   const blocosHtml = [
-    htmlCabecalhoPlano(sd),
+    htmlCabecalhoPlano(sd, logoBase64),
     htmlBlocoMacro(sd),
     ...(sd.sequencia_didatica || []).map((a, i) => htmlBlocoAula(a, i)),
     htmlBlocoFinal(sd),
