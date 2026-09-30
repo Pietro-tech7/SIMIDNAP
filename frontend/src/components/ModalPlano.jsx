@@ -226,6 +226,120 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
   };
 
   // ============================================================
+  // EDIÇÃO — Modo Coordenação (D11d)
+  // ============================================================
+  const atualizarAcao = (index, campo, valor) => {
+    const novo = { ...conteudo };
+    novo.acoes = [...(novo.acoes || [])];
+    novo.acoes[index] = { ...novo.acoes[index], [campo]: valor };
+    setConteudo(novo);
+  };
+
+  const atualizarAcaoLista = (index, campo, indexItem, valor) => {
+    const novo = { ...conteudo };
+    const acoes = [...(novo.acoes || [])];
+    const lista = [...(acoes[index]?.[campo] || [])];
+    lista[indexItem] = valor;
+    acoes[index] = { ...acoes[index], [campo]: lista };
+    novo.acoes = acoes;
+    setConteudo(novo);
+  };
+
+  const adicionarAcaoItem = (index, campo) => {
+    const novo = { ...conteudo };
+    const acoes = [...(novo.acoes || [])];
+    acoes[index] = {
+      ...acoes[index],
+      [campo]: [...(acoes[index]?.[campo] || []), ''],
+    };
+    novo.acoes = acoes;
+    setConteudo(novo);
+  };
+
+  const removerAcaoItem = (index, campo, indexItem) => {
+    const novo = { ...conteudo };
+    const acoes = [...(novo.acoes || [])];
+    acoes[index] = {
+      ...acoes[index],
+      [campo]: (acoes[index]?.[campo] || []).filter((_, i) => i !== indexItem),
+    };
+    novo.acoes = acoes;
+    setConteudo(novo);
+  };
+
+  const adicionarAcao = () => {
+    const novo = { ...conteudo };
+    const acoes = [...(novo.acoes || [])];
+    acoes.push({
+      numero: acoes.length + 1,
+      titulo: '',
+      descricao: '',
+      responsavel: '',
+      prazo: '',
+      recursos: [],
+      como_avaliar: '',
+    });
+    novo.acoes = acoes;
+    setConteudo(novo);
+  };
+
+  const removerAcao = (index) => {
+    if (!window.confirm('Remover esta ação?')) return;
+    const novo = { ...conteudo };
+    novo.acoes = (novo.acoes || []).filter((_, i) => i !== index);
+    setConteudo(novo);
+  };
+
+  // Cronograma
+  const atualizarCronograma = (index, campo, valor) => {
+    const novo = { ...conteudo };
+    novo.cronograma = [...(novo.cronograma || [])];
+    novo.cronograma[index] = { ...novo.cronograma[index], [campo]: valor };
+    setConteudo(novo);
+  };
+
+  const adicionarCronograma = () => {
+    const novo = { ...conteudo };
+    novo.cronograma = [...(novo.cronograma || []), { periodo: '', acao: '', responsavel: '' }];
+    setConteudo(novo);
+  };
+
+  const removerCronograma = (index) => {
+    const novo = { ...conteudo };
+    novo.cronograma = (novo.cronograma || []).filter((_, i) => i !== index);
+    setConteudo(novo);
+  };
+
+  // Objetivos específicos (coordenador)
+  const atualizarObjetivoEspecificoCoord = (index, valor) => {
+    const novo = { ...conteudo };
+    novo.objetivos = {
+      ...(novo.objetivos || {}),
+      especificos: [...(novo.objetivos?.especificos || [])],
+    };
+    novo.objetivos.especificos[index] = valor;
+    setConteudo(novo);
+  };
+
+  const adicionarObjetivoEspecificoCoord = () => {
+    const novo = { ...conteudo };
+    novo.objetivos = {
+      ...(novo.objetivos || {}),
+      especificos: [...(novo.objetivos?.especificos || []), ''],
+    };
+    setConteudo(novo);
+  };
+
+  const removerObjetivoEspecificoCoord = (index) => {
+    const novo = { ...conteudo };
+    novo.objetivos = {
+      ...(novo.objetivos || {}),
+      especificos: (novo.objetivos?.especificos || []).filter((_, i) => i !== index),
+    };
+    setConteudo(novo);
+  };
+
+  // ============================================================
   // SALVAR
   // ============================================================
   const salvar = async (comoNovo) => {
@@ -321,9 +435,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
     );
   };
 
-  // ============================================================
-  // RENDER — EDIT (Modo Aula)
-  // ============================================================
   // ============================================================
   // RENDER EDIT — Modo Planejamento (D11c)
   // ============================================================
@@ -583,9 +694,252 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
     );
   };
 
+  // ============================================================
+  // RENDER EDIT — Modo Coordenação (D11d)
+  // ============================================================
+  const renderEditCoordenacao = () => {
+    return (
+      <>
+        {/* Objetivo geral */}
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-2">🎯 Objetivo geral</h3>
+          <textarea
+            value={conteudo.objetivos?.geral || ''}
+            onChange={(e) => setConteudo({
+              ...conteudo,
+              objetivos: { ...(conteudo.objetivos || {}), geral: e.target.value },
+            })}
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+
+        {/* Objetivos específicos */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold text-gray-800">🎯 Objetivos específicos</h3>
+            <button onClick={adicionarObjetivoEspecificoCoord}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+              + Adicionar
+            </button>
+          </div>
+          <div className="space-y-1.5">
+            {(conteudo.objetivos?.especificos || []).map((o, i) => (
+              <div key={i} className="flex gap-2">
+                <input
+                  type="text" value={o}
+                  onChange={(e) => atualizarObjetivoEspecificoCoord(i, e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                />
+                <button onClick={() => removerObjetivoEspecificoCoord(i)}
+                  className="text-red-600 hover:text-red-800 text-sm px-2">🗑️</button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Contexto */}
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-2">🔎 Contexto (diagnóstico)</h3>
+          <textarea
+            value={conteudo.contexto || ''}
+            onChange={(e) => setConteudo({ ...conteudo, contexto: e.target.value })}
+            rows={4}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+
+        {/* Ações */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold text-gray-800">
+              📋 Ações ({(conteudo.acoes || []).length})
+            </h3>
+            <button onClick={adicionarAcao}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+              + Adicionar ação
+            </button>
+          </div>
+          <div className="space-y-4">
+            {(conteudo.acoes || []).map((acao, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-semibold text-gray-600">
+                    Ação {acao.numero || i + 1}
+                  </span>
+                  <button onClick={() => removerAcao(i)}
+                    className="text-xs text-red-600 hover:text-red-800">🗑️ Remover ação</button>
+                </div>
+
+                <input
+                  type="text" value={acao.titulo || ''}
+                  onChange={(e) => atualizarAcao(i, 'titulo', e.target.value)}
+                  placeholder="Título da ação"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mb-2"
+                />
+
+                <textarea
+                  value={acao.descricao || ''}
+                  onChange={(e) => atualizarAcao(i, 'descricao', e.target.value)}
+                  placeholder="Descrição (o que será feito, como, com quem)"
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mb-2"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                  <input
+                    type="text" value={acao.responsavel || ''}
+                    onChange={(e) => atualizarAcao(i, 'responsavel', e.target.value)}
+                    placeholder="Responsável"
+                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                  />
+                  <input
+                    type="text" value={acao.prazo || ''}
+                    onChange={(e) => atualizarAcao(i, 'prazo', e.target.value)}
+                    placeholder="Prazo (ex: semana 1)"
+                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                  />
+                </div>
+
+                {/* Recursos da ação */}
+                <div className="mt-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-semibold text-gray-600">📦 Recursos</span>
+                    <button onClick={() => adicionarAcaoItem(i, 'recursos')}
+                      className="text-[10px] text-blue-600 hover:text-blue-800 font-medium">
+                      + Adicionar
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    {(acao.recursos || []).map((r, j) => (
+                      <div key={j} className="flex gap-2">
+                        <input
+                          type="text" value={r}
+                          onChange={(e) => atualizarAcaoLista(i, 'recursos', j, e.target.value)}
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-1 text-xs"
+                        />
+                        <button onClick={() => removerAcaoItem(i, 'recursos', j)}
+                          className="text-red-600 text-xs px-1">🗑️</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <textarea
+                  value={acao.como_avaliar || ''}
+                  onChange={(e) => atualizarAcao(i, 'como_avaliar', e.target.value)}
+                  placeholder="✅ Como avaliar (o que observar para saber se a ação funcionou)"
+                  rows={2}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mt-2"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Cronograma */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold text-gray-800">📅 Cronograma</h3>
+            <button onClick={adicionarCronograma}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+              + Adicionar linha
+            </button>
+          </div>
+          <div className="space-y-2">
+            {(conteudo.cronograma || []).map((c, i) => (
+              <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-start">
+                <input
+                  type="text" value={c.periodo || ''}
+                  onChange={(e) => atualizarCronograma(i, 'periodo', e.target.value)}
+                  placeholder="Período (ex: Semana 1)"
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                />
+                <input
+                  type="text" value={c.acao || ''}
+                  onChange={(e) => atualizarCronograma(i, 'acao', e.target.value)}
+                  placeholder="Ação"
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="text" value={c.responsavel || ''}
+                    onChange={(e) => atualizarCronograma(i, 'responsavel', e.target.value)}
+                    placeholder="Responsável"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                  />
+                  <button onClick={() => removerCronograma(i)}
+                    className="text-red-600 text-sm px-1">🗑️</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Avaliação da ação */}
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-2">📊 Avaliação da ação</h3>
+          <textarea
+            value={(conteudo.avaliacao?.instrumentos || []).join('\n')}
+            onChange={(e) => setConteudo({
+              ...conteudo,
+              avaliacao: {
+                ...(conteudo.avaliacao || {}),
+                instrumentos: e.target.value.split('\n').filter(Boolean),
+              },
+            })}
+            rows={2}
+            placeholder="Instrumentos (um por linha)"
+            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mb-2"
+          />
+          <textarea
+            value={(conteudo.avaliacao?.indicadores || []).join('\n')}
+            onChange={(e) => setConteudo({
+              ...conteudo,
+              avaliacao: {
+                ...(conteudo.avaliacao || {}),
+                indicadores: e.target.value.split('\n').filter(Boolean),
+              },
+            })}
+            rows={2}
+            placeholder="Indicadores (um por linha)"
+            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mb-2"
+          />
+          <textarea
+            value={(conteudo.avaliacao?.como_registrar_evidencias || []).join('\n')}
+            onChange={(e) => setConteudo({
+              ...conteudo,
+              avaliacao: {
+                ...(conteudo.avaliacao || {}),
+                como_registrar_evidencias: e.target.value.split('\n').filter(Boolean),
+              },
+            })}
+            rows={2}
+            placeholder="Como registrar evidências (um por linha)"
+            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+          />
+        </div>
+
+        {/* Considerações finais */}
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-2">📌 Considerações finais</h3>
+          <textarea
+            value={conteudo.consideracoes_finais || ''}
+            onChange={(e) => setConteudo({ ...conteudo, consideracoes_finais: e.target.value })}
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+      </>
+    );
+  };
+
   const renderEdit = () => {
     if (modoPlano === 'planejamento') {
       return renderEditPlanejamento();
+    }
+    if (modoPlano === 'coordenacao') {
+      return renderEditCoordenacao();
     }
     if (modoPlano !== 'aula') {
       return (
