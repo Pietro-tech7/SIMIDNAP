@@ -9,6 +9,7 @@ from ...schemas.lesson_plan import (
     LessonPlanGenerateBatch,
     LessonPlanSaveComplete,
     LessonPlanUpdate,
+    LessonPlanPublish,
 )
 from ...services.lesson_plan_service import (
     generate_lesson_plan,
@@ -19,6 +20,11 @@ from ...services.lesson_plan_service import (
     save_planejamento_completo,
     update_lesson_plan,
     duplicate_lesson_plan,
+    publish_lesson_plan,
+    list_public_plans,
+    count_facetas_publicas,
+    get_public_plan,
+    increment_views,
 )
 from ...services.bncc_service import obter_habilidade
 from ...services.subscription_service import verificar_creditos, consumir_creditos
@@ -295,6 +301,138 @@ def duplicate_one(
     if not nova:
         raise HTTPException(status_code=404, detail="Plano não encontrado.")
     return nova
+
+
+# ============================================================
+# COMUNIDADE DE PLANEJAMENTOS SIMIDNAPE — Rotas públicas (D12c)
+# ATENÇÃO: estas rotas DEVEM vir antes do GET /{plan_id},
+# senão o FastAPI trata "public" como um plan_id e devolve 404.
+# ============================================================
+
+@router.get("/public/facetas")
+def facetas_publicas(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Contadores por faceta (modo, etapa, componente, tipo de ação)."""
+    return count_facetas_publicas(db)
+
+
+@router.get("/public")
+def listar_publicos(
+    modo: str = None,
+    etapa: str = None,
+    ano: int = None,
+    componente: str = None,
+    periodo_tipo: str = None,
+    tipo_acao: str = None,
+    busca: str = None,
+    ordem: str = "recentes",
+    limit: int = 60,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lista planos do banco público.
+    Filtros opcionais — todos combináveis.
+    """
+    return list_public_plans(
+        db=db,
+        modo=modo,
+        etapa=etapa,
+        ano=ano,
+        componente=componente,
+        periodo_tipo=periodo_tipo,
+        tipo_acao=tipo_acao,
+        busca=busca,
+        ordem=ordem,
+        limit=min(limit, 100),
+        offset=offset,
+    )
+
+
+@router.get("/public/{plan_id}")
+def obter_publico(
+    plan_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retorna um plano público específico e incrementa views."""
+    plan = get_public_plan(db, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plano público não encontrado.")
+
+    # Incrementa views
+    increment_views(db, plan_id)
+
+    # Re-busca para pegar o valor atualizado
+    plan = get_public_plan(db, plan_id)
+
+    return {
+        "id": str(plan.id),
+        "titulo": plan.title,
+        "modo": plan.modo,
+        "subject": plan.subject,
+        "grade": plan.grade,
+        "periodo_tipo": plan.periodo_tipo,
+        "total_aulas": plan.total_aulas,
+        "tipo_acao": plan.tipo_acao,
+        "autor_nome": plan.autor_nome,
+        "autor_escola": plan.autor_escola,
+        "autor_municipio": plan.autor_municipio,
+        "publicado_em": plan.publicado_em.isoformat() if plan.publicado_em else None,
+        "views": plan.views or 0,
+        "structured_data": plan.structured_data,
+    }
+
+
+# ============================================================
+# COMUNIDADE — Publicar / Despublicar (D12c)
+# ============================================================
+
+@router.post("/{plan_id}/publish", response_model=LessonPlanOut)
+def publicar_plano(
+    plan_id: str,
+    data: LessonPlanPublish,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Publica um plano no banco público.
+    É idempotente — pode chamar várias vezes, não duplica.
+    O usuário escolhe o que aparece como identificação do autor.
+    """
+    plan = publish_lesson_plan(
+        db=db,
+        user_id=str(current_user.id),
+        plan_id=plan_id,
+        mostrar_nome=data.mostrar_nome,
+        mostrar_escola=data.mostrar_escola,
+        mostrar_municipio=data.mostrar_municipio,
+        mostrar_titulo=data.mostrar_titulo,
+    )
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plano não encontrado.")
+    return plan
+
+
+@router.post("/{plan_id}/unpublish", response_model=LessonPlanOut)
+def despublicar_plano(
+    plan_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Remove um plano do banco público. O plano continua em 'Meus Planejamentos'."""
+    plan = get_lesson_plan(db, str(current_user.id), plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plano não encontrado.")
+
+    plan.publico = False
+    plan.publicado_em = None
+    db.commit()
+    db.refresh(plan)
+    return plan
 
 
 @router.get("/{plan_id}", response_model=LessonPlanOut)
