@@ -44,6 +44,11 @@ def generate_lesson_plan(
         "conhecimentos_previos": conhecimentos_previos,
         "necessidades_especificas": necessidades_especificas,
     }
+    # Cabeçalho institucional (D9-REBUILD-5) — usado pelo Modo Coordenação
+    if extra:
+        for k in ("nome_professor", "nome_escola", "municipio", "estado"):
+            if extra.get(k):
+                payload[k] = extra[k]
     if extra:
         payload.update(extra)
 
