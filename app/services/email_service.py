@@ -150,35 +150,94 @@ def send_welcome_email(email: str, nome: str) -> bool:
         Olá, {primeiro_nome}! 🎓
       </h2>
       <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155;">
-        É com alegria que damos as boas-vindas ao <strong>SIMIDNAPE PRO</strong> — o assistente pedagógico com Inteligência Artificial feito para professores e coordenadores da educação básica brasileira.
+        Seja muito bem-vindo(a) ao <strong>SIMIDNAPE PRO</strong> — o assistente pedagógico com Inteligência Artificial feito para professores e coordenadores da educação básica brasileira, alinhado à BNCC, ao Currículo do Piauí, ao SAEB e ao SAEPI.
       </p>
-      <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155;">
-        Aqui você tem <strong>7 motores de IA</strong> à disposição para transformar sua prática em sala de aula:
+      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#334155;">
+        Aqui está tudo o que você acaba de ganhar acesso:
       </p>
 
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 24px;">
-        <tr><td style="padding:6px 0;font-size:14px;color:#334155;">🧠 <strong>NeuroAula</strong> — design de aprendizagem baseado em neuroeducação</td></tr>
-        <tr><td style="padding:6px 0;font-size:14px;color:#334155;">❤️ <strong>Terapia Pedagógica</strong> — escuta profissional para seus desafios</td></tr>
-        <tr><td style="padding:6px 0;font-size:14px;color:#334155;">🎯 <strong>Aula que Funciona</strong> — roteiro cronometrado de execução</td></tr>
-        <tr><td style="padding:6px 0;font-size:14px;color:#334155;">📊 <strong>Meu Aluno</strong> — análise pedagógica de situações concretas</td></tr>
-        <tr><td style="padding:6px 0;font-size:14px;color:#334155;">📄 <strong>Gerador de Materiais</strong> — atividades, jogos e simulados</td></tr>
-        <tr><td style="padding:6px 0;font-size:14px;color:#334155;">🏆 <strong>Práticas Exitosas</strong> — documente e replique o que funciona</td></tr>
-        <tr><td style="padding:6px 0;font-size:14px;color:#334155;">📚 <strong>Banco de Questões</strong> — mais de 3.000 questões do ENEM</td></tr>
-      </table>
+      <!-- BLOCO 1: PLANEJADOR SIMIDNAPE -->
+      <div style="background-color:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:16px;margin:0 0 16px;">
+        <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#075985;">
+          🧠 PLANEJADOR SIMIDNAPE — O Professor Inesquecível
+        </p>
+        <p style="margin:0 0 8px;font-size:13px;color:#0c4a6e;line-height:1.6;">
+          O motor mais poderoso do sistema. Três modos em um só lugar:
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+          <tr><td style="padding:4px 0;font-size:13px;color:#0c4a6e;">🎯 <strong>Modo Aula</strong> — roteiro cronometrado, minuto a minuto, com falas e ações exatas</td></tr>
+          <tr><td style="padding:4px 0;font-size:13px;color:#0c4a6e;">📅 <strong>Modo Planejamento</strong> — sequência didática para 1 aula, semana, mês ou bimestre, com princípios de neuroeducação em cada aula</td></tr>
+          <tr><td style="padding:4px 0;font-size:13px;color:#0c4a6e;">🎓 <strong>Modo Coordenação</strong> — 6 tipos de plano para o coordenador que lidera a aprendizagem na escola</td></tr>
+        </table>
+      </div>
 
-      <div style="background-color:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;padding:16px;margin:0 0 24px;">
-        <p style="margin:0;font-size:14px;color:#1e3a8a;line-height:1.6;">
-          💡 <strong>Comece pelo teste gratuito:</strong> você tem créditos iniciais para experimentar cada motor. Aproveite!
+      <!-- BLOCO 2: MOTORES PEDAGÓGICOS -->
+      <div style="background-color:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:16px;margin:0 0 16px;">
+        <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#6b21a8;">
+          ✨ Motores pedagógicos
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+          <tr><td style="padding:4px 0;font-size:13px;color:#581c87;">🧠 <strong>NeuroAula</strong> — design de aprendizagem baseado em neuroeducação</td></tr>
+          <tr><td style="padding:4px 0;font-size:13px;color:#581c87;">❤️ <strong>Terapia Pedagógica</strong> — espaço de escuta e reflexão profissional</td></tr>
+          <tr><td style="padding:4px 0;font-size:13px;color:#581c87;">📊 <strong>Meu Aluno</strong> — análise pedagógica de situações concretas com alunos</td></tr>
+          <tr><td style="padding:4px 0;font-size:13px;color:#581c87;">📄 <strong>Gerador de Materiais</strong> — atividades, jogos e simulados prontos</td></tr>
+          <tr><td style="padding:4px 0;font-size:13px;color:#581c87;">🏆 <strong>Práticas Exitosas</strong> — documente e replique o que funciona na sua escola</td></tr>
+        </table>
+      </div>
+
+      <!-- BLOCO 3: BANCOS DE QUESTÕES -->
+      <div style="background-color:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:16px;margin:0 0 16px;">
+        <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#065f46;">
+          📚 Bancos de Questões
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+          <tr><td style="padding:4px 0;font-size:13px;color:#064e3b;">📖 <strong>ENEM</strong> — mais de 3.000 questões oficiais de 2009 a 2023</td></tr>
+          <tr><td style="padding:4px 0;font-size:13px;color:#064e3b;">📗 <strong>Fundamental</strong> — banco curado pela equipe, para Ed. Infantil e Fund. I/II</td></tr>
+          <tr><td style="padding:4px 0;font-size:13px;color:#064e3b;">✨ <strong>Banco IA</strong> — geração de questões inéditas com alinhamento BNCC, SAEB e SAEPI</td></tr>
+        </table>
+      </div>
+
+      <!-- BLOCO 4: COMUNIDADE -->
+      <div style="background-color:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:16px;margin:0 0 24px;">
+        <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#9a3412;">
+          🌐 COMUNIDADE DE PLANEJAMENTOS SIMIDNAPE
+        </p>
+        <p style="margin:0;font-size:13px;color:#7c2d12;line-height:1.6;">
+          Planejamentos prontos criados por professores e coordenadores reais. Consulte, baixe em PDF e adapte à sua turma.
         </p>
       </div>
 
+      <!-- DESTAQUE: DIFERENCIAIS -->
+      <div style="background-color:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;padding:16px;margin:0 0 24px;">
+        <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#1e3a8a;">
+          🔑 Diferencial exclusivo — multiplique seus créditos gratuitamente
+        </p>
+        <p style="margin:0;font-size:13px;color:#1e40af;line-height:1.6;">
+          Cadastre sua própria chave gratuita do Google Gemini e <strong>ganhe até 10 vezes mais créditos</strong> pelo mesmo preço. Sem custo adicional, sem trocar de plano. É só ir em "Meu Perfil" e cadastrar.
+        </p>
+      </div>
+
+      <!-- DESTAQUE: INCLUSÃO -->
+      <div style="background-color:#fdf4ff;border-left:4px solid #a21caf;border-radius:8px;padding:16px;margin:0 0 24px;">
+        <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#701a75;">
+          🧩 Inclusão real em cada plano
+        </p>
+        <p style="margin:0;font-size:13px;color:#86198f;line-height:1.6;">
+          Todos os planos já vêm com adaptações concretas para alunos autistas, com TDAH, dislexia e outras necessidades — sem diagnóstico, apenas pedagogia.
+        </p>
+      </div>
+
+      <!-- CTA -->
       <div style="text-align:center;margin:32px 0;">
         <a href="{FRONTEND_URL}/dashboard" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 32px;border-radius:10px;">
           Acessar o SIMIDNAPE PRO →
         </a>
       </div>
 
-      <p style="margin:24px 0 0;font-size:13px;color:#64748b;line-height:1.6;">
+      <p style="margin:24px 0 0;font-size:14px;color:#334155;line-height:1.6;">
+        💡 <strong>Comece pelo teste gratuito:</strong> você tem créditos iniciais para experimentar cada motor. Aproveite!
+      </p>
+      <p style="margin:16px 0 0;font-size:13px;color:#64748b;line-height:1.6;">
         Qualquer dúvida, basta responder este e-mail. Estamos aqui para caminhar com você.
       </p>
       <p style="margin:16px 0 0;font-size:13px;color:#64748b;">
