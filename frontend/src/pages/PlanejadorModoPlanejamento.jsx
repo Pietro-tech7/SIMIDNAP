@@ -439,6 +439,7 @@ const PlanejadorModoPlanejamento = () => {
       logica_pedagogica: '',
       eixos_predominantes: [],
       descritores_trabalhados: [],
+      descritores_detalhados: descritoresDetalhados,
       objetivos_gerais: '',
       objetivos_especificos: [],
       habilidades: [],
