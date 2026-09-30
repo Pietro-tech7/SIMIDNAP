@@ -28,5 +28,25 @@ class LessonPlan(Base):
     total_aulas = Column(Integer, nullable=True)
     publico = Column(Boolean, nullable=False, server_default="false", index=True)
 
+    # ============================================================
+    # Campos da COMUNIDADE DE PLANEJAMENTOS SIMIDNAPE (Bloco D12a)
+    # Todos opcionais ou com default. Só são preenchidos quando o
+    # usuário publica o plano no banco público.
+    # ============================================================
+    # Classificação (para os filtros facetados)
+    componente_sigla = Column(String(10), nullable=True, index=True)
+    ano_etapa = Column(String(10), nullable=True, index=True)
+    tipo_acao = Column(String(30), nullable=True, index=True)
+    tags = Column(JSONB, nullable=True)
+
+    # Dados do autor (só aparecem no banco público se ele autorizar)
+    autor_nome = Column(String(200), nullable=True)
+    autor_escola = Column(String(200), nullable=True)
+    autor_municipio = Column(String(150), nullable=True)
+
+    # Metadados de publicação
+    publicado_em = Column(DateTime, nullable=True, index=True)
+    views = Column(Integer, nullable=False, server_default="0")
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
