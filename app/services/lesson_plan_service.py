@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func, or_
 from datetime import datetime
+from typing import Dict, Any, Optional, List
+import re
 from ..models.lesson_plan import LessonPlan
 from .ai_service import get_ai_service
-from typing import Dict, Any
 
 
 def generate_lesson_plan(
@@ -253,6 +255,159 @@ def duplicate_lesson_plan(
     return copia
 
 
+# ============================================================
+# COMUNIDADE DE PLANEJAMENTOS SIMIDNAPE — Helpers (Bloco D12b)
+# ============================================================
+
+# Mapa nome legível → sigla (para o filtro "Componente" da Comunidade)
+_MAPA_COMPONENTE_SIGLA = {
+    "Língua Portuguesa": "LP", "Português": "LP",
+    "Matemática": "MA",
+    "Ciências": "CI", "Ciências da Natureza": "CI",
+    "Geografia": "GE",
+    "História": "HI",
+    "Arte": "AR",
+    "Educação Física": "EF",
+    "Ensino Religioso": "ER",
+    "Língua Inglesa": "LI", "Inglês": "LI",
+    "Computação": "CO",
+    "Linguagens e suas Tecnologias": "LGG", "Linguagens": "LGG",
+    "Matemática e suas Tecnologias": "MAT",
+    "Ciências da Natureza e suas Tecnologias": "CNT",
+    "Ciências Humanas e Sociais Aplicadas": "CHS", "Ciências Humanas": "CHS",
+    "O eu, o outro e o nós": "EI_EO",
+    "Corpo, gestos e movimentos": "EI_CG",
+    "Traços, sons, cores e formas": "EI_TS",
+    "Escuta, fala, pensamento e imaginação": "EI_EF",
+    "Espaços, tempos, quantidades, relações e transformações": "EI_ET",
+}
+
+
+def _extrair_componente_sigla(subject: Optional[str]) -> Optional[str]:
+    """'Matemática' → 'MA'. Retorna None se não reconhecer."""
+    if not subject:
+        return None
+    s = str(subject).strip()
+    if s in _MAPA_COMPONENTE_SIGLA:
+        return _MAPA_COMPONENTE_SIGLA[s]
+    for k, v in _MAPA_COMPONENTE_SIGLA.items():
+        if k.lower() == s.lower():
+            return v
+    return None
+
+
+def _extrair_ano_etapa(grade: Optional[str]) -> Optional[str]:
+    """Classifica em bucket de etapa:
+       'Educação Infantil' → 'EI'
+       '1º ano' … '5º ano' → 'EF1'
+       '6º ano' … '9º ano' → 'EF2'
+       '1ª série' … '3ª série' → 'EM'
+    """
+    if not grade:
+        return None
+    g = str(grade).lower().strip()
+    if "infantil" in g:
+        return "EI"
+    m = re.search(r"(\d{1,2})", g)
+    if not m:
+        return None
+    ano = int(m.group(1))
+    if "série" in g or "serie" in g:
+        return "EM"
+    if "ano" in g:
+        if 1 <= ano <= 5:
+            return "EF1"
+        if 6 <= ano <= 9:
+            return "EF2"
+    return None
+
+
+def _extrair_tags(plan: LessonPlan) -> Dict[str, Any]:
+    """Monta o objeto JSONB de tags estruturadas para o filtro/busca."""
+    tags: Dict[str, Any] = {
+        "ano": None,
+        "componente_nome": plan.subject,
+        "periodo_tipo": plan.periodo_tipo,
+        "tipo_acao": None,
+        "habilidades": [],
+        "descritores": [],
+        "palavras": [],
+    }
+
+    # Ano específico (5º ano → 5)
+    if plan.grade:
+        m = re.search(r"(\d{1,2})", str(plan.grade))
+        if m:
+            tags["ano"] = int(m.group(1))
+
+    # Do JSONB do plano: tipo_acao, habilidades, descritores
+    sd = plan.structured_data or {}
+    if isinstance(sd, dict):
+        cab = sd.get("cabecalho") or {}
+        if cab.get("tipo_acao"):
+            tags["tipo_acao"] = cab["tipo_acao"]
+        for h in (sd.get("habilidades") or []):
+            if isinstance(h, dict) and h.get("codigo"):
+                tags["habilidades"].append(h["codigo"])
+        for d in (sd.get("descritores_trabalhados") or []):
+            if d:
+                tags["descritores"].append(str(d))
+
+    # Palavras-chave do título (para busca textual)
+    if plan.title:
+        for w in str(plan.title).split():
+            w = w.strip(",.!?()[]{};:").lower()
+            if len(w) > 4:
+                tags["palavras"].append(w)
+
+    # Deduplicar e limitar
+    for k in ("habilidades", "descritores", "palavras"):
+        tags[k] = list(dict.fromkeys(tags[k]))[:30]
+
+    return tags
+
+
+def _serializar_plano_publico(plan: LessonPlan) -> Dict[str, Any]:
+    """Devolve o plano no formato público (respeitando as escolhas de privacidade)."""
+    tags = plan.tags or {}
+    mostrar_titulo = tags.get("mostrar_titulo", True)
+
+    if mostrar_titulo:
+        titulo_exibido = plan.title
+    else:
+        partes = []
+        if plan.subject:
+            partes.append(plan.subject)
+        if plan.grade:
+            partes.append(plan.grade)
+        if plan.periodo_tipo:
+            partes.append(plan.periodo_tipo)
+        titulo_exibido = ("Plano de " + " · ".join(partes)) if partes else "Plano pedagógico"
+
+    return {
+        "id": str(plan.id),
+        "titulo": titulo_exibido,
+        "mostrar_titulo": bool(mostrar_titulo),
+        "modo": plan.modo,
+        "componente": plan.subject,
+        "componente_sigla": plan.componente_sigla,
+        "ano": plan.grade,
+        "ano_etapa": plan.ano_etapa,
+        "periodo_tipo": plan.periodo_tipo,
+        "tipo_acao": plan.tipo_acao,
+        "autor": plan.autor_nome,
+        "escola": plan.autor_escola,
+        "municipio": plan.autor_municipio,
+        "views": plan.views or 0,
+        "publicado_em": plan.publicado_em.isoformat() if plan.publicado_em else None,
+        "created_at": plan.created_at.isoformat() if plan.created_at else None,
+        "tags": (
+            (tags.get("habilidades") or [])
+            + (tags.get("descritores") or [])
+        ),
+    }
+
+
 def save_planejamento_completo(
     db: Session,
     user_id: str,
@@ -289,7 +444,7 @@ def save_planejamento_completo(
         except (ValueError, TypeError):
             return None
 
-    plan = LessonPlan(
+        plan = LessonPlan(
         user_id=user_id,
         plan_type=plan_type,
         title=title,
@@ -308,3 +463,192 @@ def save_planejamento_completo(
     db.commit()
     db.refresh(plan)
     return plan
+
+
+# ============================================================
+# COMUNIDADE DE PLANEJAMENTOS SIMIDNAPE — Publicação (Bloco D12b)
+# ============================================================
+
+def publish_lesson_plan(
+    db: Session,
+    user_id: str,
+    plan_id: str,
+    mostrar_nome: bool = True,
+    mostrar_escola: bool = True,
+    mostrar_municipio: bool = True,
+    mostrar_titulo: bool = True,
+) -> Optional[LessonPlan]:
+    """
+    Publica um plano no banco público.
+    É IDEMPOTENTE — pode ser chamada várias vezes sem duplicar.
+    Extrai automaticamente componente_sigla, ano_etapa, tipo_acao e tags.
+    """
+    plan = get_lesson_plan(db, user_id, plan_id)
+    if not plan:
+        return None
+
+    # 1. Extração automática de classificação
+    plan.componente_sigla = _extrair_componente_sigla(plan.subject)
+    plan.ano_etapa = _extrair_ano_etapa(plan.grade)
+    plan.tipo_acao = None
+
+    sd = plan.structured_data or {}
+    if isinstance(sd, dict):
+        cab = sd.get("cabecalho") or {}
+        if cab.get("tipo_acao"):
+            plan.tipo_acao = cab["tipo_acao"]
+
+    plan.tags = _extrair_tags(plan)
+    plan.tags["mostrar_titulo"] = bool(mostrar_titulo)
+
+    # 2. Dados do autor — só salva o que o usuário autorizou
+    from ..models.user import User
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if user and mostrar_nome:
+        plan.autor_nome = user.full_name
+    else:
+        plan.autor_nome = None
+
+    if isinstance(sd, dict):
+        cab = sd.get("cabecalho") or {}
+
+        if mostrar_escola and cab.get("nome_escola"):
+            plan.autor_escola = cab["nome_escola"]
+        else:
+            plan.autor_escola = None
+
+        if mostrar_municipio and cab.get("municipio"):
+            texto = cab["municipio"]
+            if cab.get("estado"):
+                texto += f" - {cab['estado']}"
+            plan.autor_municipio = texto
+        else:
+            plan.autor_municipio = None
+
+    # 3. Marca como público
+    plan.publico = True
+    plan.publicado_em = datetime.utcnow()
+
+    db.commit()
+    db.refresh(plan)
+    return plan
+
+
+def list_public_plans(
+    db: Session,
+    modo: Optional[str] = None,
+    etapa: Optional[str] = None,
+    ano: Optional[int] = None,
+    componente: Optional[str] = None,
+    periodo_tipo: Optional[str] = None,
+    tipo_acao: Optional[str] = None,
+    busca: Optional[str] = None,
+    ordem: str = "recentes",
+    limit: int = 60,
+    offset: int = 0,
+) -> List[Dict[str, Any]]:
+    """Lista planos públicos já SERIALIZADOS (sem dados sensíveis)."""
+    query = db.query(LessonPlan).filter(LessonPlan.publico == True)
+
+    if modo and modo != "todos":
+        query = query.filter(LessonPlan.modo == modo)
+    if etapa:
+        query = query.filter(LessonPlan.ano_etapa == etapa)
+    if componente:
+        query = query.filter(LessonPlan.componente_sigla == componente)
+    if periodo_tipo:
+        query = query.filter(LessonPlan.periodo_tipo == periodo_tipo)
+    if tipo_acao:
+        query = query.filter(LessonPlan.tipo_acao == tipo_acao)
+
+    # Ano específico — via tags->>'ano' (Postgres JSONB)
+    if ano:
+        query = query.filter(LessonPlan.tags["ano"].astext == str(ano))
+
+    # Busca textual no título, componente e ano
+    if busca and busca.strip():
+        termo = f"%{busca.strip().lower()}%"
+        query = query.filter(
+            or_(
+                func.lower(LessonPlan.title).like(termo),
+                func.lower(LessonPlan.subject).like(termo),
+                func.lower(LessonPlan.grade).like(termo),
+            )
+        )
+
+    # Ordenação
+    if ordem == "recentes":
+        query = query.order_by(LessonPlan.publicado_em.desc().nullslast())
+    elif ordem == "antigos":
+        query = query.order_by(LessonPlan.publicado_em.asc().nullslast())
+    elif ordem == "mais_vistos":
+        query = query.order_by(LessonPlan.views.desc())
+    elif ordem == "titulo":
+        query = query.order_by(LessonPlan.title.asc())
+    else:
+        query = query.order_by(LessonPlan.publicado_em.desc().nullslast())
+
+    planos = query.offset(offset).limit(limit).all()
+    return [_serializar_plano_publico(p) for p in planos]
+
+
+def count_facetas_publicas(db: Session) -> Dict[str, Any]:
+    """Contadores por faceta para a UI (mostra quantos planos existem em cada filtro)."""
+    base = db.query(LessonPlan).filter(LessonPlan.publico == True)
+
+    por_modo = {}
+    for m in ("aula", "planejamento", "coordenacao"):
+        por_modo[m] = base.filter(LessonPlan.modo == m).count()
+
+    por_etapa = {}
+    for e in ("EI", "EF1", "EF2", "EM"):
+        por_etapa[e] = base.filter(LessonPlan.ano_etapa == e).count()
+
+    por_componente: Dict[str, int] = {}
+    rows = (
+        db.query(LessonPlan.componente_sigla, func.count(LessonPlan.id))
+        .filter(LessonPlan.publico == True, LessonPlan.componente_sigla.isnot(None))
+        .group_by(LessonPlan.componente_sigla)
+        .all()
+    )
+    for comp, cnt in rows:
+        if comp:
+            por_componente[comp] = cnt
+
+    por_tipo_acao: Dict[str, int] = {}
+    rows = (
+        db.query(LessonPlan.tipo_acao, func.count(LessonPlan.id))
+        .filter(LessonPlan.publico == True, LessonPlan.tipo_acao.isnot(None))
+        .group_by(LessonPlan.tipo_acao)
+        .all()
+    )
+    for tipo, cnt in rows:
+        if tipo:
+            por_tipo_acao[tipo] = cnt
+
+    return {
+        "total": base.count(),
+        "por_modo": por_modo,
+        "por_etapa": por_etapa,
+        "por_componente": por_componente,
+        "por_tipo_acao": por_tipo_acao,
+    }
+
+
+def get_public_plan(db: Session, plan_id: str) -> Optional[LessonPlan]:
+    """Busca um plano público específico (para incrementar views e baixar PDF)."""
+    return db.query(LessonPlan).filter(
+        LessonPlan.id == plan_id,
+        LessonPlan.publico == True,
+    ).first()
+
+
+def increment_views(db: Session, plan_id: str) -> bool:
+    """Incrementa o contador de visualizações de um plano público."""
+    plan = get_public_plan(db, plan_id)
+    if not plan:
+        return False
+    plan.views = (plan.views or 0) + 1
+    db.commit()
+    return True

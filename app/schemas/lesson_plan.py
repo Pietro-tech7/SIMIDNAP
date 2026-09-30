@@ -129,3 +129,19 @@ class LessonPlanUpdate(BaseModel):
     title: Optional[str] = None
     objective: Optional[str] = None
     structured_data: Optional[Dict[str, Any]] = None
+
+
+# ============================================================
+# COMUNIDADE DE PLANEJAMENTOS SIMIDNAPE — Publish (Bloco D12b)
+# ============================================================
+
+class LessonPlanPublish(BaseModel):
+    """Dados que o usuário escolhe ao publicar um plano.
+
+    O plano vai SEMPRE para o banco público (não é opcional).
+    Ele só escolhe O QUE aparece como identificação do autor.
+    """
+    mostrar_nome: bool = True
+    mostrar_escola: bool = True
+    mostrar_municipio: bool = True
+    mostrar_titulo: bool = True
