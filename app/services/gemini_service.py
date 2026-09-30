@@ -1259,6 +1259,115 @@ O QUE MUDA NA VIDA DO ALUNO:
 
 
 # ============================================================
+# MAPEAMENTO nome → sigla (para aceitar tanto "Matemática"
+# quanto "MA" no payload, garantindo robustez)
+# ============================================================
+NOME_PARA_SIGLA = {
+    # Ensino Fundamental
+    "Língua Portuguesa": "LP",
+    "Português": "LP",
+    "Matemática": "MA",
+    "Ciências": "CI",
+    "Ciências da Natureza": "CI",
+    "Geografia": "GE",
+    "História": "HI",
+    "Arte": "AR",
+    "Educação Física": "EF",
+    "Ensino Religioso": "ER",
+    "Língua Inglesa": "LI",
+    "Inglês": "LI",
+    "Computação": "CO",
+    # Ensino Médio
+    "Linguagens e suas Tecnologias": "LGG",
+    "Linguagens": "LGG",
+    "Matemática e suas Tecnologias": "MAT",
+    "Ciências da Natureza e suas Tecnologias": "CNT",
+    "Ciências Humanas e Sociais Aplicadas": "CHS",
+    "Ciências Humanas": "CHS",
+    # Educação Infantil
+    "O eu, o outro e o nós": "EI_EO",
+    "Corpo, gestos e movimentos": "EI_CG",
+    "Traços, sons, cores e formas": "EI_TS",
+    "Escuta, fala, pensamento e imaginação": "EI_EF",
+    "Espaços, tempos, quantidades, relações e transformações": "EI_ET",
+}
+
+# Siglas válidas do EM (para detectar etapa automaticamente)
+SIGLAS_EM = {"LGG", "MAT", "CNT", "CHS"}
+
+# Siglas válidas da EI (com prefixo EI_)
+def _eh_campo_ei(sigla: str) -> bool:
+    return bool(sigla) and sigla.startswith("EI_")
+
+
+# ============================================================
+# MONTAGEM DO PROMPT DO MODO PLANEJAMENTO
+# Junta: BASE + adaptador de modalidade + adaptador de área + schema
+# ============================================================
+def _montar_prompt_planejamento(payload: Dict[str, Any]) -> str:
+    """
+    Monta o prompt final do Modo Planejamento em camadas.
+
+    Camadas:
+      1. PLANEJAMENTO_BASE (identidade + 10 refinamentos + 3 exemplos)
+      2. ADAPTADORES_MODALIDADE[etapa] (EI, EF ou EM)
+      3. ADAPTADORES_AREA[sigla] (particularidades da disciplina)
+      4. SCHEMAS["planejamento"] (estrutura obrigatória do JSON)
+
+    Aceita tanto sigla ("MA") quanto nome ("Matemática") no payload.
+    Se etapa não vier explícita, infere pela sigla do componente.
+    """
+    # 1. Extrai etapa e componente do payload
+    etapa = payload.get("etapa") or None
+    componente_raw = (
+        payload.get("componente")
+        or payload.get("subject")
+        or payload.get("area")
+        or ""
+    )
+    componente_raw = str(componente_raw).strip()
+
+    # 2. Normaliza componente para sigla
+    #    Se já é sigla conhecida (2-4 letras maiúsculas), usa direto.
+    #    Senão, tenta mapear pelo nome.
+    sigla = componente_raw
+    if componente_raw not in ADAPTADORES_AREA:
+        sigla = NOME_PARA_SIGLA.get(componente_raw, componente_raw)
+
+    # 3. Infere etapa se não veio explícita
+    if not etapa:
+        if _eh_campo_ei(sigla):
+            etapa = "EI"
+        elif sigla in SIGLAS_EM:
+            etapa = "EM"
+        else:
+            etapa = "EF"
+
+    # 4. Monta as camadas
+    base = PLANEJAMENTO_BASE
+    adapt_mod = ADAPTADORES_MODALIDADE.get(etapa, ADAPTADORES_MODALIDADE["EF"])
+    adapt_area = ADAPTADORES_AREA.get(sigla, "")
+
+    # Se a área não foi encontrada, avisa (mas não quebra)
+    if not adapt_area:
+        print(f"[Planejador] Aviso: adaptador de área não encontrado para '{componente_raw}' (sigla: '{sigla}'). Gerando com base + modalidade apenas.")
+
+    schema = SCHEMAS.get("planejamento", "")
+
+    # 5. Junta tudo
+    prompt_final = (
+        f"{base}\n\n"
+        f"{adapt_mod}\n\n"
+        f"{adapt_area}\n\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "ESTRUTURA OBRIGATÓRIA DO JSON\n"
+        "═══════════════════════════════════════════════════════════════\n\n"
+        f"{schema}"
+    )
+    return prompt_final
+
+
+# ============================================================
 # SCHEMAS JSON
 # ============================================================
 SCHEMAS = {
@@ -1535,6 +1644,94 @@ SCHEMAS = {
 }
 """,
 }
+
+
+# ============================================================
+# MAPEAMENTO nome → sigla (para aceitar tanto "Matemática"
+# quanto "MA" no payload, garantindo robustez)
+# ============================================================
+NOME_PARA_SIGLA = {
+    "Língua Portuguesa": "LP",
+    "Português": "LP",
+    "Matemática": "MA",
+    "Ciências": "CI",
+    "Ciências da Natureza": "CI",
+    "Geografia": "GE",
+    "História": "HI",
+    "Arte": "AR",
+    "Educação Física": "EF",
+    "Ensino Religioso": "ER",
+    "Língua Inglesa": "LI",
+    "Inglês": "LI",
+    "Computação": "CO",
+    "Linguagens e suas Tecnologias": "LGG",
+    "Linguagens": "LGG",
+    "Matemática e suas Tecnologias": "MAT",
+    "Ciências da Natureza e suas Tecnologias": "CNT",
+    "Ciências Humanas e Sociais Aplicadas": "CHS",
+    "Ciências Humanas": "CHS",
+    "O eu, o outro e o nós": "EI_EO",
+    "Corpo, gestos e movimentos": "EI_CG",
+    "Traços, sons, cores e formas": "EI_TS",
+    "Escuta, fala, pensamento e imaginação": "EI_EF",
+    "Espaços, tempos, quantidades, relações e transformações": "EI_ET",
+}
+
+SIGLAS_EM = {"LGG", "MAT", "CNT", "CHS"}
+
+
+def _eh_campo_ei(sigla: str) -> bool:
+    return bool(sigla) and sigla.startswith("EI_")
+
+
+def _montar_prompt_planejamento(payload: Dict[str, Any]) -> str:
+    """
+    Monta o prompt final do Modo Planejamento em camadas:
+      1. PLANEJAMENTO_BASE (identidade + 10 refinamentos + 3 exemplos)
+      2. ADAPTADORES_MODALIDADE[etapa] (EI, EF ou EM)
+      3. ADAPTADORES_AREA[sigla] (particularidades da disciplina)
+      4. SCHEMAS['planejamento'] (estrutura do JSON)
+    Aceita tanto sigla ("MA") quanto nome ("Matemática").
+    """
+    etapa = payload.get("etapa") or None
+    componente_raw = (
+        payload.get("componente")
+        or payload.get("subject")
+        or payload.get("area")
+        or ""
+    )
+    componente_raw = str(componente_raw).strip()
+
+    sigla = componente_raw
+    if componente_raw not in ADAPTADORES_AREA:
+        sigla = NOME_PARA_SIGLA.get(componente_raw, componente_raw)
+
+    if not etapa:
+        if _eh_campo_ei(sigla):
+            etapa = "EI"
+        elif sigla in SIGLAS_EM:
+            etapa = "EM"
+        else:
+            etapa = "EF"
+
+    base = PLANEJAMENTO_BASE
+    adapt_mod = ADAPTADORES_MODALIDADE.get(etapa, ADAPTADORES_MODALIDADE["EF"])
+    adapt_area = ADAPTADORES_AREA.get(sigla, "")
+
+    if not adapt_area:
+        print(f"[Planejador] Aviso: adaptador não encontrado para '{componente_raw}' (sigla: '{sigla}').")
+
+    schema = SCHEMAS.get("planejamento", "")
+
+    return (
+        f"{base}\n\n"
+        f"{adapt_mod}\n\n"
+        f"{adapt_area}\n\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "ESTRUTURA OBRIGATÓRIA DO JSON\n"
+        "═══════════════════════════════════════════════════════════════\n\n"
+        f"{schema}"
+    )
 
 
 # ============================================================
@@ -2694,7 +2891,11 @@ class GeminiService:
         if task_type not in SCHEMAS:
             return {"erro": f"Tipo não suportado: {task_type}"}
 
-        system_prompt = _system_para_task(task_type, diferenciado=diferenciado)
+        # Modo Planejamento usa prompt em camadas (BASE + adaptadores)
+        if task_type == "planejamento":
+            system_prompt = _montar_prompt_planejamento(payload)
+        else:
+            system_prompt = _system_para_task(task_type, diferenciado=diferenciado)
 
         if task_type not in TAREFAS_SEM_RAG:
             conteudo = payload.get("content") or payload.get("tema") or ""
@@ -2816,9 +3017,34 @@ class GeminiService:
         if task_type != "planejamento":
             return {"erro": f"Batching não suportado para task_type: {task_type}"}
 
-        system_prompt = self._system_para_task_com_lote(
-            task_type, batch_start, batch_end, total_aulas
-        )
+        # Modo Planejamento usa prompt em camadas (BASE + adaptadores)
+        if task_type == "planejamento":
+            base_prompt = _montar_prompt_planejamento(payload)
+            # Adiciona a instrução de lote no final
+            instrucao_lote = (
+                f"\n\n═══════════════════════════════════════════════════════════════\n"
+                f"INSTRUÇÃO DE LOTE (CRÍTICA)\n"
+                f"═══════════════════════════════════════════════════════════════\n"
+                f"Você está gerando um planejamento LONGO em LOTES.\n"
+                f"Este é o lote {batch_start}–{batch_end} de um total de {total_aulas} aulas.\n\n"
+                f"REGRAS:\n"
+                f"1. Retorne o MESMO formato JSON completo do schema.\n"
+                f"2. No campo `sequencia_didatica`, retorne APENAS as aulas "
+                f"{batch_start} a {batch_end}.\n"
+                f"3. Cada aula em `sequencia_didatica` deve ter `numero_aula` "
+                f"ABSOLUTO (de {batch_start} a {batch_end}).\n"
+                f"4. Os campos de cabeçalho, lógica pedagógica, eixos, objetivos, "
+                f"justificativa devem ser os MESMOS em todos os lotes.\n"
+                f"5. Mantenha a progressão cognitiva considerando o planejamento "
+                f"COMPLETO (as aulas anteriores já foram geradas nos lotes "
+                f"1–{max(1, batch_start - 1)}).\n"
+                f"6. Retorne APENAS o JSON, sem texto adicional.\n"
+            )
+            system_prompt = base_prompt + instrucao_lote
+        else:
+            system_prompt = self._system_para_task_com_lote(
+                task_type, batch_start, batch_end, total_aulas
+            )
 
         # RAG — só se houver conteúdo não-vazio
         conteudo = payload.get("content") or payload.get("tema") or ""
