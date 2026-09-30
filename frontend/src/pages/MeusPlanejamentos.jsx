@@ -297,3 +297,4 @@ const MeusPlanejamentos = () => {
 };
 
 // (ModalVisualizar e Meta foram removidos no D11b-fix — substituídos pelo ModalPlano)
+export default MeusPlanejamentos;
