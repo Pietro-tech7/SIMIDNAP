@@ -1098,7 +1098,40 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
     <div className="space-y-5">
       {/* CABEÇALHO */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-5 text-white">
+        {/* Marca SIMIDNAPE */}
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2 border-b border-blue-400/40 pb-3">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-blue-200 font-bold">
+              PLANEJADOR SIMIDNAPE
+            </p>
+            <p className="text-[10px] text-blue-100">O Professor Inesquecível</p>
+          </div>
+          <p className="text-[10px] text-blue-200 font-mono">
+            simidnape.com.br
+          </p>
+        </div>
+
+        {/* Título do plano */}
         <h2 className="text-xl font-bold">📘 {cab.titulo || tituloFallback}</h2>
+
+        {/* Cabeçalho institucional — quem está planejando */}
+        {(cab.nome_professor || cab.nome_escola || cab.municipio) && (
+          <div className="mt-2 mb-3 text-xs text-blue-100">
+            {cab.nome_professor && (
+              <span><strong className="text-white">Professor(a):</strong> {cab.nome_professor}</span>
+            )}
+            {cab.nome_escola && (
+              <span> · <strong className="text-white">Escola:</strong> {cab.nome_escola}</span>
+            )}
+            {cab.municipio && (
+              <span> · <strong className="text-white">Município:</strong> {cab.municipio}</span>
+            )}
+            {cab.estado && (
+              <span> - {cab.estado}</span>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 text-sm">
           <div>
             <p className="text-xs text-blue-200 uppercase">Componente</p>
