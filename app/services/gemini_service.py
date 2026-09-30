@@ -682,6 +682,583 @@ REGRAS ESPECÍFICAS DO EM:
 
 
 # ============================================================
+# ADAPTADORES POR ÁREA (componente curricular)
+# Cada adaptador traz as particularidades da disciplina.
+# Somado à BASE + ao ADAPTADOR DA MODALIDADE, forma o prompt final.
+# ============================================================
+
+ADAPTADORES_AREA = {
+
+    # ==========================================================
+    # ENSINO FUNDAMENTAL
+    # ==========================================================
+
+    "LP": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: LÍNGUA PORTUGUESA
+═══════════════════════════════════════════════════════════════
+
+Você está planejando LÍNGUA PORTUGUESA. Esta área tem particularidades fortes.
+
+FOCOS DA LP:
+   1. LEITURA — compreensão, localização de informação, inferência, tema, finalidade
+   2. ESCRITA — produção textual, gêneros, ortografia, coesão, coerência
+   3. ORALIDADE — fala, escuta, argumentação, exposição
+   4. ANÁLISE LINGUÍSTICA — gramática, vocabulário, variação linguística
+
+GÊNEROS TEXTUAIS (escolha conforme o ano):
+   - 1º-3º: parlenda, trava-língua, cantiga, conto curto, bilhete, lista, receita, cartaz
+   - 4º-6º: conto, fábula, notícia, reportagem, poema, e-mail, carta, verbete
+   - 7º-9º: crônica, artigo de opinião, editorial, resenha, conto literário, entrevista
+
+PRÁTICAS DE LEITURA (obrigatórias):
+   - Ler em voz alta com entonação
+   - Antecipar hipóteses ANTES da leitura
+   - Recuperação ativa: perguntar antes de reler
+   - Perguntas por nível: localizar → inferir → opinar
+
+PRÁTICAS DE ESCRITA (obrigatórias):
+   - Planejar (o que vou escrever?)
+   - Escrever (rascunho)
+   - Revisar (com critérios claros)
+   - Reescrever (versão final)
+   - Socializar (leitura para o colega ou turma)
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Roda de leitura com pergunta disparadora
+   ✅ Leitura compartilhada com pausa para hipóteses
+   ✅ Reescrita coletiva na lousa
+   ✅ Jogo de palavras / caça-rimas / bingo de sílabas
+   ✅ Dramatização de cena do texto
+   ✅ Mural de produções da turma
+
+AVALIAÇÃO ESPECÍFICA:
+   - Avaliar a compreensão (o que entendeu, não o que decorou)
+   - Avaliar o processo de escrita (não só o produto)
+   - Valorizar a oralidade (participação, argumentação)
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Ler com compreensão, escrever para ser entendido, falar com clareza, ouvir com atenção. A LP é a ferramenta de toda a vida escolar e cidadã.""",
+
+    "MA": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: MATEMÁTICA
+═══════════════════════════════════════════════════════════════
+
+Você está planejando MATEMÁTICA. Use o MÉTODO CPA (Cingapura).
+
+MÉTODO CPA (Concreto → Pictórico → Abstrato) — OBRIGATÓRIO:
+   1. CONCRETO — material manipulável (ábaco, blocos, dinheiro didático, tampinhas)
+   2. PICTÓRICO — representação visual (desenho, esquema, reta numérica)
+   3. ABSTRATO — símbolo/número (conta, equação, fórmula)
+
+NUNCA comece pelo abstrato. Sempre pelo concreto.
+
+EIXOS DE MATEMÁTICA:
+   1. NÚMEROS — contagem, SND, operações, frações, decimais
+   2. ÁLGEBRA — padrões, expressões, equações
+   3. GEOMETRIA — formas, posição, planificação
+   4. GRANDEZAS E MEDIDAS — comprimento, massa, tempo, dinheiro
+   5. PROBABILIDADE E ESTATÍSTICA — gráficos, tabelas, chance
+
+LAÇTE EM FÓRMULAS:
+   - Toda fórmula em LaTeX (inline com $ ... $, bloco com $$ ... $$)
+   - No JSON, use \\\\ em vez de \\ (ex: \\\\frac em vez de \\frac)
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Material dourado para SND
+   ✅ Ábaco para adição/subtração
+   ✅ Dinheiro didático para problemas financeiros
+   ✅ Barras de chocolate desenhadas para frações
+   ✅ Reta numérica no chão para ordenação
+   ✅ Jogo de cartas para multiplicação
+   ✅ Calculadora humana (aluno resolve no quadro enquanto turma confere)
+
+RESOLUÇÃO DE PROBLEMAS (obrigatório):
+   - Sempre partir de SITUAÇÃO-PROBLEMA do cotidiano
+   - Pedir que o aluno EXPLIQUE como pensou
+   - Valorizar estratégias pessoais antes de ensinar a "oficial"
+
+AVALIAÇÃO ESPECÍFICA:
+   - Avaliar o raciocínio, não só a resposta
+   - Pedir justificativa ("como você chegou nisso?")
+   - Valorizar o erro como oportunidade de aprendizagem
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Resolver problemas com confiança, pensar logicamente, usar matemática no cotidiano. Matemática é ferramenta, não tortura.""",
+
+    "CI": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: CIÊNCIAS DA NATUREZA
+═══════════════════════════════════════════════════════════════
+
+Você está planejando CIÊNCIAS. Esta área tem MÉTODO CIENTÍFICO próprio.
+
+MÉTODO CIENTÍFICO (obrigatório):
+   1. OBSERVAR — o que vemos?
+   2. PERGUNTAR — o que queremos saber?
+   3. HIPOTETIZAR — o que achamos que vai acontecer?
+   4. EXPERIMENTAR — como testar?
+   5. REGISTRAR — o que aconteceu?
+   6. CONCLUIR — o que aprendemos?
+
+EIXOS DE CIÊNCIAS:
+   - Vida e evolução (seres vivos, corpo humano, ecologia)
+   - Terra e universo (solo, água, ar, clima, sistema solar)
+   - Matéria e energia (estados físicos, transformações, energia)
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Experimento com material simples (água, sal, pilha, LED)
+   ✅ Observação com lupa, ímã, termômetro
+   ✅ Registro em caderno de cientista (data, hipótese, resultado, desenho)
+   ✅ Maquete (célula, sistema solar, relevo)
+   ✅ Roda de hipóteses ANTES do experimento
+   ✅ Comparação entre o previsto e o observado
+
+ATENÇÃO:
+   - NUNCA entregue a resposta antes da hipótese do aluno
+   - Sempre valorize o "erro científico" (hipótese que não se confirmou)
+   - A curiosidade é o motor. Alimente-a.
+
+SEGURANÇA:
+   - Toda atividade prática deve ser segura e viável em sala comum
+   - Materiais simples, não tóxicos, não inflamáveis
+
+AVALIAÇÃO ESPECÍFICA:
+   - Avaliar a observação, a hipótese e o registro
+   - Não avaliar apenas a resposta certa
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Olhar o mundo com curiosidade científica, fazer perguntas, testar hipóteses, compreender a natureza.""",
+
+    "HI": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: HISTÓRIA
+═══════════════════════════════════════════════════════════════
+
+Você está planejando HISTÓRIA. Esta área trabalha com TEMPORALIDADE, FONTES e CAUSALIDADE.
+
+EIXOS DE HISTÓRIA:
+   - Tempo e temporalidade
+   - Sujeitos históricos
+   - Causalidade histórica
+   - Mudança e permanência
+   - Comparação entre períodos
+
+FONTES HISTÓRICAS (use sempre que possível):
+   - Textos, documentos, cartas
+   - Fotografias, pinturas, gravuras
+   - Objetos, vestimentas, monumentos
+   - Depoimentos, relatos orais
+   - Mapas históricos
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Linha do tempo na parede
+   ✅ Análise de fonte histórica (quem escreveu, quando, por quê?)
+   ✅ Comparação passado/presente com imagens
+   ✅ Dramatização de cena histórica
+   ✅ Entrevista com pessoas mais velhas (história oral)
+   ✅ Roda de perguntas: "como será que era?"
+
+ATENÇÃO:
+   - NUNCA trate história como "lista de nomes e datas"
+   - Sempre contextualize: o que estava acontecendo? por quê?
+   - Respeite a complexidade, evite heroificação ou vilificação
+   - Compare diferentes perspectivas (não só a do vencedor)
+
+AVALIAÇÃO ESPECÍFICA:
+   - Avaliar a compreensão do contexto
+   - Valorizar a análise de fontes
+   - Pedir comparações e explicações causais
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Compreender de onde viemos, como as sociedades mudam, respeitar diferentes culturas e tempos.""",
+
+    "GE": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: GEOGRAFIA
+═══════════════════════════════════════════════════════════════
+
+Você está planejando GEOGRAFIA. Esta área trabalha com ESPAÇO, ESCALA e RELAÇÃO SOCIEDADE-NATUREZA.
+
+EIXOS DE GEOGRAFIA:
+   - Localização e representação
+   - Natureza, ambientes e qualidade de vida
+   - Mundo do trabalho
+   - Formas de representação e pensamento espacial
+   - Natureza, ambientes e qualidade de vida
+
+REPRESENTAÇÕES ESPACIAIS:
+   - Mapas (mentais, temáticos, políticos)
+   - Croquis, plantas, maquetes
+   - Google Earth, imagens de satélite
+   - Gráficos, tabelas
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Desenho de croqui da sala de aula
+   ✅ Maquete de relevo com papel e argila
+   ✅ Leitura de mapa com escala
+   ✅ Comparação de paisagens (rural/urbano, local/global)
+   ✅ Análise de problema ambiental real
+   ✅ Roda de conversa sobre o bairro
+
+ATENÇÃO:
+   - Sempre partir do LOCAL antes do global
+   - Evite estereótipos regionais
+   - Respeite a diversidade territorial
+   - Não use geografia como "lista de capitais"
+
+AVALIAÇÃO ESPECÍFICA:
+   - Avaliar a leitura de mapa
+   - Valorizar a compreensão das relações sociedade-natureza
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Ler o mundo como espaço vivido, compreender seu lugar no planeta, agir com consciência socioambiental.""",
+
+    "AR": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: ARTE
+═══════════════════════════════════════════════════════════════
+
+Você está planejando ARTE. Esta área tem 4 LINGUAGENS: artes visuais, dança, música e teatro.
+
+DIMENSÕES DA ARTE (BNCC):
+   - CRIAÇÃO (fazer)
+   - APRECIAÇÃO (ver/ouvir)
+   - CONTEXTUALIZAÇÃO (compreender)
+   - EXPRESSÃO (comunicar)
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Oficina de criação (tinta, colagem, modelagem)
+   ✅ Apreciação de obra com perguntas abertas
+   ✅ Roda de percussão corporal
+   ✅ Jogo dramático (teatro improvisado)
+   ✅ Dança circular
+   ✅ Exposição das produções da turma
+
+ATENÇÃO:
+   - NUNCA avalie a arte por "certo ou errado"
+   - Valorize o PROCESSO, não só o produto
+   - Respeite as linguagens artísticas (não misture)
+   - Todos podem criar — não existe "não sei desenhar"
+
+AVALIAÇÃO ESPECÍFICA:
+   - Avaliar a participação, o envolvimento, a criatividade
+   - Portfólio das produções
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Expressar-se, apreciar a beleza, respeitar a diversidade cultural, criar com autonomia.""",
+
+    "EF": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: EDUCAÇÃO FÍSICA
+═══════════════════════════════════════════════════════════════
+
+Você está planejando EDUCAÇÃO FÍSICA. Esta área trabalha com PRÁTICAS CORPORAIS.
+
+EIXOS DA EF:
+   - Brincadeiras e jogos
+   - Esportes (de marca, de precisão, de rede, de invasão)
+   - Ginásticas
+   - Danças
+   - Lutas
+   - Práticas corporais de aventura
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Jogo cooperativo com regra clara
+   ✅ Circuito motor
+   ✅ Brincadeira tradicional da região
+   ✅ Alongamento e aquecimento conduzidos
+   ✅ Roda final para falar sobre o corpo
+
+ATENÇÃO:
+   - INCLUSÃO radical: TODOS participam, com adaptações
+   - NUNCA use EF para descobrir "talentos" — use para incluir
+   - Evite competição como fim. Use competição como meio, com equilíbrio
+   - Respeite quem não quer jogar bola (ofereça alternativas)
+
+AVALIAÇÃO ESPECÍFICA:
+   - Avaliar a participação, cooperação, respeito
+   - Não avaliar desempenho técnico
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Amar o corpo, cooperar, ter saúde, respeitar o corpo do outro.""",
+
+    "ER": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: ENSINO RELIGIOSO
+═══════════════════════════════════════════════════════════════
+
+Você está planejando ENSINO RELIGIOSO. Esta área trabalha com DIVERSIDADE RELIGIOSA, VALORES e CONVIVÊNCIA — sem proselitismo.
+
+EIXOS DO ER:
+   - Crenças e convicções religiosas
+   - Ética e moral
+   - Diversidade religiosa e cultural
+   - Convivência e respeito
+
+ATENÇÃO CRÍTICA:
+   - NUNCA proselitismo (não ensine uma religião específica)
+   - NUNCA trate uma religião como "certa" e outra como "errada"
+   - Apresente DIVERSIDADE: cristianismo, judaísmo, islamismo, indígenas, matriz africana, ateísmo, agnosticismo
+   - Respeite quem não tem religião
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Roda de conversa sobre valores universais (respeito, solidariedade)
+   ✅ Leitura de mitos e narrativas de diferentes tradições
+   ✅ Análise de símbolos religiosos (sem julgamento)
+   ✅ Projeto "nossos valores em família"
+   ✅ Visita virtual a templos de diferentes tradições
+
+AVALIAÇÃO ESPECÍFICA:
+   - Avaliar a compreensão da diversidade
+   - Valorizar a convivência respeitosa
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Respeitar o outro como ele é, compreender a diversidade, viver em paz com quem pensa diferente.""",
+
+    "LI": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: LÍNGUA INGLESA
+═══════════════════════════════════════════════════════════════
+
+Você está planejando LÍNGUA INGLESA. Esta área trabalha com as 4 HABILIDADES: listening, speaking, reading, writing.
+
+EIXOS DA LI:
+   - Compreensão oral (listening)
+   - Produção oral (speaking)
+   - Compreensão escrita (reading)
+   - Produção escrita (writing)
+   - Dimensão intercultural
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Jogo de vocabulário (flashcards, bingo, memory)
+   ✅ Música e vídeo curto em inglês
+   ✅ Role play (diálogo do cotidiano)
+   ✅ Reading com suporte visual
+   ✅ Produção de cartaz temático em inglês
+   ✅ Total Physical Response (TPR — aprender com movimento)
+
+ATENÇÃO:
+   - Sempre contextualize a língua (não ensine palavra solta)
+   - Respeite o tempo de aquisição — não force fluência
+   - Valorize o erro como parte do aprendizado
+
+AVALIAÇÃO ESPECÍFICA:
+   - Avaliar a compreensão e comunicação
+   - Valorizar a participação oral
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Comunicar-se em inglês, ter acesso a outras culturas, abrir portas para o futuro.""",
+
+    "CO": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: COMPUTAÇÃO
+═══════════════════════════════════════════════════════════════
+
+Você está planejando COMPUTAÇÃO. Esta área trabalha com PENSAMENTO COMPUTACIONAL.
+
+EIXOS DA COMPUTAÇÃO:
+   - Pensamento computacional (decomposição, padrão, abstração, algoritmo)
+   - Mundo digital (segurança, privacidade, ética)
+   - Cultura digital (tecnologias, IA, redes)
+   - Programação (mesmo sem computador)
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Algoritmo desplugado (receita, labirinto no chão)
+   ✅ Scratch ou similar (quando houver computador)
+   ✅ Cartões para ordenar instruções
+   ✅ Roda de conversa sobre segurança digital
+   ✅ Jogo de padrão e sequência
+
+ATENÇÃO:
+   - NUNCA exija tecnologia para ensinar computação
+   - Pensamento computacional se ensina com papel e lápis
+   - Respeite quem não tem acesso
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Pensar logicamente, resolver problemas, usar tecnologia com consciência e segurança.""",
+
+    # ==========================================================
+    # EDUCAÇÃO INFANTIL (Campos de Experiência)
+    # ==========================================================
+
+    "EI_EO": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: CAMPO "O EU, O OUTRO E O NÓS" (EI)
+═══════════════════════════════════════════════════════════════
+
+Você está planejando para o Campo "O eu, o outro e o nós". Foco em IDENTIDADE, AUTONOMIA e RELAÇÃO.
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Roda de conversa com espelho (reconhecer-se)
+   ✅ Cantiga com nome das crianças
+   ✅ Jogo de fazer de conta (sou o papai, a mamãe)
+   ✅ Atividade de cuidar de uma plantinha
+   ✅ Mural das famílias
+   ✅ Combinados da turma (regras construídas juntos)
+
+O QUE A CRIANÇA DESENVOLVE:
+   Autoconhecimento, autonomia, empatia, cooperação.""",
+
+    "EI_CG": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: CAMPO "CORPO, GESTOS E MOVIMENTOS" (EI)
+═══════════════════════════════════════════════════════════════
+
+Você está planejando para o Campo "Corpo, gestos e movimentos". Foco em CORPO, MOVIMENTO e EXPRESSÃO CORPORAL.
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Circuito motor (pular, rastejar, equilibrar)
+   ✅ Dança com música
+   ✅ Jogo de imitar animais
+   ✅ Massinha para coordenação fina
+   ✅ Brincadeira de roda tradicional
+   ✅ Yoga infantil (posturas simples)
+
+O QUE A CRIANÇA DESENVOLVE:
+   Consciência corporal, coordenação, expressão, saúde.""",
+
+    "EI_TS": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: CAMPO "TRAÇOS, SONS, CORES E FORMAS" (EI)
+═══════════════════════════════════════════════════════════════
+
+Você está planejando para o Campo "Traços, sons, cores e formas". Foco em ARTES VISUAIS, MÚSICA e EXPRESSÃO.
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Pintura com tinta guache (livre e dirigida)
+   ✅ Colagem com materiais diversos
+   ✅ Modelagem com massinha
+   ✅ Roda de percussão corporal
+   ✅ Exploração de sons (instrumentos simples)
+   ✅ Desenho livre após contação de história
+
+O QUE A CRIANÇA DESENVOLVE:
+   Criatividade, sensibilidade estética, expressão, coordenação fina.""",
+
+    "EI_EF": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: CAMPO "ESCUTA, FALA, PENSAMENTO E IMAGINAÇÃO" (EI)
+═══════════════════════════════════════════════════════════════
+
+Você está planejando para o Campo "Escuta, fala, pensamento e imaginação". Foco em LINGUAGEM e ORALIDADE.
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Contação de história com fantoches
+   ✅ Roda de conversa com pergunta aberta
+   ✅ Reconto oral pela criança
+   ✅ Leitura de imagem (livro sem texto)
+   ✅ Cantigas e parlendas
+   ✅ Dramatização de história
+
+O QUE A CRIANÇA DESENVOLVE:
+   Linguagem oral, escuta ativa, imaginação, repertório literário.""",
+
+    "EI_ET": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: CAMPO "ESPAÇOS, TEMPOS, QUANTIDADES, RELAÇÕES E TRANSFORMAÇÕES" (EI)
+═══════════════════════════════════════════════════════════════
+
+Você está planejando para o Campo "Espaços, tempos, quantidades, relações e transformações". Foco em EXPLORAÇÃO DO MUNDO e MATEMÁTICA INICIAL.
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Contagem com objetos concretos
+   ✅ Exploração de formas geométricas
+   ✅ Noção de tempo (antes, agora, depois)
+   ✅ Experimento simples (areia + água)
+   ✅ Comparação de tamanhos, pesos, quantidades
+   ✅ Explorar espaços (dentro/fora, em cima/embaixo)
+
+O QUE A CRIANÇA DESENVOLVE:
+   Noção de quantidade, tempo, espaço, causalidade, pensamento lógico inicial.""",
+
+    # ==========================================================
+    # ENSINO MÉDIO (Competências específicas de área)
+    # ==========================================================
+
+    "LGG": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: LINGUAGENS E SUAS TECNOLOGIAS (EM)
+═══════════════════════════════════════════════════════════════
+
+Você está planejando para a área de LINGUAGENS (EM). Esta área integra Língua Portuguesa, Literatura, Arte, Educação Física, Língua Inglesa e Tecnologias.
+
+COMPETÊNCIAS ESPECÍFICAS (BNCC EM):
+   - Compreender o funcionamento das linguagens
+   - Analisar manifestações artísticas e culturais
+   - Produzir textos e manifestações artísticas
+   - Argumentar com base em dados
+   - Usar tecnologias digitais criticamente
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Leitura e análise de textos argumentativos
+   ✅ Produção de textos autorais
+   ✅ Seminário com apresentação oral
+   ✅ Análise de obra artística
+   ✅ Projeto interdisciplinar de comunicação
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Comunicar-se com clareza, argumentar, produzir cultura, atuar na sociedade.""",
+
+    "MAT": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: MATEMÁTICA E SUAS TECNOLOGIAS (EM)
+═══════════════════════════════════════════════════════════════
+
+Você está planejando para a área de MATEMÁTICA (EM). Foco em COMPETÊNCIAS para a vida, não só fórmulas.
+
+COMPETÊNCIAS ESPECÍFICAS (BNCC EM):
+   - Resolver problemas com estratégias diversas
+   - Modelar fenômenos (gráficos, funções)
+   - Argumentar matematicamente
+   - Usar tecnologia para análise
+   - Comunicar resultados
+
+LINGUAGEM LATEX: toda fórmula em LaTeX (inline com $ ... $, bloco com $$ ... $$). No JSON, use \\\\ em vez de \\.
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Situação-problema real (economia, esporte, meio ambiente)
+   ✅ Uso de planilhas e gráficos
+   ✅ Modelagem com função
+   ✅ Análise de dados estatísticos
+   ✅ Resolução colaborativa no quadro
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Resolver problemas complexos, argumentar com dados, pensar estatisticamente, decidir com base em evidências.""",
+
+    "CNT": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: CIÊNCIAS DA NATUREZA E SUAS TECNOLOGIAS (EM)
+═══════════════════════════════════════════════════════════════
+
+Você está planejando para a área de CIÊNCIAS DA NATUREZA (EM). Integra Biologia, Física e Química.
+
+COMPETÊNCIAS ESPECÍFICAS (BNCC EM):
+   - Analisar fenômenos naturais com base em modelos
+   - Aplicar conceitos científicos para explicar situações
+   - Argumentar com base em evidências
+   - Avaliar impactos socioambientais
+   - Comunicar conhecimento científico
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Experimentos investigativos
+   ✅ Análise de gráficos e dados reais
+   ✅ Discussão de problema socioambiental
+   ✅ Estudo de caso
+   ✅ Modelagem científica
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Compreender o mundo natural, decidir com base em evidências, atuar frente às questões socioambientais.""",
+
+    "CHS": """═══════════════════════════════════════════════════════════════
+ADAPTADOR: CIÊNCIAS HUMANAS E SOCIAIS APLICADAS (EM)
+═══════════════════════════════════════════════════════════════
+
+Você está planejando para a área de CIÊNCIAS HUMANAS (EM). Integra História, Geografia, Filosofia e Sociologia.
+
+COMPETÊNCIAS ESPECÍFICAS (BNCC EM):
+   - Analisar processos históricos e geográficos
+   - Compreender a diversidade cultural
+   - Argumentar com base em fontes
+   - Posicionar-se criticamente
+   - Atuar como cidadão
+
+ESTRATÉGIAS CONCRETAS TÍPICAS:
+   ✅ Análise de fonte histórica ou documento
+   ✅ Debate estruturado (com papéis definidos)
+   ✅ Estudo de caso real (político, social, econômico)
+   ✅ Projeto de intervenção comunitária
+   ✅ Análise de mapa ou gráfico
+
+O QUE MUDA NA VIDA DO ALUNO:
+   Compreender a sociedade, argumentar, exercer cidadania ativa e crítica.""",
+}
+
+
+# ============================================================
 # SCHEMAS JSON
 # ============================================================
 SCHEMAS = {
