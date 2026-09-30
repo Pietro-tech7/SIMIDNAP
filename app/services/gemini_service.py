@@ -246,6 +246,59 @@ Respeite estes mínimos:
    - Resultado_visivel: cobrir os 3 verbos (SABERÁ, SABERÁ FAZER, SENTIRÁ)
 
 ═══════════════════════════════════════════════════════════════
+BACKWARD DESIGN (Planejamento Reverso — obrigatório)
+═══════════════════════════════════════════════════════════════
+
+Antes de planejar as atividades, raciocine na ordem reversa:
+
+   1. RESULTADO — O que o aluno deve saber/fazer ao final? (o `resultado_visivel`)
+   2. EVIDÊNCIA — Como vou saber que ele aprendeu? Qual produto observável? (o `evidencia_de_aprendizagem`)
+   3. ATIVIDADES — Só então, quais atividades levam a esse resultado?
+
+É proibido começar pelo conteúdo ou pela atividade. Comece pelo RESULTADO.
+O campo `evidencia_de_aprendizagem` é OBRIGATÓRIO e deve descrever o que o professor VÊ o aluno fazer.
+
+═══════════════════════════════════════════════════════════════
+PERGUNTA PROBLEMATIZADORA E CONEXÃO COM A VIDA (Paulo Freire)
+═══════════════════════════════════════════════════════════════
+
+Toda aula começa com uma PERGUNTA que liga o conteúdo à vida do aluno. Não é uma pergunta de prova — é uma pergunta que provoca curiosidade e que a criança/adolescente consegue relacionar com o mundo dela.
+
+O campo `pergunta_problematizadora` é OBRIGATÓRIO em cada aula.
+
+O campo `conexao_com_a_vida` mostra onde esse conteúdo aparece no cotidiano do aluno. É OBRIGATÓRIO em cada aula.
+
+Exemplos:
+   ✅ "Por que a água da poça desaparece no sol?" (Ciências, evaporação)
+   ✅ "Se eu dobrar a receita de bolo, o que acontece com cada ingrediente?" (Matemática, proporção)
+   ✅ "Como você descobre o tema de uma notícia antes de ler tudo?" (LP, leitura)
+   ✅ "Por que os preços de uma mesma coisa variam de loja para loja?" (Matemática, comparação)
+
+═══════════════════════════════════════════════════════════════
+DIFERENCIAÇÃO REAL (obrigatório em cada aula)
+═══════════════════════════════════════════════════════════════
+
+O campo `diferenciacao` responde duas perguntas:
+   - O que fazer com quem NÃO acompanha? (apoio)
+   - O que fazer com quem AVANÇA mais rápido? (aprofundamento)
+
+Isso vale para TODAS as aulas, não só quando há aluno com laudo. Diferenciação é a regra, não a exceção.
+
+Exemplo: "Se o aluno travar, oferecer tiras de papel já divididas; se avançar, propor comparação com denominadores diferentes."
+
+═══════════════════════════════════════════════════════════════
+CABEÇALHO (dados que o professor fornece no formulário)
+═══════════════════════════════════════════════════════════════
+
+O cabeçalho do plano inclui:
+   - nome_professor (o professor que está planejando)
+   - nome_escola (a escola dele — pode dar aula em várias, então é preenchido por ele)
+   - municipio e estado (preenchidos pelo professor)
+   - componente, ano, período, total de aulas, tempo por aula
+
+Esses dados NÃO são inventados. Vêm do formulário. Você apenas os inclui no JSON.
+
+═══════════════════════════════════════════════════════════════
 3 CAMADAS QUE SE SOBREPÕEM
 ═══════════════════════════════════════════════════════════════
 
@@ -2035,10 +2088,14 @@ SCHEMAS = {
   ]
 }
 """,
-   "planejamento": """
+    "planejamento": """
 {
   "cabecalho": {
     "titulo": "string",
+    "nome_professor": "string (nome do professor — vem pré-preenchido do cadastro, mas editável)",
+    "nome_escola": "string (nome da escola — o professor digita, pode dar aula em várias)",
+    "municipio": "string (município — o professor digita)",
+    "estado": "string (UF — ex: 'PI', 'MA', 'SP')",
     "componente": "string",
     "ano": "string",
     "periodo_tipo": "string ('aula' | 'semana' | 'mes' | 'bimestre')",
@@ -2073,19 +2130,23 @@ SCHEMAS = {
       "habilidade_foco": "string (ex: 'D01 — Usos dos números naturais' ou 'EF05MA03 — Comparar frações')",
       "foco": "string (ex: 'Números, sequências e operações')",
       "descritores": ["string (descritores trabalhados nesta aula específica)"],
-      "objetivo_da_aula": "string",
+      "pergunta_problematizadora": "string (pergunta que abre a aula e conecta o conteúdo à vida do aluno — inspirado em Paulo Freire. Deve ser uma pergunta que provoca curiosidade e que o aluno não responde de imediato. Ex: 'Por que a água da poça desaparece no sol?', 'Se eu dobrar a receita, o que acontece com cada ingrediente?')",
+      "objetivo_da_aula": "string (o que o aluno saberá/fará ao final da aula)",
+      "evidencia_de_aprendizagem": "string (Backward Design: qual PRODUTO OBSERVÁVEL mostra que o aluno aprendeu? Ex: 'Resolver 4 comparações de fração no caderno justificando a escolha', 'Registrar em uma frase o que entendeu sobre o tema da notícia', 'Explicar para o colega como chegou à resposta')",
       "conteudo": "string (o que será trabalhado)",
       "estrategia": "string (ESTRATÉGIA CONCRETA E EXECUTÁVEL — proibido usar termos genéricos como 'desenvolvimento' ou 'apresentação'. Ex: 'Trabalhar centena, dezena e unidade com material dourado e quadro posicional', 'Jogo Monte o número: 245 = 200 + 40 + 5', 'Circuito de problemas envolvendo adição e subtração')",
-      "metodologia": "string (passo a passo do que o professor faz)",
+      "metodologia": "string (passo a passo do que o professor faz — 5 a 8 passos claros)",
       "atividades": ["string (ações dos alunos)"],
       "recursos": ["string (apenas recursos simples e comuns)"],
+      "diferenciacao": "string (o que fazer com quem NÃO acompanha e com quem AVANÇA mais rápido. Ex: 'Se o aluno travar, oferecer tiras de papel já divididas; se avançar, propor comparação com denominadores diferentes')",
       "avaliacao_da_aula": "string (como verificar se a aula funcionou)",
       "duracao_minutos": 0,
       "principio_cognitivo": "string (princípio de neuroeducação/neuropsicopedagogia. Ex: 'Atenção e Curiosidade', 'Carga Cognitiva', 'Dupla Codificação', 'Recuperação Ativa', 'Metacognição', 'Funções Executivas', 'Consolidação de Memória', 'Transferência')",
       "leitura_relacional": "string (leitura psicanalítica ESPECÍFICA e ÚNICA desta aula sobre o vínculo professor-aluno. Deve falar do vínculo, não do conteúdo. Ex: 'Resistir ao impulso de corrigir de imediato cria holding — o erro vira processo, não humilhação')",
       "onde_pode_travar": "string (antecipação: onde o aluno provavelmente vai errar + o que o professor faz se isso acontecer)",
       "momento_de_encantamento": "string (o momento 'uau' da aula — o instante em que o aluno sente curiosidade genuína)",
-      "resultado_visivel": "string (o que o aluno SABERÁ, SABERÁ FAZER e SENTIRÁ ao final da aula)"
+      "resultado_visivel": "string (o que o aluno SABERÁ, SABERÁ FAZER e SENTIRÁ ao final da aula)",
+      "conexao_com_a_vida": "string (como esse conteúdo se aplica na vida real do aluno — inspirado em Paulo Freire. Ex: 'Usar frações no dia a dia: dividir uma pizza, medir meia xícara, calcular desconto')"
     }
   ],
   "avaliacao_geral": {
