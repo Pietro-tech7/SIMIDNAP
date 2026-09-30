@@ -444,7 +444,7 @@ def save_planejamento_completo(
         except (ValueError, TypeError):
             return None
 
-        plan = LessonPlan(
+    plan = LessonPlan(
         user_id=user_id,
         plan_type=plan_type,
         title=title,
