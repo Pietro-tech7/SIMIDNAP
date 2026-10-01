@@ -462,6 +462,27 @@ def save_planejamento_completo(
     db.add(plan)
     db.commit()
     db.refresh(plan)
+
+    # ============================================================
+    # PUBLICAÇÃO AUTOMÁTICA NA COMUNIDADE (R4b)
+    # Todo plano salvo via save-complete vai direto para o banco público.
+    # O professor escolheu a privacidade no formulário ANTES de gerar.
+    # As rotas /publish e /unpublish continuam existindo para casos manuais.
+    # ============================================================
+    mostrar_nome = extra.get("mostrar_nome", True)
+    mostrar_escola = extra.get("mostrar_escola", True)
+    mostrar_municipio = extra.get("mostrar_municipio", True)
+    mostrar_titulo = extra.get("mostrar_titulo", True)
+    publish_lesson_plan(
+        db=db,
+        user_id=user_id,
+        plan_id=str(plan.id),
+        mostrar_nome=mostrar_nome,
+        mostrar_escola=mostrar_escola,
+        mostrar_municipio=mostrar_municipio,
+        mostrar_titulo=mostrar_titulo,
+    )
+    db.refresh(plan)
     return plan
 
 
@@ -505,10 +526,10 @@ def publish_lesson_plan(
     from ..models.user import User
     user = db.query(User).filter(User.id == user_id).first()
 
-    if user and mostrar_nome:
+    if user and mostrar_nome and user.full_name:
         plan.autor_nome = user.full_name
     else:
-        plan.autor_nome = None
+        plan.autor_nome = "Professor(a) SIMIDNAPE"
 
     if isinstance(sd, dict):
         cab = sd.get("cabecalho") or {}
@@ -516,7 +537,7 @@ def publish_lesson_plan(
         if mostrar_escola and cab.get("nome_escola"):
             plan.autor_escola = cab["nome_escola"]
         else:
-            plan.autor_escola = None
+            plan.autor_escola = "Escola SIMIDNAPE"
 
         if mostrar_municipio and cab.get("municipio"):
             texto = cab["municipio"]
