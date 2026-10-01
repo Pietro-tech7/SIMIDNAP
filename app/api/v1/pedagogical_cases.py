@@ -129,7 +129,7 @@ def analyze(
             detail="Créditos insuficientes. Faça upgrade do seu plano para continuar."
         )
 
-    resultado = analyze_case(db, str(current_user.id), case_id)
+    resultado = analyze_case(db, str(current_user.id), case_id, user=current_user)
     if "erro" in resultado:
         raise HTTPException(status_code=400, detail=resultado["erro"])
 
@@ -165,13 +165,15 @@ async def analyze_stream(
     payload = _montar_payload(case)
 
     ai = get_ai_service()
+    # Captura o usuário ANTES do streaming (sessão pode fechar no gerador)
+    user_obj = current_user
 
     async def gerar():
         yield "event: inicio\ndata: {\"status\": \"ok\"}\n\n"
 
         texto_acumulado = ""
         try:
-            async for chunk in ai.generate_structured_stream("situacao_pedagogica", payload):
+            async for chunk in ai.generate_structured_stream("situacao_pedagogica", payload, user=user_obj):
                 texto_acumulado += chunk
                 payload_chunk = json.dumps({"texto": chunk}, ensure_ascii=False)
                 yield f"event: chunk\ndata: {payload_chunk}\n\n"

@@ -658,11 +658,21 @@ class AIService(BaseAIService):
 
         return {"erro": "Geração em lotes exige a IA real (Gemini). Mock não suportado."}
 
-    async def generate_structured_stream(self, task_type: str, payload: Dict[str, Any]):
+    async def generate_structured_stream(self, task_type: str, payload: Dict[str, Any], user=None):
         """Streaming estruturado. Só funciona se o Gemini estiver ativo."""
-        if self._gemini:
+        # Multi-API key: usa a chave do usuário se disponível
+        gemini = self._gemini
+        if user is not None:
             try:
-                async for chunk in self._gemini.generate_structured_stream(task_type, payload):
+                from .gemini_service import get_gemini_service_for_user
+                gemini = get_gemini_service_for_user(user)
+            except Exception as e:
+                print(f"[AIService] Erro ao obter Gemini do usuário (stream): {e}")
+                gemini = self._gemini
+
+        if gemini:
+            try:
+                async for chunk in gemini.generate_structured_stream(task_type, payload):
                     yield chunk
                 return
             except Exception as e:

@@ -92,7 +92,7 @@ def _montar_payload(case: PedagogicalCase) -> Dict[str, Any]:
     return payload
 
 
-def analyze_case(db: Session, user_id: str, case_id: str) -> Dict[str, Any]:
+def analyze_case(db: Session, user_id: str, case_id: str, user=None) -> Dict[str, Any]:
     """
     Analisa a situação pedagógica com IA e retorna
     compreensão, hipóteses, intervenções, acompanhamento e encaminhamento.
@@ -108,6 +108,7 @@ def analyze_case(db: Session, user_id: str, case_id: str) -> Dict[str, Any]:
         resultado = ai.generate_structured(
             task_type="situacao_pedagogica",
             payload=payload,
+            user=user,
         )
 
         # Salva a análise no banco
