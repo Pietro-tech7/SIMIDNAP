@@ -81,6 +81,7 @@ def message(
         user_id=str(current_user.id),
         reflection_id=reflection_id,
         content=data.content,
+        user=current_user,
     )
     if not result:
         raise HTTPException(status_code=404, detail="Conversa não encontrada.")

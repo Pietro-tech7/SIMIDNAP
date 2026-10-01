@@ -409,7 +409,7 @@ def start_reflection(db: Session, user_id: str, theme: str = None, title: str = 
     return reflection
 
 
-def add_message(db: Session, user_id: str, reflection_id: str, content: str) -> Dict[str, Any]:
+def add_message(db: Session, user_id: str, reflection_id: str, content: str, user=None) -> Dict[str, Any]:
     reflection = db.query(Reflection).filter(
         Reflection.id == reflection_id,
         Reflection.user_id == user_id
@@ -443,6 +443,7 @@ def add_message(db: Session, user_id: str, reflection_id: str, content: str) -> 
             mensagens_atuais,
             direcionamento_estagio=direcionamento,
             contexto_tema=contexto_tema,
+            user=user,
         )
     except Exception as e:
         print(f"[therapy_service] Erro ao gerar resposta: {e}")
