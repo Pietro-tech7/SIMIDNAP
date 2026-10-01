@@ -1002,3 +1002,50 @@ async def gerar_imagem(
         ilimitado=cota_pos["ilimitado"],
         mensagem="Imagem gerada e salva no Banco de Figuras.",
     )
+
+
+# ============================================================
+# MEU ACERVO — Lista as questões que EU gerei (Motor 9)
+# ============================================================
+@router.get("/minhas")
+def listar_minhas_questoes(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lista todas as questões que o usuário gerou com o Motor 9.
+    Lê da tabela compartilhada `question_bank_fundamental`, filtrando
+    por `submitted_by = current_user.id` e `origem = 'gerada_ia'`.
+    Usada pela aba "Minhas Questões" do Meu Acervo.
+    """
+    from ...models.question_bank_fundamental import QuestionBankFundamental
+
+    questoes = (
+        db.query(QuestionBankFundamental)
+        .filter(
+            QuestionBankFundamental.submitted_by == current_user.id,
+            QuestionBankFundamental.origem == "gerada_ia",
+            QuestionBankFundamental.trashed_at.is_(None),
+        )
+        .order_by(QuestionBankFundamental.created_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": str(q.id),
+            "enunciado": q.enunciado,
+            "componente": q.componente,
+            "disciplina": q.disciplina,
+            "ano": q.ano,
+            "serie": q.serie,
+            "etapa": q.etapa,
+            "tipo": q.tipo,
+            "dificuldade": q.dificuldade,
+            "habilidade_codigo": q.habilidade_codigo,
+            "approved": q.approved,
+            "anulada": q.anulada,
+            "created_at": q.created_at.isoformat() if q.created_at else None,
+        }
+        for q in questoes
+    ]
