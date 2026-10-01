@@ -62,6 +62,14 @@ const PlanejadorModoPlanejamento = () => {
   const [ano, setAno] = useState(5);
   const [componente, setComponente] = useState('');
 
+  // ============================================================
+  // ESTADO — Privacidade na Comunidade (D12d-automática)
+  // ============================================================
+  const [mostrarNome, setMostrarNome] = useState(true);
+  const [mostrarEscola, setMostrarEscola] = useState(true);
+  const [mostrarMunicipio, setMostrarMunicipio] = useState(true);
+  const [mostrarTitulo, setMostrarTitulo] = useState(true);
+
   // Preenche nome do professor quando o usuário carrega (pode chegar depois)
   useEffect(() => {
     if (user?.full_name && !nomeProfessor) {
@@ -162,6 +170,10 @@ const PlanejadorModoPlanejamento = () => {
             if (d.conhecimentosPrevios !== undefined) setConhecimentosPrevios(d.conhecimentosPrevios);
             if (d.dificuldades !== undefined) setDificuldades(d.dificuldades);
             if (d.diferenciado !== undefined) setDiferenciado(d.diferenciado);
+            if (d.mostrarNome !== undefined) setMostrarNome(d.mostrarNome);
+            if (d.mostrarEscola !== undefined) setMostrarEscola(d.mostrarEscola);
+            if (d.mostrarMunicipio !== undefined) setMostrarMunicipio(d.mostrarMunicipio);
+            if (d.mostrarTitulo !== undefined) setMostrarTitulo(d.mostrarTitulo);
           } else {
             localStorage.removeItem(STORAGE_KEY);
           }
@@ -184,6 +196,7 @@ const PlanejadorModoPlanejamento = () => {
         titulo, etapa, ano, componente, referenciais, habilidades,
         periodoTipo, tempoAula, aulasPorSemana, totalAulas, totalEditadoManualmente,
         numAlunos, conhecimentosPrevios, dificuldades, diferenciado,
+        mostrarNome, mostrarEscola, mostrarMunicipio, mostrarTitulo,
         _salvo_em: new Date().toISOString(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
@@ -199,6 +212,7 @@ const PlanejadorModoPlanejamento = () => {
     titulo, etapa, ano, componente, referenciais, habilidades,
     periodoTipo, tempoAula, aulasPorSemana, totalAulas, totalEditadoManualmente,
     numAlunos, conhecimentosPrevios, dificuldades, diferenciado,
+    mostrarNome, mostrarEscola, mostrarMunicipio, mostrarTitulo,
   ]);
 
   // ============================================================
@@ -412,6 +426,10 @@ const PlanejadorModoPlanejamento = () => {
         municipio: municipio.trim() || null,
         estado: estado || null,
         descritores_detalhados: descritoresDetalhados,
+        mostrar_nome: mostrarNome,
+        mostrar_escola: mostrarEscola,
+        mostrar_municipio: mostrarMunicipio,
+        mostrar_titulo: mostrarTitulo,
       },
       grade: etapa === 'EI' ? 'Educação Infantil' : (etapa === 'EM' ? `${ano}ª série` : `${ano}º ano`),
       content: habPayload.map(h => h.texto).join(' | '),
@@ -522,6 +540,10 @@ const PlanejadorModoPlanejamento = () => {
           aulas_por_semana: Number(aulasPorSemana),
           total_aulas: total,
           referenciais,
+          mostrar_nome: mostrarNome,
+          mostrar_escola: mostrarEscola,
+          mostrar_municipio: mostrarMunicipio,
+          mostrar_titulo: mostrarTitulo,
         },
       });
 
@@ -552,6 +574,7 @@ const PlanejadorModoPlanejamento = () => {
     setPeriodoTipo('semana'); setTempoAula(50); setAulasPorSemana(5);
     setTotalAulas(5); setTotalEditadoManualmente(false);
     setNumAlunos(25); setConhecimentosPrevios(''); setDificuldades(''); setDiferenciado(false);
+    setMostrarNome(true); setMostrarEscola(true); setMostrarMunicipio(true); setMostrarTitulo(true);
     setResultado(null); setErro(''); setSucesso('');
   };
 
@@ -655,6 +678,75 @@ const PlanejadorModoPlanejamento = () => {
             placeholder="Ex: Frações — Matemática 5º ano — Outubro"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
           />
+        </div>
+
+        {/* Privacidade na Comunidade */}
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-2 mb-3">
+            <span className="text-lg">🌐</span>
+            <div>
+              <p className="text-sm font-semibold text-emerald-900">
+                Publicação na Comunidade
+              </p>
+              <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed">
+                Todo plano gerado vai direto para a <strong>Comunidade de Planejamentos SIMIDNAPE</strong> — onde outros professores autorizados podem consultar e baixar. Escolha o que mostrar publicamente:
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <label className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-emerald-200 cursor-pointer hover:border-emerald-400 transition">
+              <input
+                type="checkbox"
+                checked={mostrarNome}
+                onChange={(e) => setMostrarNome(e.target.checked)}
+                className="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-800">Mostrar meu nome</p>
+                <p className="text-[10px] text-gray-600 mt-0.5">Se desmarcar, vira "Professor(a) SIMIDNAPE".</p>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-emerald-200 cursor-pointer hover:border-emerald-400 transition">
+              <input
+                type="checkbox"
+                checked={mostrarEscola}
+                onChange={(e) => setMostrarEscola(e.target.checked)}
+                className="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-800">Mostrar minha escola</p>
+                <p className="text-[10px] text-gray-600 mt-0.5">Se desmarcar, vira "Escola SIMIDNAPE".</p>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-emerald-200 cursor-pointer hover:border-emerald-400 transition">
+              <input
+                type="checkbox"
+                checked={mostrarMunicipio}
+                onChange={(e) => setMostrarMunicipio(e.target.checked)}
+                className="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-800">Mostrar meu município</p>
+                <p className="text-[10px] text-gray-600 mt-0.5">Se desmarcar, o município/UF é ocultado.</p>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-emerald-200 cursor-pointer hover:border-emerald-400 transition">
+              <input
+                type="checkbox"
+                checked={mostrarTitulo}
+                onChange={(e) => setMostrarTitulo(e.target.checked)}
+                className="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-800">Mostrar meu título</p>
+                <p className="text-[10px] text-gray-600 mt-0.5">Se desmarcar, vira "Plano de [Componente] — [Ano]".</p>
+              </div>
+            </label>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
