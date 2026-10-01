@@ -677,10 +677,22 @@ class AIService(BaseAIService):
         messages: List[Dict[str, str]],
         direcionamento_estagio: str = None,
         contexto_tema: str = None,
+        user=None,
     ) -> str:
-        if self._gemini:
+        # Multi-API key: se um usuário foi informado e tem chave própria,
+        # usa o Gemini DELE. Caso contrário, cai na chave do sistema.
+        gemini = self._gemini
+        if user is not None:
             try:
-                return self._gemini.generate_chat(
+                from .gemini_service import get_gemini_service_for_user
+                gemini = get_gemini_service_for_user(user)
+            except Exception as e:
+                print(f"[AIService] Erro ao obter Gemini do usuário (chat): {e}")
+                gemini = self._gemini
+
+        if gemini:
+            try:
+                return gemini.generate_chat(
                     messages,
                     direcionamento_estagio=direcionamento_estagio,
                     contexto_tema=contexto_tema,
