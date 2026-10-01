@@ -1061,3 +1061,25 @@ def listar_minhas_questoes(
         }
         for q in questoes
     ]
+
+
+# ============================================================
+# FASE 4 — Retenção de questões (disparo manual pelo admin)
+# ============================================================
+@router.post("/run-retention")
+def run_retention(
+    dry_run: bool = False,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Aplica a política de retenção de questões manualmente.
+    Só o superuser pode rodar.
+
+    Use ?dry_run=true para apenas contar (não apaga nada).
+    """
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Apenas o admin pode rodar isto.")
+
+    from ...jobs.run_retention import aplicar_retencao
+    stats = aplicar_retencao(dry_run=dry_run)
+    return {"sucesso": True, "estatisticas": stats}
