@@ -9,14 +9,14 @@ const PDF_H = 210;
 const MARGEM = 15;
 const RODAPE_ALTURA = 10;
 const GAP = 4;
-const CONTENT_W_MM = PDF_W - MARGEM * 2;      // 267mm
-const CONTENT_H_MM = PDF_H - MARGEM - RODAPE_ALTURA - 2;  // 183mm
+const CONTENT_W_MM = PDF_W - MARGEM * 2;
+const CONTENT_H_MM = PDF_H - MARGEM - RODAPE_ALTURA - 2;
 const CANVAS_W_PX = 1600;
-// Altura alvo da capa: 183mm / (267/1600) = ~1096px
 const CAPA_ALTURA_PX = 1096;
+const PICAPAU_URL = '/icons/comparacao/simidnape-picapau.svg';
 
 // ============================================================
-// PALETA SUAVE — IDENTIDADE VISUAL SIMIDNAPE
+// PALETA SUAVE
 // ============================================================
 const CREME         = '#FDFBF7';
 const BRANCO        = '#FFFFFF';
@@ -33,7 +33,22 @@ const OURO_CLARO    = '#FBF3E0';
 const TEXTO         = '#2D2D2D';
 const TEXTO_2       = '#6B6B6B';
 const BORDA         = '#E5E0D8';
-const RODAPE_COR    = '#9B9182';
+
+// ============================================================
+// TAMANHOS DE FONTE — Finais (2x maiores, legíveis sem zoom)
+// ============================================================
+const F_BODY       = 26;   // corpo do texto principal
+const F_BODY_SM    = 22;   // textos secundários
+const F_LABEL      = 16;   // labels uppercase dos cartões
+const F_LABEL_SM   = 14;   // labels muito pequenos
+const F_CHIP       = 18;   // chips de código (D02, EF05MA03)
+const F_TITULO_AULA = 36;  // título de cada aula (Lora)
+const F_TITULO_SEC = 44;   // títulos de seção (Lora)
+const F_LOGO       = 96;   // SIMIDNAPE
+const F_SLOGAN     = 26;   // O Professor Inesquecível
+const F_COVER_TIT  = 62;   // título do plano na capa
+const F_COVER_BADGE = 16;  // badge "PLANEJAMENTO PEDAGÓGICO"
+const F_COVER_CARD = 22;   // dados do card na capa
 
 // ============================================================
 // HELPERS
@@ -58,6 +73,25 @@ function slug(texto) {
     .substring(0, 60) || 'planejamento';
 }
 
+// Normaliza código de descritor: "SAEB:D02" → "D02"; " d02 " → "D02"
+function normalizarCodigo(codigo) {
+  if (!codigo) return '';
+  let s = String(codigo).trim();
+  if (s.includes(':')) s = s.split(':').pop();
+  return s.trim().toUpperCase();
+}
+
+// Pré-carrega uma imagem e aguarda estar pronta
+function preloadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
+}
+
 async function renderizarBloco(html, opcoes = {}) {
   const { larguraPx = CANVAS_W_PX, alturaMinimaPx = null } = opcoes;
   const el = document.createElement('div');
@@ -76,6 +110,7 @@ async function renderizarBloco(html, opcoes = {}) {
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       backgroundColor: CREME,
       logging: false,
       windowWidth: el.scrollWidth,
@@ -88,20 +123,18 @@ async function renderizarBloco(html, opcoes = {}) {
 }
 
 // ============================================================
-// LOGO SIMIDNAPE — inspirada em "ensinei" (Quicksand + dots coloridos)
+// LOGO SIMIDNAPE (Quicksand + bolinhas coloridas)
 // ============================================================
 function htmlLogo(opcoes = {}) {
   const {
-    tamanhoNome = 76,
-    tamanhoSlogan = 22,
-    alturaPicapau = 96,
-    gap = 24,
+    tamanhoNome = F_LOGO,
+    tamanhoSlogan = F_SLOGAN,
+    alturaPicapau = 120,
+    gap = 28,
   } = opcoes;
 
-  // Renderiza "SIMIDNAPE" com bolinhas coloridas acima dos dois "I"
-  // I está nas posições 1 e 3 (0-indexed) da palavra SIMIDNAPE
-  const corBolinha1 = CORAL;   // primeiro I
-  const corBolinha2 = OURO;    // segundo I
+  const corBolinha1 = CORAL;
+  const corBolinha2 = OURO;
   const dotSize = Math.round(tamanhoNome * 0.11);
   const dotTop  = Math.round(tamanhoNome * 0.12);
 
@@ -118,8 +151,8 @@ function htmlLogo(opcoes = {}) {
 
   return `
     <div style="display: flex; align-items: center; gap: ${gap}px;">
-      <img src="/icons/comparacao/simidnape-picapau.svg" alt=""
-           style="height: ${alturaPicapau}px; width: auto; display: block;"
+      <img src="${PICAPAU_URL}" alt=""
+           style="height: ${alturaPicapau}px; width: auto; display: block; flex-shrink: 0;"
            crossorigin="anonymous" />
       <div style="display: flex; flex-direction: column; line-height: 1;">
         <div style="
@@ -127,7 +160,7 @@ function htmlLogo(opcoes = {}) {
           font-weight: 700;
           font-size: ${tamanhoNome}px;
           color: ${AZUL};
-          letter-spacing: 6px;
+          letter-spacing: 7px;
           line-height: 1.05;
         ">${conteudo}</div>
         <div style="
@@ -136,8 +169,8 @@ function htmlLogo(opcoes = {}) {
           font-weight: 400;
           font-size: ${tamanhoSlogan}px;
           color: ${TEXTO_2};
-          margin-top: 8px;
-          letter-spacing: 0.8px;
+          margin-top: 10px;
+          letter-spacing: 1px;
         ">O Professor Inesquecível</div>
       </div>
     </div>
@@ -145,7 +178,7 @@ function htmlLogo(opcoes = {}) {
 }
 
 // ============================================================
-// CAPA — preenche a folha inteira (1096px de altura)
+// CAPA
 // ============================================================
 function htmlCapa(cab) {
   const nome   = cab.nome_professor || '—';
@@ -170,47 +203,43 @@ function htmlCapa(cab) {
       display: flex;
       flex-direction: column;
     ">
-      <!-- Faixa decorativa no topo -->
-      <div style="display: flex; height: 12px; width: 100%; flex-shrink: 0;">
+      <div style="display: flex; height: 14px; width: 100%; flex-shrink: 0;">
         <div style="flex: 3; background: ${AZUL};"></div>
         <div style="flex: 2; background: ${VERDE};"></div>
         <div style="flex: 2; background: ${PESSEGO};"></div>
         <div style="flex: 1; background: ${CORAL};"></div>
       </div>
 
-      <!-- Círculos decorativos de fundo -->
-      <div style="position: absolute; top: 160px; right: -100px; width: 340px; height: 340px; border-radius: 50%; background: ${AZUL_CLARO}; opacity: 0.55;"></div>
-      <div style="position: absolute; bottom: 100px; left: -90px; width: 260px; height: 260px; border-radius: 50%; background: ${PESSEGO_CLARO}; opacity: 0.7;"></div>
+      <div style="position: absolute; top: 170px; right: -100px; width: 340px; height: 340px; border-radius: 50%; background: ${AZUL_CLARO}; opacity: 0.5;"></div>
+      <div style="position: absolute; bottom: 110px; left: -90px; width: 260px; height: 260px; border-radius: 50%; background: ${PESSEGO_CLARO}; opacity: 0.7;"></div>
 
       <div style="
         position: relative;
         z-index: 1;
-        padding: 70px 80px 70px;
+        padding: 55px 70px 55px;
         flex: 1;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: ${CAPA_ALTURA_PX - 12}px;
+        min-height: ${CAPA_ALTURA_PX - 14}px;
         box-sizing: border-box;
       ">
-        <!-- Topo: logo -->
         <div>
-          ${htmlLogo({ tamanhoNome: 76, tamanhoSlogan: 22, alturaPicapau: 96 })}
+          ${htmlLogo({ tamanhoNome: F_LOGO, tamanhoSlogan: F_SLOGAN, alturaPicapau: 120 })}
         </div>
 
-        <!-- Centro: título do plano -->
-        <div style="text-align: center; margin: 30px 0;">
+        <div style="text-align: center; margin: 24px 0;">
           <div style="
             display: inline-block;
             background: ${OURO_CLARO};
             color: ${OURO};
             font-family: 'Quicksand', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 5px;
-            padding: 10px 26px;
+            font-size: ${F_COVER_BADGE}px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            padding: 12px 30px;
             border-radius: 999px;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
             text-transform: uppercase;
           ">
             Planejamento Pedagógico
@@ -218,27 +247,26 @@ function htmlCapa(cab) {
           <div style="
             font-family: 'Lora', serif;
             font-weight: 400;
-            font-size: 46px;
+            font-size: ${F_COVER_TIT}px;
             color: ${AZUL};
-            line-height: 1.3;
-            max-width: 1050px;
+            line-height: 1.25;
+            max-width: 1150px;
             margin: 0 auto;
           ">
             ${escapeHtml(cab.titulo || 'Sem título')}
           </div>
         </div>
 
-        <!-- Rodapé: card branco com dados -->
         <div style="
           background: ${BRANCO};
           border-radius: 16px;
-          padding: 34px 44px;
+          padding: 34px 46px;
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 20px 60px;
-          font-size: 17px;
+          gap: 22px 60px;
+          font-size: ${F_COVER_CARD}px;
           color: ${TEXTO};
-          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+          box-shadow: 0 2px 10px rgba(0,0,0,0.05);
           border: 1px solid ${BORDA};
         ">
           <div><span style="color: ${TEXTO_2};">Professor(a):</span> <strong style="color: ${TEXTO}; font-weight: 700;">${escapeHtml(nome)}</strong></div>
@@ -256,7 +284,7 @@ function htmlCapa(cab) {
 }
 
 // ============================================================
-// MICRO-BLOCO — Cabeçalho do plano
+// CABEÇALHO DO PLANO
 // ============================================================
 function htmlMicroCabecalho(sd) {
   const cab = sd.cabecalho || {};
@@ -269,25 +297,25 @@ function htmlMicroCabecalho(sd) {
       <div style="
         background: ${AZUL_CLARO};
         border-radius: 14px;
-        padding: 28px 34px;
-        border-left: 6px solid ${AZUL};
+        padding: 30px 36px;
+        border-left: 7px solid ${AZUL};
       ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <div style="font-family: 'Quicksand', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 4px; color: ${AZUL}; text-transform: uppercase;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; letter-spacing: 5px; color: ${AZUL}; text-transform: uppercase;">
             PLANEJADOR SIMIDNAPE
           </div>
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: ${TEXTO_2};">simidnape.com.br</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: ${F_LABEL_SM}px; color: ${TEXTO_2};">simidnape.com.br</div>
         </div>
-        <div style="font-family: 'Lora', serif; font-size: 32px; color: ${AZUL}; margin-bottom: 14px; line-height: 1.3;">
+        <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_SEC}px; color: ${AZUL}; margin-bottom: 16px; line-height: 1.25;">
           ${escapeHtml(cab.titulo || '')}
         </div>
-        <div style="font-size: 14px; color: ${TEXTO_2}; line-height: 1.7;">
+        <div style="font-size: ${F_BODY_SM}px; color: ${TEXTO_2}; line-height: 1.65;">
           ${cab.nome_professor ? `<strong style="color:${TEXTO};">Professor(a):</strong> ${escapeHtml(cab.nome_professor)}` : ''}
           ${cab.nome_escola ? ` · <strong style="color:${TEXTO};">Escola:</strong> ${escapeHtml(cab.nome_escola)}` : ''}
           ${cab.municipio ? ` · <strong style="color:${TEXTO};">Município:</strong> ${escapeHtml(cab.municipio)}` : ''}
           ${cab.estado ? ` - ${escapeHtml(cab.estado)}` : ''}
         </div>
-        <div style="font-size: 14px; color: ${TEXTO_2}; margin-top: 6px;">
+        <div style="font-size: ${F_BODY_SM}px; color: ${TEXTO_2}; margin-top: 6px;">
           <strong style="color:${TEXTO};">Componente:</strong> ${escapeHtml(cab.componente || '')} · 
           <strong style="color:${TEXTO};">Ano:</strong> ${escapeHtml(cab.ano || '')} · 
           <strong style="color:${TEXTO};">Período:</strong> ${escapeHtml(cab.periodo_texto || '')} · 
@@ -299,15 +327,15 @@ function htmlMicroCabecalho(sd) {
 }
 
 // ============================================================
-// MICRO-BLOCOS — MACRO
+// MACRO
 // ============================================================
 function htmlMicroMacro(sd) {
   const blocos = [];
 
   const cartaoLabel = (titulo, conteudoHtml, corBarra, corFundo) => `
     <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-      <div style="background: ${corFundo}; border-left: 5px solid ${corBarra}; border-radius: 10px; padding: 20px 26px;">
-        <div style="font-family: 'Quicksand', sans-serif; font-size: 13px; font-weight: 700; color: ${corBarra}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">${titulo}</div>
+      <div style="background: ${corFundo}; border-left: 6px solid ${corBarra}; border-radius: 12px; padding: 24px 30px;">
+        <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${corBarra}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 16px;">${titulo}</div>
         ${conteudoHtml}
       </div>
     </div>
@@ -316,22 +344,22 @@ function htmlMicroMacro(sd) {
   if (sd.logica_pedagogica) {
     blocos.push(cartaoLabel(
       'Lógica pedagógica do período',
-      `<div style="font-family: 'Lora', serif; font-style: italic; font-size: 18px; color: ${AZUL}; line-height: 1.65;">${escapeHtml(sd.logica_pedagogica)}</div>`,
+      `<div style="font-family: 'Lora', serif; font-style: italic; font-size: ${F_BODY}px; color: ${AZUL}; line-height: 1.55;">${escapeHtml(sd.logica_pedagogica)}</div>`,
       AZUL, AZUL_CLARO
     ));
   }
 
   if ((sd.eixos_predominantes || []).length > 0) {
     const linhas = sd.eixos_predominantes.map(e => `
-      <div style="display: flex; gap: 14px; align-items: baseline; margin-bottom: 8px; font-size: 16px;">
-        <span style="background: ${BRANCO}; color: ${AZUL}; padding: 4px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; font-family: 'JetBrains Mono', monospace;">${escapeHtml(e.periodo || '')}</span>
+      <div style="display: flex; gap: 16px; align-items: baseline; margin-bottom: 10px; font-size: ${F_BODY}px;">
+        <span style="background: ${BRANCO}; color: ${AZUL}; padding: 6px 16px; border-radius: 6px; font-weight: 700; font-size: ${F_CHIP}px; font-family: 'JetBrains Mono', monospace; flex-shrink: 0;">${escapeHtml(e.periodo || '')}</span>
         <span style="color: ${TEXTO};">${escapeHtml(e.eixo || '')}</span>
       </div>
     `).join('');
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 10px; padding: 20px 26px;">
-          <div style="font-family: 'Quicksand', sans-serif; font-size: 13px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px;">Eixos predominantes</div>
+        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 12px; padding: 24px 30px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 16px;">Eixos predominantes</div>
           ${linhas}
         </div>
       </div>
@@ -341,29 +369,17 @@ function htmlMicroMacro(sd) {
   const descs = sd.descritores_detalhados || [];
   if (descs.length > 0) {
     const linhas = descs.map(d => `
-      <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; font-size: 16px;">
-        <span style="background: ${PESSEGO_CLARO}; color: ${CORAL}; padding: 5px 14px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: 13px;">${escapeHtml(d.codigo)}</span>
-        ${d.fonte ? `<span style="background: ${OURO_CLARO}; color: ${OURO}; padding: 5px 12px; border-radius: 6px; font-weight: 700; font-size: 12px; text-transform: uppercase; flex-shrink: 0; letter-spacing: 0.5px;">${escapeHtml(d.fonte)}</span>` : ''}
-        <span style="color: ${TEXTO}; line-height: 1.6;">${escapeHtml(d.texto)}</span>
+      <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; font-size: ${F_BODY}px;">
+        <span style="background: ${PESSEGO_CLARO}; color: ${CORAL}; padding: 6px 16px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px;">${escapeHtml(d.codigo)}</span>
+        ${d.fonte ? `<span style="background: ${OURO_CLARO}; color: ${OURO}; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: ${F_LABEL_SM}px; text-transform: uppercase; flex-shrink: 0; letter-spacing: 0.5px;">${escapeHtml(d.fonte)}</span>` : ''}
+        <span style="color: ${TEXTO}; line-height: 1.55;">${escapeHtml(d.texto)}</span>
       </div>
     `).join('');
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 10px; padding: 20px 26px;">
-          <div style="font-family: 'Quicksand', sans-serif; font-size: 13px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px;">Descritores trabalhados no período</div>
+        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 12px; padding: 24px 30px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 18px;">Descritores trabalhados no período</div>
           ${linhas}
-        </div>
-      </div>
-    `);
-  } else if ((sd.descritores_trabalhados || []).length > 0) {
-    const chips = sd.descritores_trabalhados.map(d => 
-      `<span style="background: ${PESSEGO_CLARO}; color: ${CORAL}; padding: 5px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace;">${escapeHtml(d)}</span>`
-    ).join('');
-    blocos.push(`
-      <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 10px; padding: 20px 26px;">
-          <div style="font-family: 'Quicksand', sans-serif; font-size: 13px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px;">Descritores trabalhados</div>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px;">${chips}</div>
         </div>
       </div>
     `);
@@ -372,8 +388,8 @@ function htmlMicroMacro(sd) {
   if (sd.objetivos_gerais) {
     blocos.push(cartaoLabel(
       'Objetivos gerais',
-      `<div style="font-size: 17px; color: ${TEXTO}; line-height: 1.7; margin-bottom: 10px;">${escapeHtml(sd.objetivos_gerais)}</div>
-       ${(sd.objetivos_especificos || []).map(o => `<div style="font-size: 16px; color: ${TEXTO}; line-height: 1.8; padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700; font-size: 18px;">✓</span>${escapeHtml(o)}</div>`).join('')}`,
+      `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; margin-bottom: 12px;">${escapeHtml(sd.objetivos_gerais)}</div>
+       ${(sd.objetivos_especificos || []).map(o => `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.7; padding-left: 26px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">✓</span>${escapeHtml(o)}</div>`).join('')}`,
       VERDE, VERDE_CLARO
     ));
   }
@@ -381,7 +397,7 @@ function htmlMicroMacro(sd) {
   if (sd.justificativa) {
     blocos.push(cartaoLabel(
       'Justificativa',
-      `<div style="font-size: 17px; color: ${TEXTO}; line-height: 1.7;">${escapeHtml(sd.justificativa)}</div>`,
+      `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6;">${escapeHtml(sd.justificativa)}</div>`,
       OURO, OURO_CLARO
     ));
   }
@@ -390,37 +406,43 @@ function htmlMicroMacro(sd) {
 }
 
 // ============================================================
-// MICRO-BLOCOS — UMA AULA (com descritores completos)
+// UMA AULA
 // ============================================================
 function htmlMicroAula(aula, index, sd) {
   const blocos = [];
 
-  // Resolve descritores completos (código + fonte + texto)
-  const descritoresDetalhados = sd.descritores_detalhados || [];
-  const descritoresDaAula = (aula.descritores || []).map(codigo => {
-    const detalhe = descritoresDetalhados.find(d => d.codigo === codigo);
-    return detalhe || { codigo, texto: '', fonte: '' };
+  // Constrói mapa de descritores por código normalizado
+  const mapaDescritores = {};
+  (sd.descritores_detalhados || []).forEach(d => {
+    const chave = normalizarCodigo(d.codigo);
+    if (chave) mapaDescritores[chave] = d;
+  });
+
+  // Resolve descritores completos desta aula
+  const descritoresDaAula = (aula.descritores || []).map(codigoOriginal => {
+    const chave = normalizarCodigo(codigoOriginal);
+    const detalhe = mapaDescritores[chave];
+    return detalhe || { codigo: chave || String(codigoOriginal), texto: '', fonte: '' };
   });
 
   const headerBadges = [
-    aula.principio_cognitivo ? `<span style="background: ${BRANCO}; color: ${AZUL}; padding: 6px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid ${BORDA};">🧠 ${escapeHtml(aula.principio_cognitivo)}</span>` : '',
-    aula.duracao_minutos ? `<span style="background: ${BRANCO}; color: ${TEXTO_2}; padding: 6px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid ${BORDA}; font-family: 'JetBrains Mono', monospace;">${aula.duracao_minutos} min</span>` : '',
+    aula.principio_cognitivo ? `<span style="background: ${BRANCO}; color: ${AZUL}; padding: 8px 18px; border-radius: 999px; font-size: ${F_LABEL}px; font-weight: 700; border: 1px solid ${BORDA};">🧠 ${escapeHtml(aula.principio_cognitivo)}</span>` : '',
+    aula.duracao_minutos ? `<span style="background: ${BRANCO}; color: ${TEXTO_2}; padding: 8px 18px; border-radius: 999px; font-size: ${F_LABEL}px; font-weight: 700; border: 1px solid ${BORDA}; font-family: 'JetBrains Mono', monospace;">${aula.duracao_minutos} min</span>` : '',
   ].filter(Boolean).join('');
 
   const badgesRow = [
-    aula.habilidade_foco ? `<span style="background: ${VERDE_CLARO}; color: ${VERDE}; padding: 6px 16px; border-radius: 6px; font-size: 14px; font-weight: 700;">🎯 ${escapeHtml(aula.habilidade_foco)}</span>` : '',
-    aula.foco ? `<span style="background: ${AZUL_CLARO}; color: ${AZUL}; padding: 6px 16px; border-radius: 6px; font-size: 14px; font-weight: 600;">📌 ${escapeHtml(aula.foco)}</span>` : '',
+    aula.habilidade_foco ? `<span style="background: ${VERDE_CLARO}; color: ${VERDE}; padding: 8px 18px; border-radius: 8px; font-size: ${F_LABEL}px; font-weight: 700;">🎯 ${escapeHtml(aula.habilidade_foco)}</span>` : '',
+    aula.foco ? `<span style="background: ${AZUL_CLARO}; color: ${AZUL}; padding: 8px 18px; border-radius: 8px; font-size: ${F_LABEL}px; font-weight: 600;">📌 ${escapeHtml(aula.foco)}</span>` : '',
   ].filter(Boolean).join('');
 
-  // Bloco de descritores completos desta aula
   const descritoresBloco = descritoresDaAula.length > 0 ? `
-    <div style="margin-top: 16px; padding: 14px 20px; background: ${PESSEGO_CLARO}; border-radius: 10px; border-left: 4px solid ${CORAL};">
-      <div style="font-family: 'Quicksand', sans-serif; font-size: 12px; font-weight: 700; color: ${CORAL}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">📊 Descritores desta aula</div>
+    <div style="margin-top: 18px; padding: 20px 24px; background: ${PESSEGO_CLARO}; border-radius: 12px; border-left: 5px solid ${CORAL};">
+      <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${CORAL}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 14px;">📊 Descritores desta aula</div>
       ${descritoresDaAula.map(d => `
-        <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; font-size: 15px;">
-          <span style="background: ${BRANCO}; color: ${CORAL}; padding: 3px 10px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: 12px;">${escapeHtml(d.codigo)}</span>
-          ${d.fonte ? `<span style="background: ${OURO_CLARO}; color: ${OURO}; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; text-transform: uppercase; flex-shrink: 0;">${escapeHtml(d.fonte)}</span>` : ''}
-          <span style="color: ${TEXTO}; line-height: 1.55; font-size: 15px;">${escapeHtml(d.texto)}</span>
+        <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; font-size: ${F_BODY}px;">
+          <span style="background: ${BRANCO}; color: ${CORAL}; padding: 5px 14px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px;">${escapeHtml(d.codigo)}</span>
+          ${d.fonte ? `<span style="background: ${OURO_CLARO}; color: ${OURO}; padding: 5px 12px; border-radius: 6px; font-weight: 700; font-size: ${F_LABEL_SM}px; text-transform: uppercase; flex-shrink: 0;">${escapeHtml(d.fonte)}</span>` : ''}
+          <span style="color: ${TEXTO}; line-height: 1.55;">${escapeHtml(d.texto || '—')}</span>
         </div>
       `).join('')}
     </div>
@@ -428,27 +450,27 @@ function htmlMicroAula(aula, index, sd) {
 
   blocos.push(`
     <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 18px 40px 6px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-      <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-left: 6px solid ${AZUL}; border-radius: 12px; padding: 22px 28px;">
+      <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-left: 7px solid ${AZUL}; border-radius: 14px; padding: 26px 32px;">
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
           <div style="flex: 1; min-width: 0;">
-            <div style="font-family: 'Quicksand', sans-serif; font-size: 12px; font-weight: 700; color: ${CORAL}; letter-spacing: 3px; text-transform: uppercase;">
+            <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${CORAL}; letter-spacing: 4px; text-transform: uppercase;">
               ${aula.semana ? 'SEMANA ' + aula.semana + ' · ' : ''}AULA ${aula.numero_aula || index + 1}
             </div>
-            <div style="font-family: 'Lora', serif; font-size: 26px; color: ${AZUL}; margin-top: 8px; line-height: 1.3;">
+            <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${AZUL}; margin-top: 10px; line-height: 1.25;">
               ${escapeHtml(aula.titulo || '')}
             </div>
           </div>
-          <div style="display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;">${headerBadges}</div>
+          <div style="display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;">${headerBadges}</div>
         </div>
 
         ${aula.pergunta_problematizadora ? `
-          <div style="margin-top: 18px; padding: 18px 22px; background: ${OURO_CLARO}; border-radius: 10px; border-left: 4px solid ${OURO};">
-            <div style="font-family: 'Quicksand', sans-serif; font-size: 12px; font-weight: 700; color: ${OURO}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">❓ Pergunta problematizadora</div>
-            <div style="font-family: 'Lora', serif; font-style: italic; font-size: 18px; color: #7A5E20; line-height: 1.6;">"${escapeHtml(aula.pergunta_problematizadora)}"</div>
+          <div style="margin-top: 20px; padding: 22px 26px; background: ${OURO_CLARO}; border-radius: 12px; border-left: 5px solid ${OURO};">
+            <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${OURO}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 10px;">❓ Pergunta problematizadora</div>
+            <div style="font-family: 'Lora', serif; font-style: italic; font-size: ${F_BODY}px; color: #7A5E20; line-height: 1.55;">"${escapeHtml(aula.pergunta_problematizadora)}"</div>
           </div>
         ` : ''}
 
-        ${badgesRow ? `<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;">${badgesRow}</div>` : ''}
+        ${badgesRow ? `<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px;">${badgesRow}</div>` : ''}
 
         ${descritoresBloco}
       </div>
@@ -457,9 +479,9 @@ function htmlMicroAula(aula, index, sd) {
 
   const cartao = (titulo, conteudo, cor, corFundo) => conteudo ? `
     <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-      <div style="background: ${corFundo || BRANCO}; border-left: 4px solid ${cor}; border-radius: 8px; padding: 16px 22px;">
-        <div style="font-family: 'Quicksand', sans-serif; font-size: 12px; font-weight: 700; color: ${cor}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">${titulo}</div>
-        <div style="font-size: 17px; color: ${TEXTO}; line-height: 1.7;">${escapeHtml(conteudo)}</div>
+      <div style="background: ${corFundo || BRANCO}; border-left: 5px solid ${cor}; border-radius: 10px; padding: 20px 26px;">
+        <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${cor}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">${titulo}</div>
+        <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; word-wrap: break-word;">${escapeHtml(conteudo)}</div>
       </div>
     </div>
   ` : '';
@@ -472,9 +494,9 @@ function htmlMicroAula(aula, index, sd) {
   if ((aula.atividades || []).length > 0) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 8px; padding: 18px 22px;">
-          <div style="font-family: 'Quicksand', sans-serif; font-size: 12px; font-weight: 700; color: ${AZUL}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px;">👥 Atividades dos alunos</div>
-          ${aula.atividades.map(a => `<div style="font-size: 16px; color: ${TEXTO}; line-height: 1.75; padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">•</span>${escapeHtml(a)}</div>`).join('')}
+        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 10px; padding: 20px 26px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${AZUL}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">👥 Atividades dos alunos</div>
+          ${aula.atividades.map(a => `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65; padding-left: 26px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">•</span>${escapeHtml(a)}</div>`).join('')}
         </div>
       </div>
     `);
@@ -494,7 +516,7 @@ function htmlMicroAula(aula, index, sd) {
 }
 
 // ============================================================
-// MICRO-BLOCOS — FINAL
+// FINAL
 // ============================================================
 function htmlMicroFinal(sd) {
   const blocos = [];
@@ -503,19 +525,19 @@ function htmlMicroFinal(sd) {
   if (aval.instrumentos?.length || aval.indicadores_de_sucesso?.length || aval.como_acompanhar) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 12px; padding: 26px 32px;">
-          <div style="font-family: 'Lora', serif; font-size: 24px; color: ${AZUL}; margin-bottom: 16px;">📊 Avaliação geral do período</div>
+        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 14px; padding: 30px 36px;">
+          <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${AZUL}; margin-bottom: 18px;">📊 Avaliação geral do período</div>
           ${(aval.instrumentos || []).length > 0 ? `
-            <div style="font-family: 'Quicksand', sans-serif; font-size: 12px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Instrumentos</div>
-            ${aval.instrumentos.map(x => `<div style="font-size: 16px; color: ${TEXTO}; line-height: 1.75; padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">•</span>${escapeHtml(x)}</div>`).join('')}
+            <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 10px;">Instrumentos</div>
+            ${aval.instrumentos.map(x => `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65; padding-left: 26px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">•</span>${escapeHtml(x)}</div>`).join('')}
           ` : ''}
           ${(aval.indicadores_de_sucesso || []).length > 0 ? `
-            <div style="font-family: 'Quicksand', sans-serif; font-size: 12px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2px; margin: 18px 0 8px;">Indicadores de sucesso</div>
-            ${aval.indicadores_de_sucesso.map(x => `<div style="font-size: 16px; color: ${TEXTO}; line-height: 1.75; padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">•</span>${escapeHtml(x)}</div>`).join('')}
+            <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2.5px; margin: 20px 0 10px;">Indicadores de sucesso</div>
+            ${aval.indicadores_de_sucesso.map(x => `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65; padding-left: 26px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">•</span>${escapeHtml(x)}</div>`).join('')}
           ` : ''}
           ${aval.como_acompanhar ? `
-            <div style="font-family: 'Quicksand', sans-serif; font-size: 12px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2px; margin: 18px 0 8px;">Como acompanhar</div>
-            <div style="font-size: 16px; color: ${TEXTO}; line-height: 1.75;">${escapeHtml(aval.como_acompanhar)}</div>
+            <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2.5px; margin: 20px 0 10px;">Como acompanhar</div>
+            <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65;">${escapeHtml(aval.como_acompanhar)}</div>
           ` : ''}
         </div>
       </div>
@@ -525,12 +547,12 @@ function htmlMicroFinal(sd) {
   if ((sd.adaptacoes_inclusivas || []).length > 0) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${AZUL_CLARO}; border-radius: 12px; padding: 26px 32px; border-left: 6px solid ${AZUL};">
-          <div style="font-family: 'Lora', serif; font-size: 24px; color: ${AZUL}; margin-bottom: 16px;">🧩 Adaptações inclusivas</div>
+        <div style="background: ${AZUL_CLARO}; border-radius: 14px; padding: 30px 36px; border-left: 7px solid ${AZUL};">
+          <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${AZUL}; margin-bottom: 18px;">🧩 Adaptações inclusivas</div>
           ${sd.adaptacoes_inclusivas.map(a => `
-            <div style="margin-bottom: 16px;">
-              <div style="font-family: 'Quicksand', sans-serif; font-size: 15px; font-weight: 700; color: ${AZUL}; margin-bottom: 8px;">${escapeHtml(a.necessidade || '')}</div>
-              ${(a.estrategias || []).map(e => `<div style="font-size: 16px; color: ${TEXTO}; line-height: 1.75; padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: ${AZUL}; font-weight: 700;">•</span>${escapeHtml(e)}</div>`).join('')}
+            <div style="margin-bottom: 18px;">
+              <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_BODY}px; font-weight: 700; color: ${AZUL}; margin-bottom: 10px;">${escapeHtml(a.necessidade || '')}</div>
+              ${(a.estrategias || []).map(e => `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65; padding-left: 26px; position: relative;"><span style="position: absolute; left: 0; color: ${AZUL}; font-weight: 700;">•</span>${escapeHtml(e)}</div>`).join('')}
             </div>
           `).join('')}
         </div>
@@ -541,9 +563,9 @@ function htmlMicroFinal(sd) {
   if (sd.consideracoes_finais) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${PESSEGO_CLARO}; border-radius: 12px; padding: 26px 32px; border-left: 6px solid ${CORAL};">
-          <div style="font-family: 'Lora', serif; font-size: 24px; color: ${CORAL}; margin-bottom: 12px;">📌 Considerações finais</div>
-          <div style="font-size: 16px; color: ${TEXTO}; line-height: 1.75;">${escapeHtml(sd.consideracoes_finais)}</div>
+        <div style="background: ${PESSEGO_CLARO}; border-radius: 14px; padding: 30px 36px; border-left: 7px solid ${CORAL};">
+          <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${CORAL}; margin-bottom: 14px;">📌 Considerações finais</div>
+          <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65;">${escapeHtml(sd.consideracoes_finais)}</div>
         </div>
       </div>
     `);
@@ -573,24 +595,27 @@ export async function gerarPdfPlanejamento(plano) {
   const sd = plano.structured_data;
   const cab = sd.cabecalho || {};
 
+  // Pré-carrega o SVG do pica-pau (para o html2canvas capturar)
+  await preloadImage(PICAPAU_URL);
+
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-  // 1. CAPA — renderiza com altura mínima que preenche a folha
+  // 1. CAPA
   const canvasCapa = await renderizarBloco(htmlCapa(cab), { alturaMinimaPx: CAPA_ALTURA_PX });
   const capaRatio = CONTENT_W_MM / canvasCapa.width;
   const capaAlturaMM = Math.min(canvasCapa.height * capaRatio, CONTENT_H_MM);
   pdf.addImage(canvasCapa.toDataURL('image/jpeg', 0.95), 'JPEG', MARGEM, MARGEM, CONTENT_W_MM, capaAlturaMM);
 
-  // 2. Micro-blocos do conteúdo
+  // 2. Micro-blocos
   const micros = [];
   micros.push(htmlMicroCabecalho(sd));
   micros.push(...htmlMicroMacro(sd));
   (sd.sequencia_didatica || []).forEach((aula, i) => {
-    micros.push(...htmlMicroAula(aula, i, sd));  // passa sd para resolver descritores
+    micros.push(...htmlMicroAula(aula, i, sd));
   });
   micros.push(...htmlMicroFinal(sd));
 
-  // 3. Nova página e empilha
+  // 3. Página 2 em diante
   pdf.addPage('a4', 'landscape');
   let yAtual = MARGEM;
 
