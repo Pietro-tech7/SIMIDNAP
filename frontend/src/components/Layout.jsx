@@ -69,6 +69,7 @@ const Layout = () => {
     { path: '/modulo/professor_inteiro', label: 'Terapia Pedagógica', icon: '❤️' },
     { path: '/modulo/planejador', label: 'PLANEJADOR SIMIDNAPE', icon: '🧠' },
     { path: '/meus-planejamentos', label: 'Meus Planejamentos', icon: '📚' },
+    { path: '/meu-acervo', label: 'Meu Acervo', icon: '🗂️' },
     { path: '/comunidade', label: 'Comunidade', icon: '🌐' },
     { path: '/modulo/meu_aluno', label: 'Meu Aluno', icon: '📊' },
     { path: '/modulo/ia_para_professor', label: 'Gerador de Materiais', icon: '📄' },
@@ -98,6 +99,9 @@ const Layout = () => {
     }
     if (path === '/meus-planejamentos') {
       return location.pathname.startsWith('/meus-planejamentos');
+    }
+    if (path === '/meu-acervo') {
+      return location.pathname.startsWith('/meu-acervo');
     }
     if (path === '/comunidade') {
       return location.pathname.startsWith('/comunidade');
