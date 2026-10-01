@@ -309,6 +309,26 @@ def montar_system_instruction() -> str:
         "  - objetos_escolares (lápis, caderno, tesoura, mochila)\n"
         "  - formas (quadrado, círculo, triângulo)\n"
         "  - nenhuma (questão não pede figura)\n\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "REGRA CRÍTICA — GRÁFICO COM DADOS ESTRUTURADOS (BLOCO G)\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "Quando a questão pedir INTERPRETAÇÃO DE DADOS, ESTATÍSTICA ou LEITURA DE GRÁFICO,\n"
+        "você DEVE preencher o campo 'grafico' com dados estruturados. Caso contrário,\n"
+        "deixe 'grafico: null'.\n\n"
+        "Tipos de gráfico permitidos:\n"
+        "  - 'barras' → comparação entre categorias (ex: vendas por produto)\n"
+        "  - 'barras_horizontais' → mesmo uso, mas com rótulos longos\n"
+        "  - 'linha' → evolução ao longo do tempo (ex: temperatura por mês)\n"
+        "  - 'pizza' → proporção do todo (ex: divisão de uma turma por esporte)\n\n"
+        "REGRAS OBRIGATÓRIAS do campo 'grafico':\n"
+        "  1. Só preencha se a questão REALMENTE exige leitura de gráfico.\n"
+        "  2. Mínimo 3 itens em 'dados', máximo 8 itens.\n"
+        "  3. Todos os 'valor' devem ser NÚMEROS POSITIVOS (sem negativos, sem zero).\n"
+        "  4. Escolha o tipo certo: barras para comparação, linha para tempo, pizza para proporção.\n"
+        "  5. Use rótulos curtos (máximo 15 caracteres).\n"
+        "  6. A resposta correta deve estar INFERÍVEL a partir dos dados do gráfico.\n"
+        "  7. NUNCA invente valores incoerentes (ex: 3 itens que somam 200 se o texto fala de 100).\n\n"
+        "Se a questão NÃO for de gráfico, retorne 'grafico: null'.\n\n"
         "SUPORTE VISUAL\n"
         "═══════════════════════════════════════════════════════════════\n"
         "Para cada questão, indique se ela precisa de ilustração.\n"
@@ -338,7 +358,37 @@ def montar_system_instruction() -> str:
         '      "gabarito": "B",\n'
         '      "explicacao_gabarito": "...",\n'
         '      "precisa_ilustracao": true,\n'
-        '      "descricao_ilustracao": "Uma caixa com 12 lápis de cor"\n'
+        '      "descricao_ilustracao": "Uma caixa com 12 lápis de cor",\n'
+        '      "grafico": null\n'
+        "    },\n"
+        "    {\n"
+        '      "numero": 2,\n'
+        '      "habilidade_codigo": "EF05MA24",\n'
+        '      "enunciado": "Observe o gráfico e responda: qual produto foi mais vendido?",\n'
+        '      "tema_condutor": "ESTATÍSTICA",\n'
+        '      "tipo_figura_sugerida": "comparacao",\n'
+        '      "grafico": {\n'
+        '        "tipo": "barras",\n'
+        '        "titulo": "Vendas do mês",\n'
+        '        "eixo_x": "Produto",\n'
+        '        "eixo_y": "Unidades",\n'
+        '        "unidade": "un",\n'
+        '        "dados": [\n'
+        '          {"rotulo": "Arroz", "valor": 30},\n'
+        '          {"rotulo": "Feijão", "valor": 45},\n'
+        '          {"rotulo": "Macarrão", "valor": 20}\n'
+        "        ]\n"
+        "      },\n"
+        '      "alternativas": [\n'
+        '        {"letra": "A", "texto": "Arroz"},\n'
+        '        {"letra": "B", "texto": "Feijão"},\n'
+        '        {"letra": "C", "texto": "Macarrão"},\n'
+        '        {"letra": "D", "texto": "Todos iguais"}\n'
+        "      ],\n"
+        '      "gabarito": "B",\n'
+        '      "explicacao_gabarito": "Feijão teve 45 unidades, o maior valor do gráfico.",\n'
+        '      "precisa_ilustracao": false,\n'
+        '      "descricao_ilustracao": null\n'
         "    }\n"
         "  ]\n"
         "}"
@@ -398,6 +448,15 @@ def montar_prompt_base(data: GerarQuestoesIARequest, batch_start: int, batch_end
 
     prompt += "\nTIPOS DE FIGURA VÁLIDOS (use EXATAMENTE um por questão, no campo 'tipo_figura_sugerida'):\n"
     prompt += f"  {', '.join(TIPOS_FIGURA_VALIDOS)}\n"
+
+    # BLOCO G — Instrução de gráficos (reforçada no prompt, além do system_instruction)
+    prompt += (
+        "\nGRÁFICOS (BLOCO G):\n"
+        "Se a questão pedir INTERPRETAÇÃO DE DADOS, ESTATÍSTICA ou LEITURA DE GRÁFICO,\n"
+        "preencha o campo 'grafico' com dados estruturados. Caso contrário, use 'grafico': null.\n"
+        "Tipos permitidos: 'barras', 'barras_horizontais', 'linha', 'pizza'.\n"
+        "Mínimo 3 itens em 'dados', máximo 8. Valores sempre positivos.\n"
+    )
 
     # ----------------------------------------------------------
     # ENRIQUECIMENTO 2 — erros comuns para calibrar distratores
@@ -551,6 +610,48 @@ def gerar_questoes(
     # ------------------------------------------------------------
     # 4. Converter para o schema
     # ------------------------------------------------------------
+    from ...schemas.question_ia import GraficoIA, DadoGrafico
+
+    def _validar_grafico(g):
+        """
+        BLOCO G — Validação e normalização do gráfico devolvido pela IA.
+        Retorna GraficoIA ou None (fallback silencioso se estiver inválido).
+        """
+        if not isinstance(g, dict):
+            return None
+        tipo = str(g.get("tipo", "")).strip().lower()
+        if tipo not in ("barras", "barras_horizontais", "linha", "pizza"):
+            return None
+        dados_raw = g.get("dados")
+        if not isinstance(dados_raw, list) or len(dados_raw) < 3 or len(dados_raw) > 8:
+            return None
+        dados_validos = []
+        for item in dados_raw:
+            if not isinstance(item, dict):
+                continue
+            rotulo = str(item.get("rotulo", "")).strip()
+            try:
+                valor = float(item.get("valor"))
+            except (TypeError, ValueError):
+                continue
+            if not rotulo or valor <= 0:
+                continue
+            dados_validos.append(DadoGrafico(rotulo=rotulo[:30], valor=valor))
+        if len(dados_validos) < 3:
+            return None
+        try:
+            return GraficoIA(
+                tipo=tipo,
+                titulo=(str(g.get("titulo")).strip() if g.get("titulo") else None),
+                eixo_x=(str(g.get("eixo_x")).strip() if g.get("eixo_x") else None),
+                eixo_y=(str(g.get("eixo_y")).strip() if g.get("eixo_y") else None),
+                unidade=(str(g.get("unidade")).strip() if g.get("unidade") else None),
+                dados=dados_validos,
+            )
+        except Exception as e:
+            print(f"[Motor 9 / G] Erro ao validar gráfico: {e}")
+            return None
+
     questoes_out: List[QuestaoIA] = []
     for i, q in enumerate(questoes_raw, start=batch_start):
         alternativas = []
@@ -597,6 +698,7 @@ def gerar_questoes(
             origem="gerada_ia",
             tema_condutor=tema_condutor,
             tipo_figura_sugerida=tipo_figura,
+            grafico=_validar_grafico(q.get("grafico")),
         ))
 
     # ------------------------------------------------------------

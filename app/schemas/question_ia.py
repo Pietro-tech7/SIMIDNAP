@@ -57,6 +57,29 @@ class AlternativaIA(BaseModel):
     texto: str
 
 
+# ============================================================
+# BLOCO G — GRÁFICOS GERADOS POR IA (FASE 1: SCHEMA)
+# ============================================================
+class DadoGrafico(BaseModel):
+    """Um par rótulo/valor do gráfico."""
+    rotulo: str
+    valor: float
+
+
+class GraficoIA(BaseModel):
+    """
+    Dados estruturados de um gráfico gerado pela IA.
+    A IA NÃO desenha — apenas devolve os dados.
+    O frontend desenha (Recharts), e o PDF/Word capturam como imagem.
+    """
+    tipo: str = Field(..., description="'barras' | 'barras_horizontais' | 'linha' | 'pizza'")
+    titulo: Optional[str] = None
+    eixo_x: Optional[str] = None
+    eixo_y: Optional[str] = None
+    unidade: Optional[str] = None
+    dados: List[DadoGrafico] = Field(default_factory=list)
+
+
 class QuestaoIA(BaseModel):
     numero: int
     habilidade_codigo: str
@@ -87,6 +110,12 @@ class QuestaoIA(BaseModel):
     # Categoria pedagógica de figura (ex: "quantidade", "ordem", "medida",
     # "decomposicao", "sequencia", "comparacao", "objetos_escolares", "formas", "nenhuma").
     # Usado no frontend para sugerir SVGs ao professor (Fase 3).
+
+    # BLOCO G — Gráficos gerados por IA
+    grafico: Optional[GraficoIA] = None
+    # Quando a questão for de interpretação de gráfico/dados, a IA preenche este
+    # campo com dados estruturados. O sistema desenha o gráfico na tela, no PDF
+    # e no Word. Se for None, a questão é textual normalmente.
 
 
 class GerarQuestoesIAResponse(BaseModel):
