@@ -163,6 +163,7 @@ def generate(
         description=data.description,
         # Rede de segurança
         answers=data.answers,
+        user=current_user,
     )
 
     # ---- Consome créditos ----

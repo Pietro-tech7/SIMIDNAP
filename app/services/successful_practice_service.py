@@ -62,6 +62,7 @@ def generate_practice(
     what_you_expect: Optional[str] = None,
     # Rede de segurança
     answers: Optional[Dict[str, Any]] = None,
+    user=None,
 ) -> SuccessfulPractice:
     """
     Gera uma prática exitosa via IA e salva no banco.
@@ -156,6 +157,7 @@ def generate_practice(
         task_type="pratica_exitosa",
         payload=payload,
         diferenciado=False,
+        user=user,
     )
 
     # ============================================================
