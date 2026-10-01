@@ -79,6 +79,7 @@ def generate(
         num_alunos=data.num_alunos,
         dificuldades=data.dificuldades,
         diferenciado=diferenciado,
+        user=current_user,
     )
 
     # Só consome créditos se gerou com sucesso

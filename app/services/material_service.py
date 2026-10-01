@@ -21,6 +21,7 @@ def generate_material(
     num_alunos: int = None,
     dificuldades: str = None,
     diferenciado: bool = False,
+    user=None,
 ) -> Material:
 
     ai = get_ai_service()
@@ -43,6 +44,7 @@ def generate_material(
         task_type=material_type,
         payload=payload,
         diferenciado=diferenciado,
+        user=user,
     )
 
     # Garante que adaptações inclusivas estejam presentes
