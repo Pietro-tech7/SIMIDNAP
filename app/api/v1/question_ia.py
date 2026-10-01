@@ -1055,6 +1055,9 @@ def listar_minhas_questoes(
             "approved": q.approved,
             "anulada": q.anulada,
             "created_at": q.created_at.isoformat() if q.created_at else None,
+            # FASE 4 — campos de retenção (diagnóstico)
+            "retencao_nivel": q.retencao_nivel,
+            "ultima_utilizacao_em": q.ultima_utilizacao_em.isoformat() if q.ultima_utilizacao_em else None,
         }
         for q in questoes
     ]
