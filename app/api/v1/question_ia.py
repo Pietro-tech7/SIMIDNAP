@@ -33,6 +33,7 @@ from ...services.system_settings_service import (
 )
 from ...models.question_bank_fundamental import QuestionBankFundamental
 from pydantic import BaseModel
+from datetime import datetime
 import uuid
 import re
 
@@ -693,6 +694,14 @@ def enviar_curadoria(
                 submitted_by=current_user.id,
                 approved=False,
                 anulada=False,
+                # ============================================================
+                # FASE 4 — Retenção automática
+                # Enviar para curadoria = usar em prova = nível 2.
+                # O cron semanal (run_retention.py) usa estes campos para
+                # decidir quando apagar questões antigas.
+                # ============================================================
+                retencao_nivel=2,
+                ultima_utilizacao_em=datetime.utcnow(),
             )
             db.add(nova)
             total += 1
