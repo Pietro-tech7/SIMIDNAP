@@ -353,14 +353,20 @@ export const CredibilitySection = ({ data }) => {
 // ============================================================
 export const ProblemSection = ({ data }) => {
   return (
-    <section id="problem" className="py-20 md:py-28 bg-white">
+    <section id="problem" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-14">
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-5 leading-tight">
+          <h2
+            className="text-3xl md:text-5xl font-bold mb-5 leading-tight font-heading"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >
             {data.title}
           </h2>
           {data.subtitle && (
-            <p className="text-lg md:text-xl text-gray-600">{data.subtitle}</p>
+            <p
+              className="text-lg md:text-xl"
+              style={{ color: 'var(--theme-text-secondary)' }}
+            >{data.subtitle}</p>
           )}
         </div>
 
@@ -368,18 +374,31 @@ export const ProblemSection = ({ data }) => {
           {data.cards?.map((card, i) => (
             <div
               key={i}
-              className="bg-gray-50 border border-gray-200 rounded-2xl p-7 hover:border-gray-300 hover:shadow-md transition"
+              className="rounded-2xl p-7 transition hover:shadow-md border"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--theme-warning) 8%, white)',
+                borderColor: 'color-mix(in srgb, var(--theme-warning) 20%, transparent)',
+              }}
             >
               <div className="text-4xl mb-4">{card.icon}</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-3 leading-snug">{card.title}</h3>
-              <p className="text-gray-700 leading-relaxed">{card.description}</p>
+              <h3
+                className="text-lg font-bold mb-3 leading-snug font-heading"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >{card.title}</h3>
+              <p
+                className="leading-relaxed"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >{card.description}</p>
             </div>
           ))}
         </div>
 
         {data.transition_text && (
           <div className="text-center max-w-3xl mx-auto">
-            <p className="text-xl md:text-2xl font-bold text-gray-900 leading-relaxed">
+            <p
+              className="text-xl md:text-2xl font-bold leading-relaxed font-heading"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >
               {data.transition_text}
             </p>
           </div>
@@ -396,15 +415,21 @@ export const BeforeAfterSection = ({ data }) => {
   if (!data.items?.length) return null;
 
   return (
-    <section id="before_after" className="py-20 md:py-28 bg-white">
+    <section id="before_after" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       <div className="max-w-5xl mx-auto px-4 md:px-6">
         {/* Cabeçalho */}
         <div className="text-center max-w-3xl mx-auto mb-14">
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-5 leading-tight">
+          <h2
+            className="text-3xl md:text-5xl font-bold mb-5 leading-tight font-heading"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >
             {data.title}
           </h2>
           {data.subtitle && (
-            <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
+            <p
+              className="text-lg md:text-xl leading-relaxed"
+              style={{ color: 'var(--theme-text-secondary)' }}
+            >
               {data.subtitle}
             </p>
           )}
@@ -413,22 +438,34 @@ export const BeforeAfterSection = ({ data }) => {
         {/* Header das 2 colunas */}
         <div className="hidden md:grid grid-cols-2 gap-6 mb-4">
           <div className="flex items-center gap-2 px-2">
-            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-              <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--theme-warning) 20%, white)' }}
+            >
+              <svg className="w-4 h-4" style={{ color: 'var(--theme-warning)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <span className="font-bold text-red-700 uppercase tracking-wide text-sm">
+            <span
+              className="font-bold uppercase tracking-wide text-sm"
+              style={{ color: 'var(--theme-warning)' }}
+            >
               {data.before_label || 'Antes'}
             </span>
           </div>
           <div className="flex items-center gap-2 px-2">
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-              <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--theme-success) 20%, white)' }}
+            >
+              <svg className="w-4 h-4" style={{ color: 'var(--theme-success)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <span className="font-bold text-green-700 uppercase tracking-wide text-sm">
+            <span
+              className="font-bold uppercase tracking-wide text-sm"
+              style={{ color: 'var(--theme-success)' }}
+            >
               {data.after_label || 'Depois'}
             </span>
           </div>
@@ -439,31 +476,61 @@ export const BeforeAfterSection = ({ data }) => {
           {data.items.map((item, i) => (
             <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
               {/* Antes */}
-              <div className="bg-red-50 border border-red-100 rounded-xl p-5 flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div
+                className="rounded-xl p-5 flex items-start gap-3 border"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--theme-warning) 8%, white)',
+                  borderColor: 'color-mix(in srgb, var(--theme-warning) 20%, transparent)',
+                }}
+              >
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ backgroundColor: 'var(--theme-warning)' }}
+                >
                   <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </div>
-                <p className="text-gray-800 leading-relaxed md:hidden text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">
+                <p
+                  className="leading-relaxed md:hidden text-xs font-semibold uppercase tracking-wide mb-1"
+                  style={{ color: 'var(--theme-warning)' }}
+                >
                   {data.before_label || 'Antes'}:
                 </p>
-                <p className="text-gray-800 leading-relaxed">
+                <p
+                  className="leading-relaxed"
+                  style={{ color: 'var(--theme-text-primary)' }}
+                >
                   {item.before}
                 </p>
               </div>
 
               {/* Depois */}
-              <div className="bg-green-50 border border-green-100 rounded-xl p-5 flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div
+                className="rounded-xl p-5 flex items-start gap-3 border"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--theme-success) 8%, white)',
+                  borderColor: 'color-mix(in srgb, var(--theme-success) 20%, transparent)',
+                }}
+              >
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ backgroundColor: 'var(--theme-success)' }}
+                >
                   <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-gray-800 leading-relaxed md:hidden text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">
+                <p
+                  className="leading-relaxed md:hidden text-xs font-semibold uppercase tracking-wide mb-1"
+                  style={{ color: 'var(--theme-success)' }}
+                >
                   {data.after_label || 'Depois'}:
                 </p>
-                <p className="text-gray-800 leading-relaxed">
+                <p
+                  className="leading-relaxed"
+                  style={{ color: 'var(--theme-text-primary)' }}
+                >
                   {item.after}
                 </p>
               </div>
