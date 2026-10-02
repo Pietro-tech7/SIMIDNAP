@@ -522,6 +522,32 @@ class ErrorPageSection(BaseModel):
 
 
 # ============================================================
+# TELA DE LOGIN — foto e textos editáveis pelo admin
+# ============================================================
+class LoginSection(BaseModel):
+    enabled: bool = True
+    photo: str = ""
+    welcome_title: str = "Bem-vindo de volta."
+    welcome_subtitle: str = "Sua próxima aula inesquecível começa aqui."
+    benefits: List[str] = Field(default_factory=lambda: [
+        "Continue de onde parou — todo seu histórico salvo",
+        "Acesse os 9 motores de IA pedagógica",
+        "Gerencie seus créditos e plano quando quiser",
+        "Suporte humano para professores brasileiros",
+    ])
+
+
+# ============================================================
+# TELA DE CADASTRO — foto e textos editáveis pelo admin
+# ============================================================
+class RegisterSection(BaseModel):
+    enabled: bool = True
+    photo: str = ""
+    welcome_title: str = "Crie sua conta."
+    welcome_subtitle: str = "7 créditos grátis para testar. Sem cartão de crédito."
+
+
+# ============================================================
 # SCHEMA PRINCIPAL
 # ============================================================
 class LandingConfigSchema(BaseModel):
@@ -574,6 +600,8 @@ class LandingConfigSchema(BaseModel):
     popup: PopupSection = Field(default_factory=PopupSection)
     header: HeaderSection = Field(default_factory=HeaderSection)
     error_page: ErrorPageSection = Field(default_factory=ErrorPageSection)
+    login: LoginSection = Field(default_factory=LoginSection)
+    register: RegisterSection = Field(default_factory=RegisterSection)
 
 
 class LandingConfigOut(BaseModel):

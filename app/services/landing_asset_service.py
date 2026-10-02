@@ -45,6 +45,8 @@ SLOTS_VALIDOS = {
     "founder_photo",
     "testimonials_image",
     "faq_image",
+    "login_photo",
+    "register_photo",
 }
 
 
