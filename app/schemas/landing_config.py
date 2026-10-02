@@ -74,6 +74,7 @@ class HeroSection(BaseModel):
     cta_secondary_text: str = "Ver como funciona"
     cta_secondary_video_url: str = ""
     hero_image: str = ""
+    image_placeholder: str = "Foto do slide"
     float_badges: List[Dict[str, str]] = Field(default_factory=lambda: [
         {"icon": "⚡", "title": "Planos em minutos", "subtitle": "Não em horas"},
         {"icon": "🎯", "title": "Alinhado à BNCC", "subtitle": "SAEPI, IDEB e ENEM"},
@@ -341,7 +342,10 @@ class TestimonialsSection(BaseModel):
     enabled: bool = True
     title: str = "Histórias reais, resultados concretos"
     subtitle: str = "Professores que usam o SIMIDNAPE PRO contam como ele mudou a rotina."
+    kicker: str = "Depoimentos"
     image: str = ""
+    image_placeholder: str = "Foto do depoimento"
+    empty_message: str = "Em breve: depoimentos de professores que estão usando o SIMIDNAPE PRO."
     video_url: str = ""
     testimonials: List[Dict[str, str]] = Field(default_factory=list)
 
@@ -349,6 +353,7 @@ class TestimonialsSection(BaseModel):
 class ComparisonSection(BaseModel):
     enabled: bool = True
     title: str = "Por que o SIMIDNAPE PRO não é só mais um ChatGPT"
+    feature_column_label: str = "Recurso"
     columns: List[str] = Field(default_factory=lambda: [
         "SIMIDNAPE PRO",
         "ChatGPT",
@@ -404,7 +409,11 @@ class FAQSection(BaseModel):
     enabled: bool = True
     title: str = "Ainda tem dúvida?"
     subtitle: str = "Entre em contato conosco."
+    kicker: str = "Perguntas frequentes"
     image: str = ""
+    image_placeholder: str = "Foto da professora"
+    contact_text: str = "Entre em contato conosco."
+    contact_email: str = "contato@simidnape.com.br"
     items: List[Dict[str, str]] = Field(default_factory=lambda: [
         {
             "question": "O que é o SIMIDNAPE PRO?",
