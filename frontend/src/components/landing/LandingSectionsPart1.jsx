@@ -5,15 +5,17 @@ import { Link } from 'react-router-dom';
 // HELPERS
 // ============================================================
 const ButtonPrimary = ({ children, to, onClick, className = '' }) => {
-  const base = "inline-flex items-center justify-center gap-2 bg-amber hover:bg-amber/90 text-white font-semibold px-7 py-3.5 rounded-lg shadow-sm hover:shadow-md transition";
-  if (to) return <Link to={to} className={`${base} ${className}`}>{children}</Link>;
-  return <button onClick={onClick} className={`${base} ${className}`}>{children}</button>;
+  const base = "inline-flex items-center justify-center gap-2 font-semibold px-7 py-3.5 rounded-lg shadow-sm hover:shadow-md hover:opacity-90 transition text-white";
+  const style = { backgroundColor: 'var(--theme-primary)' };
+  if (to) return <Link to={to} className={`${base} ${className}`} style={style}>{children}</Link>;
+  return <button onClick={onClick} className={`${base} ${className}`} style={style}>{children}</button>;
 };
 
 const ButtonSecondary = ({ children, to, onClick, className = '' }) => {
-  const base = "inline-flex items-center justify-center gap-2 bg-transparent hover:bg-petrol/5 text-petrol font-semibold px-7 py-3.5 rounded-lg border-2 border-petrol/30 hover:border-petrol/60 transition";
-  if (to) return <Link to={to} className={`${base} ${className}`}>{children}</Link>;
-  return <button onClick={onClick} className={`${base} ${className}`}>{children}</button>;
+  const base = "inline-flex items-center justify-center gap-2 bg-transparent font-semibold px-7 py-3.5 rounded-lg border-2 transition hover:opacity-80";
+  const style = { color: 'var(--theme-accent)', borderColor: 'var(--theme-accent)' };
+  if (to) return <Link to={to} className={`${base} ${className}`} style={style}>{children}</Link>;
+  return <button onClick={onClick} className={`${base} ${className}`} style={style}>{children}</button>;
 };
 
 const Check = ({ className = 'text-blue-600' }) => (
@@ -101,33 +103,46 @@ export const HeroSection = ({ data }) => {
             {/* Coluna esquerda — Texto do slide */}
             <div className="text-center lg:text-left">
               {slide.badge && (
-                <div className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 ${
-                  isDark ? 'bg-white/15 border border-amber/40' : 'bg-badge-cream border border-amber/40'
-                }`}>
-                  <span className={`w-2 h-2 rounded-full animate-pulse ${isDark ? 'bg-amber' : 'bg-coral'}`} />
-                  <span className={`text-xs font-semibold ${isDark ? 'text-amber' : 'text-terracotta'}`}>
+                <div
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 border"
+                  style={{
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'color-mix(in srgb, var(--theme-highlight) 20%, white)',
+                    borderColor: 'color-mix(in srgb, var(--theme-highlight) 40%, transparent)',
+                  }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full animate-pulse"
+                    style={{ backgroundColor: 'var(--theme-highlight)' }}
+                  />
+                  <span
+                    className="text-xs font-semibold"
+                    style={{ color: isDark ? 'var(--theme-highlight)' : 'var(--theme-text-primary)' }}
+                  >
                     {slide.badge}
                   </span>
                 </div>
               )}
 
               {slide.brand_line && (
-                <p className={`text-sm font-bold uppercase tracking-widest mb-3 ${
-                  isDark ? 'text-gold' : 'text-terracotta'
-                }`}>
+                <p
+                  className="text-sm font-bold uppercase tracking-widest mb-3"
+                  style={{ color: isDark ? 'var(--theme-highlight)' : 'var(--theme-accent)' }}
+                >
                   {slide.brand_line}
                 </p>
               )}
 
-              <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 ${
-                isDark ? 'text-white' : 'text-petrol'
-              }`}>
+              <h1
+                className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 font-heading"
+                style={{ color: isDark ? '#FFFFFF' : 'var(--theme-text-primary)' }}
+              >
                 {slide.headline}
               </h1>
 
-              <p className={`text-lg md:text-xl leading-relaxed mb-8 ${
-                isDark ? 'text-gray-200' : 'text-petrol-deep/85'
-              }`}>
+              <p
+                className="text-lg md:text-xl leading-relaxed mb-8"
+                style={{ color: isDark ? 'rgba(255,255,255,0.85)' : 'var(--theme-text-secondary)' }}
+              >
                 {slide.subheadline}
               </p>
 
@@ -152,13 +167,20 @@ export const HeroSection = ({ data }) => {
 
               {/* Métricas (só no primeiro slide) */}
               {slideAtivo === 0 && data.metrics?.length > 0 && (
-                <div className={`grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0 pt-6 mt-8 border-t ${
-                  isDark ? 'border-white/20' : 'border-petrol/15'
-                }`}>
+                <div
+                  className="grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0 pt-6 mt-8 border-t"
+                  style={{ borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'color-mix(in srgb, var(--theme-accent) 20%, transparent)' }}
+                >
                   {data.metrics.map((m, i) => (
                     <div key={i} className="text-center lg:text-left">
-                      <p className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-petrol-deep'}`}>{m.value}</p>
-                      <p className={`text-xs mt-1 leading-snug ${isDark ? 'text-gray-300' : 'text-ink-soft'}`}>{m.label}</p>
+                      <p
+                        className="text-3xl font-bold font-heading"
+                        style={{ color: isDark ? '#FFFFFF' : 'var(--theme-text-primary)' }}
+                      >{m.value}</p>
+                      <p
+                        className="text-xs mt-1 leading-snug"
+                        style={{ color: isDark ? 'rgba(255,255,255,0.7)' : 'var(--theme-text-secondary)' }}
+                      >{m.label}</p>
                     </div>
                   ))}
                 </div>
@@ -215,11 +237,16 @@ export const HeroSection = ({ data }) => {
                   key={i}
                   onClick={() => irParaSlide(i)}
                   aria-label={`Ir para o slide ${i + 1}`}
-                  className={`transition-all rounded-full ${
+                  className="transition-all rounded-full"
+                  style={
                     i === slideAtivo
-                      ? `w-10 h-2.5 bg-amber`
-                      : `w-2.5 h-2.5 ${isDark ? 'bg-white/40 hover:bg-white/60' : 'bg-petrol/25 hover:bg-petrol/40'}`
-                  }`}
+                      ? { width: '40px', height: '10px', backgroundColor: 'var(--theme-primary)' }
+                      : {
+                          width: '10px',
+                          height: '10px',
+                          backgroundColor: isDark ? 'rgba(255,255,255,0.4)' : 'color-mix(in srgb, var(--theme-accent) 30%, transparent)',
+                        }
+                  }
                 />
               ))}
             </div>
@@ -290,22 +317,25 @@ export const CredibilitySection = ({ data }) => {
   if (!data.items?.length) return null;
 
   return (
-    <section id="credibility" className="bg-gray-900 py-12 md:py-16">
+    <section id="credibility" className="py-12 md:py-16" style={{ backgroundColor: 'var(--theme-bg-dark)' }}>
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {data.items.map((item, i) => (
             <div key={i} className="text-center lg:text-left">
               {/* Número grande */}
-              <p className="text-4xl md:text-5xl font-bold text-white mb-2 leading-none">
+              <p className="text-4xl md:text-5xl font-bold text-white mb-2 leading-none font-heading">
                 {item.title}
               </p>
               {/* Rótulo curto */}
-              <p className="text-xs md:text-sm text-blue-300 font-semibold uppercase tracking-wider mb-2">
+              <p
+                className="text-xs md:text-sm font-semibold uppercase tracking-wider mb-2"
+                style={{ color: 'var(--theme-highlight)' }}
+              >
                 {item.description}
               </p>
               {/* Detalhe extra */}
               {item.icon && (
-                <p className="text-xs text-gray-500 leading-snug">
+                <p className="text-xs leading-snug" style={{ color: 'rgba(255,255,255,0.55)' }}>
                   {item.icon}
                 </p>
               )}
