@@ -426,6 +426,12 @@ const EditorHero = ({ data, onChange }) => {
       <Toggle label="Carrossel ativado (recomendado)" value={data.carousel_enabled !== false}
         onChange={(v) => onChange('carousel_enabled', v)} />
 
+      <Input label="Texto do placeholder de imagem (quando não há foto)"
+        value={data.image_placeholder}
+        onChange={(v) => onChange('image_placeholder', v)}
+        placeholder="Foto do slide"
+        help="Aparece no espaço da imagem quando nenhum slide tem foto. Ex: 'Foto do slide'." />
+
       {/* =========================================== */}
       {/* EDITOR DE SLIDES */}
       {/* =========================================== */}
@@ -825,13 +831,27 @@ const EditorTestimonials = ({ data, onChange }) => {
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
+      <Input label="Kicker (rótulo pequeno acima do título)"
+        value={data.kicker}
+        onChange={(v) => onChange('kicker', v)}
+        placeholder="Depoimentos"
+        help="Rótulo em caixa alta que aparece acima do título." />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
       <UploadImage slot="testimonials_image" label="Foto do depoimento destaque"
         value={data.image} onChange={(v) => onChange('image', v)}
         help="Foto grande que aparece à esquerda do depoimento principal." />
+      <Input label="Texto do placeholder de imagem (quando não há foto)"
+        value={data.image_placeholder}
+        onChange={(v) => onChange('image_placeholder', v)}
+        placeholder="Foto do depoimento" />
       <Input label="URL do vídeo do depoimento destaque" value={data.video_url}
         onChange={(v) => onChange('video_url', v)} />
+      <Input label="Mensagem quando não há depoimentos"
+        value={data.empty_message}
+        onChange={(v) => onChange('empty_message', v)}
+        placeholder="Em breve: depoimentos..."
+        help="Aparece quando a lista de depoimentos está vazia." />
       <ListHeader label="Depoimentos em texto"
         onAdd={() => onChange('testimonials', [...(data.testimonials || []), { name: '', school: '', text: '' }])} />
       {(data.testimonials || []).map((t, i) => (
@@ -860,6 +880,11 @@ const EditorComparison = ({ data, onChange }) => {
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
+      <Input label="Cabeçalho da coluna de recursos"
+        value={data.feature_column_label}
+        onChange={(v) => onChange('feature_column_label', v)}
+        placeholder="Recurso"
+        help="Rótulo da primeira coluna da tabela comparativa." />
       <Textarea label="Colunas (uma por linha)" value={(data.columns || []).join('\n')}
         onChange={(v) => onChange('columns', v.split('\n').filter(Boolean))} rows={3} />
       <ListHeader label="Linhas de comparação"
@@ -939,10 +964,27 @@ const EditorFAQ = ({ data, onChange }) => {
   return (
     <>
       <Toggle label="Seção ativada" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
+      <Input label="Kicker (rótulo pequeno acima do título)"
+        value={data.kicker}
+        onChange={(v) => onChange('kicker', v)}
+        placeholder="Perguntas frequentes" />
       <Input label="Título" value={data.title} onChange={(v) => onChange('title', v)} />
       <Input label="Subtítulo" value={data.subtitle} onChange={(v) => onChange('subtitle', v)} />
       <UploadImage slot="faq_image" label="Foto lateral"
         value={data.image} onChange={(v) => onChange('image', v)} />
+      <Input label="Texto do placeholder de imagem (quando não há foto)"
+        value={data.image_placeholder}
+        onChange={(v) => onChange('image_placeholder', v)}
+        placeholder="Foto da professora" />
+      <Input label="Texto do link de contato"
+        value={data.contact_text}
+        onChange={(v) => onChange('contact_text', v)}
+        placeholder="Entre em contato conosco." />
+      <Input label="E-mail de contato"
+        value={data.contact_email}
+        onChange={(v) => onChange('contact_email', v)}
+        placeholder="contato@simidnape.com.br"
+        help="Para onde o link de contato aponta." />
       <ListHeader label="Perguntas"
         onAdd={() => onChange('items', [...(data.items || []), { question: '', answer: '' }])} />
       {(data.items || []).map((f, i) => (
