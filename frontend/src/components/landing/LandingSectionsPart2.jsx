@@ -2,8 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { VideoEmbed } from './LandingSectionsPart1';
 
-const Check = ({ className = 'text-blue-600' }) => (
-  <svg className={`w-5 h-5 ${className} flex-shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+const Check = ({ className = '' }) => (
+  <svg
+    className={`w-5 h-5 flex-shrink-0 ${className}`}
+    style={{ color: 'var(--theme-success)' }}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth="3"
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
   </svg>
 );
@@ -410,33 +417,35 @@ export const FounderOfferSection = ({ data }) => {
   const isUrgente = vagasRestantes <= 10;
 
   return (
-    <section id="founder_offer" className="relative py-20 md:py-28 bg-white overflow-hidden">
+    <section id="founder_offer" className="relative py-20 md:py-28 overflow-hidden" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       {/* Elemento decorativo de fundo */}
-      <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-40 z-0" />
-      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-100 rounded-full blur-3xl opacity-40 z-0" />
+      <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-30 z-0" style={{ backgroundColor: 'var(--theme-primary)' }} />
+      <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-30 z-0" style={{ backgroundColor: 'var(--theme-highlight)' }} />
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-6">
-        <div className="relative bg-gradient-to-br from-gray-900 via-gray-900 to-blue-950 rounded-3xl p-8 md:p-14 text-center shadow-2xl overflow-hidden">
-          {/* Elementos decorativos internos */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
-
+        <div
+          className="relative rounded-3xl p-8 md:p-14 text-center shadow-2xl overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, var(--theme-bg-dark) 0%, var(--theme-bg-dark) 70%, color-mix(in srgb, var(--theme-accent) 40%, var(--theme-bg-dark)) 100%)' }}
+        >
           <div className="relative z-10">
             {/* Badge */}
             {data.badge && (
-              <div className="inline-flex items-center gap-2 bg-blue-600 text-white text-xs md:text-sm font-bold uppercase tracking-wider px-5 py-2 rounded-full mb-8 shadow-lg shadow-blue-600/30">
+              <div
+                className="inline-flex items-center gap-2 text-white text-xs md:text-sm font-bold uppercase tracking-wider px-5 py-2 rounded-full mb-8 shadow-lg"
+                style={{ backgroundColor: 'var(--theme-primary)' }}
+              >
                 {data.badge}
               </div>
             )}
 
             {/* Título */}
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight max-w-3xl mx-auto font-heading">
               {data.title}
             </h2>
 
             {/* Descrição */}
             {data.description && (
-              <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">
+              <p className="text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10" style={{ color: 'rgba(255,255,255,0.75)' }}>
                 {data.description}
               </p>
             )}
@@ -444,24 +453,24 @@ export const FounderOfferSection = ({ data }) => {
             {/* Preço */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 md:gap-12 mb-10">
               <div className="text-center">
-                <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 font-semibold">
+                <p className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>
                   De
                 </p>
-                <p className="text-2xl md:text-3xl text-gray-500 line-through">
+                <p className="text-2xl md:text-3xl line-through" style={{ color: 'rgba(255,255,255,0.5)' }}>
                   {data.price_normal}
                 </p>
               </div>
 
-              <div className="hidden sm:block w-px h-16 bg-gray-700" />
+              <div className="hidden sm:block w-px h-16" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
 
               <div className="text-center">
-                <p className="text-xs uppercase tracking-wider text-blue-400 mb-2 font-bold">
+                <p className="text-xs uppercase tracking-wider mb-2 font-bold" style={{ color: 'var(--theme-highlight)' }}>
                   Por
                 </p>
-                <p className="text-5xl md:text-7xl font-bold text-white leading-none">
+                <p className="text-5xl md:text-7xl font-bold text-white leading-none font-heading">
                   {data.price_founder}
                 </p>
-                <p className="text-xs md:text-sm text-blue-400 font-bold uppercase tracking-wider mt-3">
+                <p className="text-xs md:text-sm font-bold uppercase tracking-wider mt-3" style={{ color: 'var(--theme-highlight)' }}>
                   {data.period_label || 'para sempre'}
                 </p>
               </div>
@@ -471,7 +480,7 @@ export const FounderOfferSection = ({ data }) => {
             {data.spots_total > 0 && (
               <div className="max-w-lg mx-auto mb-10">
                 <div className="flex justify-between items-baseline text-sm mb-3">
-                  <span className="text-gray-400">
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>
                     <strong className="text-white">{data.spots_total - data.spots_remaining}</strong>{' '}
                     vagas preenchidas
                   </span>
@@ -479,14 +488,15 @@ export const FounderOfferSection = ({ data }) => {
                     Restam {data.spots_remaining} de {data.spots_total}
                   </span>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+                <div className="w-full rounded-full h-3 overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
                   <div
-                    className={`h-full transition-all duration-500 ${
-                      isUrgente
-                        ? 'bg-gradient-to-r from-orange-500 to-red-500'
-                        : 'bg-gradient-to-r from-blue-500 to-blue-400'
-                    }`}
-                    style={{ width: `${pct}%` }}
+                    className="h-full transition-all duration-500"
+                    style={{
+                      width: `${pct}%`,
+                      background: isUrgente
+                        ? 'linear-gradient(90deg, #F97316, #DC2626)'
+                        : 'linear-gradient(90deg, var(--theme-primary), var(--theme-highlight))',
+                    }}
                   />
                 </div>
                 {isUrgente && (
@@ -500,7 +510,8 @@ export const FounderOfferSection = ({ data }) => {
             {/* CTA */}
             <Link
               to={data.cta_link || '/register'}
-              className="inline-flex items-center gap-3 bg-white text-gray-900 font-bold px-8 md:px-10 py-4 md:py-5 rounded-xl hover:bg-gray-100 transition shadow-xl text-base md:text-lg transform hover:-translate-y-0.5"
+              className="inline-flex items-center gap-3 bg-white font-bold px-8 md:px-10 py-4 md:py-5 rounded-xl hover:bg-gray-100 transition shadow-xl text-base md:text-lg transform hover:-translate-y-0.5"
+              style={{ color: 'var(--theme-bg-dark)' }}
             >
               {data.cta_text || 'Quero garantir minha vaga'}
               <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -509,7 +520,7 @@ export const FounderOfferSection = ({ data }) => {
             </Link>
 
             {/* Aviso de segurança abaixo do CTA */}
-            <p className="text-xs text-gray-500 mt-6">
+            <p className="text-xs mt-6" style={{ color: 'rgba(255,255,255,0.5)' }}>
               💳 Pagamento seguro · Cancele quando quiser · Sem multa
             </p>
           </div>
@@ -600,22 +611,31 @@ const PLANOS_FIXOS = [
 
 export const PlansSection = ({ data }) => {
   return (
-    <section id="plans" className="py-20 md:py-28 bg-gray-50">
+    <section id="plans" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
+          <h2
+            className="text-3xl md:text-4xl font-bold mb-4 font-heading"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >{data.title}</h2>
           {data.subtitle && (
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>
+            <p
+              className="text-lg max-w-2xl mx-auto"
+              style={{ color: 'var(--theme-text-secondary)' }}
+            >{data.subtitle}</p>
           )}
         </div>
 
-        {/* Faixa de destaque: bônus da API própria */}
-        <div className="max-w-3xl mx-auto mb-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-5 text-white text-center shadow-lg">
+        {/* Faixa de destaque: bônus do Modo Turbo */}
+        <div
+          className="max-w-3xl mx-auto mb-12 rounded-2xl p-5 text-white text-center shadow-lg"
+          style={{ background: 'linear-gradient(90deg, var(--theme-primary) 0%, var(--theme-accent) 100%)' }}
+        >
           <p className="text-base md:text-lg font-bold leading-snug">
-            🔑 Cadastre sua API Key do Gemini <span className="bg-white/20 px-2 py-0.5 rounded">gratuita</span> e multiplique seus créditos
+            🔑 Ative o <span className="bg-white/25 px-2 py-0.5 rounded">Modo Turbo</span> e ganhe até 10x mais créditos
           </p>
-          <p className="text-sm text-blue-100 mt-2">
-            A chave é gratuita, leva 2 minutos, e você ganha <strong className="text-white">até 10x mais créditos</strong> pelo mesmo preço.
+          <p className="text-sm mt-2 text-white/90">
+            É grátis, leva 2 minutos. Você conecta uma <strong className="text-white">chave gratuita do Google</strong> e multiplica seus créditos — sem pagar a mais.
           </p>
         </div>
 
@@ -630,14 +650,20 @@ export const PlansSection = ({ data }) => {
             return (
               <div
                 key={p.codigo}
-                className={`relative rounded-2xl p-5 border-2 transition flex flex-col bg-white ${
-                  p.destaque
-                    ? 'border-blue-600 shadow-lg scale-[1.02]'
-                    : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                }`}
+                className="relative rounded-2xl p-5 border-2 transition flex flex-col bg-white"
+                style={{
+                  borderColor: p.destaque
+                    ? 'var(--theme-primary)'
+                    : 'color-mix(in srgb, var(--theme-accent) 15%, transparent)',
+                  boxShadow: p.destaque ? '0 10px 25px -5px color-mix(in srgb, var(--theme-primary) 30%, transparent)' : undefined,
+                  transform: p.destaque ? 'scale(1.02)' : undefined,
+                }}
               >
                 {p.destaque && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
+                  <div
+                    className="absolute -top-3 left-1/2 transform -translate-x-1/2 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-md"
+                    style={{ backgroundColor: 'var(--theme-primary)' }}
+                  >
                     ⭐ MAIS ESCOLHIDO
                   </div>
                 )}
@@ -645,66 +671,78 @@ export const PlansSection = ({ data }) => {
                 {/* Ícone + Nome */}
                 <div className="flex items-center gap-2 mb-3 mt-1">
                   <span className="text-2xl leading-none">{p.icone}</span>
-                  <h3 className="text-lg font-bold text-gray-900 leading-tight">{p.nome}</h3>
+                  <h3 className="text-lg font-bold leading-tight font-heading" style={{ color: 'var(--theme-text-primary)' }}>{p.nome}</h3>
                 </div>
 
                 {/* Preço */}
                 <div className="mb-1">
-                  <span className="text-2xl font-bold text-gray-900">
+                  <span className="text-2xl font-bold font-heading" style={{ color: 'var(--theme-text-primary)' }}>
                     {p.preco === 0 ? 'Grátis' : `R$ ${p.preco.toFixed(2).replace('.', ',')}`}
                   </span>
-                  {p.preco > 0 && <span className="text-gray-500 ml-1 text-xs">/mês</span>}
+                  {p.preco > 0 && <span className="ml-1 text-xs" style={{ color: 'var(--theme-text-secondary)' }}>/mês</span>}
                 </div>
                 {precoPorDia && (
-                  <p className="text-[10px] text-gray-500 mb-3">
+                  <p className="text-[10px] mb-3" style={{ color: 'var(--theme-text-secondary)' }}>
                     Apenas R$ {precoPorDia} por dia
                   </p>
                 )}
 
-                {/* Bloco de créditos: sem API vs com API */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-lg p-3 mb-4">
-                  <p className="text-[9px] uppercase tracking-widest font-bold text-blue-700 mb-2">
+                {/* Bloco de créditos: sem Turbo vs com Turbo */}
+                <div
+                  className="rounded-lg p-3 mb-4 border"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--theme-accent) 8%, white)',
+                    borderColor: 'color-mix(in srgb, var(--theme-accent) 20%, transparent)',
+                  }}
+                >
+                  <p
+                    className="text-[9px] uppercase tracking-widest font-bold mb-2"
+                    style={{ color: 'var(--theme-accent)' }}
+                  >
                     Seus créditos/mês
                   </p>
 
                   {p.trial ? (
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-700 leading-none">
+                      <p className="text-2xl font-bold leading-none" style={{ color: 'var(--theme-accent)' }}>
                         {p.creditos_com_api}
                       </p>
-                      <p className="text-[10px] text-blue-600 font-medium mt-1">
+                      <p className="text-[10px] font-medium mt-1" style={{ color: 'var(--theme-accent)' }}>
                         para testar tudo
                       </p>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-1">
-                      {/* Sem API */}
+                      {/* Sem Turbo */}
                       <div className="text-center flex-1">
-                        <p className="text-base font-bold text-gray-500 leading-none">
+                        <p className="text-base font-bold leading-none" style={{ color: 'var(--theme-text-secondary)' }}>
                           {p.creditos_sem_api}
                         </p>
-                        <p className="text-[9px] text-gray-500 mt-1 leading-none">
-                          sem API
+                        <p className="text-[9px] mt-1 leading-none" style={{ color: 'var(--theme-text-secondary)' }}>
+                          sem Turbo
                         </p>
                       </div>
 
                       {/* Seta */}
-                      <div className="text-blue-500 text-sm leading-none">→</div>
+                      <div className="text-sm leading-none" style={{ color: 'var(--theme-accent)' }}>→</div>
 
-                      {/* Com API */}
+                      {/* Com Turbo */}
                       <div className="text-center flex-1">
-                        <p className="text-2xl font-bold text-blue-700 leading-none">
+                        <p className="text-2xl font-bold leading-none" style={{ color: 'var(--theme-accent)' }}>
                           {p.creditos_com_api}
                         </p>
-                        <p className="text-[9px] font-bold text-blue-700 mt-1 leading-none">
-                          com sua API ✨
+                        <p className="text-[9px] font-bold mt-1 leading-none" style={{ color: 'var(--theme-accent)' }}>
+                          com Turbo ✨
                         </p>
                       </div>
                     </div>
                   )}
 
                   {multiplicador && (
-                    <p className="text-[10px] text-center text-blue-700 font-bold mt-2 bg-white/70 rounded py-1">
+                    <p
+                      className="text-[10px] text-center font-bold mt-2 rounded py-1"
+                      style={{ color: 'var(--theme-accent)', backgroundColor: 'rgba(255,255,255,0.7)' }}
+                    >
                       ⬆ {multiplicador}x mais créditos
                     </p>
                   )}
@@ -713,8 +751,8 @@ export const PlansSection = ({ data }) => {
                 {/* Features */}
                 <ul className="space-y-1.5 mb-4 flex-1">
                   {p.itens.map((item, j) => (
-                    <li key={j} className="flex items-start gap-1.5 text-[11px] text-gray-700 leading-snug">
-                      <Check className="text-green-600 w-3 h-3 mt-0.5 flex-shrink-0" />
+                    <li key={j} className="flex items-start gap-1.5 text-[11px] leading-snug" style={{ color: 'var(--theme-text-secondary)' }}>
+                      <Check className="w-3 h-3 mt-0.5 flex-shrink-0" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -723,13 +761,14 @@ export const PlansSection = ({ data }) => {
                 {/* CTA */}
                 <Link
                   to="/register"
-                  className={`block text-center font-bold py-2.5 rounded-lg transition text-sm ${
+                  className="block text-center font-bold py-2.5 rounded-lg transition text-sm"
+                  style={
                     p.destaque
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                      ? { backgroundColor: 'var(--theme-primary)', color: '#FFFFFF' }
                       : p.trial
-                        ? 'bg-white hover:bg-gray-50 text-blue-700 border-2 border-blue-200'
-                        : 'bg-gray-900 hover:bg-black text-white'
-                  }`}
+                        ? { backgroundColor: '#FFFFFF', color: 'var(--theme-accent)', border: '2px solid color-mix(in srgb, var(--theme-accent) 30%, transparent)' }
+                        : { backgroundColor: 'var(--theme-bg-dark)', color: '#FFFFFF' }
+                  }
                 >
                   {p.trial ? '🚀 Começar grátis' : 'Assinar agora'}
                 </Link>
@@ -740,18 +779,23 @@ export const PlansSection = ({ data }) => {
 
         {/* Rodapé explicativo */}
         <div className="mt-10 max-w-3xl mx-auto">
-          <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
-            <p className="text-sm text-gray-700 leading-relaxed">
-              <strong>💡 Como funciona o bônus da API própria:</strong> ao assinar, você tem uma cota de créditos mensais usando a infraestrutura do SIMIDNAPE.
-              Se você cadastrar sua própria chave do Google Gemini (gratuita), essa cota <strong>multiplica automaticamente</strong> — sem custo adicional e sem trocar de plano.
+          <div
+            className="rounded-xl p-5 text-center border bg-white"
+            style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}
+          >
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--theme-text-primary)' }}>
+              <strong>💡 O que é o Modo Turbo?</strong> Cada plano tem uma cota mensal de créditos.
+              Quando você ativa o Modo Turbo (conectando uma <strong>chave gratuita do Google</strong>), essa cota
+              <strong> multiplica automaticamente</strong> — sem custo extra e sem trocar de plano.
+              Você ativa e desativa quando quiser.
             </p>
-            <p className="text-xs text-gray-500 mt-3">
+            <p className="text-xs mt-3" style={{ color: 'var(--theme-text-secondary)' }}>
               🔒 Sua chave é criptografada e fica só na sua conta. Você mantém total controle.
             </p>
           </div>
         </div>
 
-        <p className="text-center text-sm text-gray-500 mt-8">
+        <p className="text-center text-sm mt-8" style={{ color: 'var(--theme-text-secondary)' }}>
           💳 Pagamento via cartão de crédito (recomendado) ou Pix. Cancele quando quiser, sem multa.
         </p>
       </div>
@@ -765,17 +809,26 @@ export const PlansSection = ({ data }) => {
 // ============================================================
 export const GuaranteeSection = ({ data }) => {
   return (
-    <section id="guarantee" className="py-16 md:py-20 bg-white">
+    <section id="guarantee" className="py-16 md:py-20" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       <div className="max-w-4xl mx-auto px-4 md:px-6">
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-8 md:p-12">
+        <div
+          className="rounded-2xl p-8 md:p-12 border"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--theme-success) 8%, white)',
+            borderColor: 'color-mix(in srgb, var(--theme-success) 25%, transparent)',
+          }}
+        >
           <div className="text-center mb-6">
             <div className="text-5xl mb-3">🛡️</div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{data.title}</h2>
+            <h2
+              className="text-2xl md:text-3xl font-bold font-heading"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >{data.title}</h2>
           </div>
           <ul className="space-y-3 max-w-2xl mx-auto">
             {data.items?.map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-gray-800">
-                <Check className="text-green-600 mt-0.5" />
+              <li key={i} className="flex items-start gap-3" style={{ color: 'var(--theme-text-primary)' }}>
+                <Check className="mt-0.5" />
                 <span>{item}</span>
               </li>
             ))}
