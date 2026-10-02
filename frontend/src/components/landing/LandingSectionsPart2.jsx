@@ -847,21 +847,31 @@ export const FAQSection = ({ data }) => {
   const [aberto, setAberto] = useState(null);
 
   return (
-    <section id="faq" className="py-20 md:py-28 bg-gray-50">
+    <section id="faq" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 items-start">
           {/* Coluna esquerda */}
           <div className="lg:col-span-2">
-            <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-3">
+            <p
+              className="text-xs font-bold uppercase tracking-wider mb-3"
+              style={{ color: 'var(--theme-accent)' }}
+            >
               {data.kicker || 'Perguntas frequentes'}
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+            <h2
+              className="text-3xl md:text-4xl font-bold mb-4 leading-tight font-heading"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >
               {data.title}
             </h2>
             {data.subtitle && (
-              <p className="text-lg text-gray-600 mb-6">
+              <p className="text-lg mb-6" style={{ color: 'var(--theme-text-secondary)' }}>
                 {data.subtitle}{' '}
-                <a href={`mailto:${data.contact_email || 'contato@simidnape.com.br'}`} className="text-blue-700 hover:underline font-semibold">
+                <a
+                  href={`mailto:${data.contact_email || 'contato@simidnape.com.br'}`}
+                  className="hover:underline font-semibold"
+                  style={{ color: 'var(--theme-accent)' }}
+                >
                   {data.contact_text || 'Entre em contato conosco.'}
                 </a>
               </p>
@@ -869,11 +879,14 @@ export const FAQSection = ({ data }) => {
 
             {/* Foto */}
             <div className="hidden lg:block mt-8">
-              <div className="rounded-2xl overflow-hidden shadow-lg aspect-square max-w-sm bg-gray-200">
+              <div
+                className="rounded-2xl overflow-hidden shadow-lg aspect-square max-w-sm"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--theme-accent) 10%, white)' }}
+              >
                 {data.image ? (
                   <img src={data.image} alt="Professora" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                  <div className="w-full h-full flex flex-col items-center justify-center" style={{ color: 'var(--theme-text-secondary)' }}>
                     <span className="text-8xl mb-3">👩‍🏫</span>
                     <span className="text-sm font-medium">{data.image_placeholder || 'Foto da professora'}</span>
                   </div>
@@ -888,25 +901,47 @@ export const FAQSection = ({ data }) => {
               {data.items?.map((f, i) => (
                 <div
                   key={i}
-                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-gray-300 transition"
+                  className="rounded-xl overflow-hidden transition bg-white border"
+                  style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}
                 >
                   <button
                     onClick={() => setAberto(aberto === i ? null : i)}
-                    className="w-full text-left px-5 py-4 flex items-center gap-4 hover:bg-gray-50 transition"
+                    className="w-full text-left px-5 py-4 flex items-center gap-4 transition hover:opacity-90"
+                    style={{ backgroundColor: 'transparent' }}
                   >
-                    <span className="text-xl font-bold text-blue-700 flex-shrink-0 w-8">
+                    <span
+                      className="text-xl font-bold flex-shrink-0 w-8"
+                      style={{ color: 'var(--theme-accent)' }}
+                    >
                       {String(i + 1).padStart(2, '0')}
                     </span>
-                    <span className="font-semibold text-gray-900 flex-1 leading-snug">
+                    <span
+                      className="font-semibold flex-1 leading-snug"
+                      style={{ color: 'var(--theme-text-primary)' }}
+                    >
                       {f.question}
                     </span>
-                    <span className={`text-2xl text-gray-400 flex-shrink-0 transition-transform ${aberto === i ? 'rotate-45' : ''}`}>
+                    <span
+                      className={`text-2xl flex-shrink-0 transition-transform ${aberto === i ? 'rotate-45' : ''}`}
+                      style={{ color: 'var(--theme-text-secondary)' }}
+                    >
                       +
                     </span>
                   </button>
                   {aberto === i && (
-                    <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
-                      <p className="text-gray-700 leading-relaxed pl-12">{f.answer}</p>
+                    <div
+                      className="px-5 py-4 border-t"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--theme-accent) 5%, transparent)',
+                        borderColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)',
+                      }}
+                    >
+                      <p
+                        className="leading-relaxed pl-12"
+                        style={{ color: 'var(--theme-text-secondary)' }}
+                      >
+                        {f.answer}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -925,17 +960,21 @@ export const FAQSection = ({ data }) => {
 // ============================================================
 export const FinalCTASection = ({ data }) => {
   return (
-    <section id="final_cta" className="py-20 md:py-28 bg-gray-900">
+    <section id="final_cta" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-dark)' }}>
       <div className="max-w-4xl mx-auto px-4 md:px-6 text-center">
-        <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
+        <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight font-heading">
           {data.headline}
         </h2>
-        <p className="text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+        <p
+          className="text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed"
+          style={{ color: 'rgba(255,255,255,0.75)' }}
+        >
           {data.subheadline}
         </p>
         <Link
           to={data.cta_link || '/register'}
-          className="inline-flex items-center gap-2 bg-white text-gray-900 font-bold px-10 py-4 rounded-lg hover:bg-gray-100 transition shadow-sm text-lg"
+          className="inline-flex items-center gap-2 font-bold px-10 py-4 rounded-lg transition shadow-sm text-lg hover:opacity-90"
+          style={{ backgroundColor: 'var(--theme-primary)', color: '#FFFFFF' }}
         >
           {data.cta_text || 'Criar conta grátis'}
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -953,45 +992,65 @@ export const FinalCTASection = ({ data }) => {
 // ============================================================
 export const FooterSection = ({ data }) => {
   return (
-    <footer className="bg-black text-gray-400 py-14 px-4 md:px-6">
+    <footer className="py-14 px-4 md:px-6" style={{ backgroundColor: 'var(--theme-bg-dark)', color: 'rgba(255,255,255,0.55)' }}>
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
           <div className="md:col-span-2">
-            <h3 className="text-2xl font-bold text-white mb-1">SIMIDNAPE PRO</h3>
-            <p className="text-sm text-blue-400 font-bold mb-4">O Professor Inesquecível</p>
+            {/* Logo tipográfico — mesmo do header */}
+            <div className="inline-flex items-end pt-3 mb-2">
+              {'SIMIDNAPE'.split('').map((letra, i) => (
+                <span
+                  key={i}
+                  className="relative font-display text-2xl md:text-3xl font-bold text-white tracking-tight"
+                >
+                  {letra === 'I' && (
+                    <span
+                      className={`absolute -top-2.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
+                        i === 1 ? 'bg-coral' : 'bg-gold'
+                      }`}
+                    />
+                  )}
+                  {letra}
+                </span>
+              ))}
+            </div>
+            <p className="font-serif italic text-xs mb-4 tracking-wide" style={{ color: 'rgba(255,255,255,0.55)' }}>
+              O Professor Inesquecível
+            </p>
+
             {data.brand_explanation && (
-              <p className="text-xs text-gray-500 leading-relaxed mb-4 max-w-md">
+              <p className="text-xs leading-relaxed mb-4 max-w-md" style={{ color: 'rgba(255,255,255,0.45)' }}>
                 {data.brand_explanation}
               </p>
             )}
-            <p className="text-sm text-gray-400 leading-relaxed max-w-md">
+            <p className="text-sm leading-relaxed max-w-md" style={{ color: 'rgba(255,255,255,0.6)' }}>
               Assistente pedagógico com IA para professores brasileiros.
               Neuroeducação, ciência da aprendizagem e respeito à autonomia docente.
             </p>
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="text-xs mt-4" style={{ color: 'rgba(255,255,255,0.45)' }}>
               🇧🇷 Feito no Brasil · Alinhado à BNCC
             </p>
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Produto</h4>
+            <h4 className="text-white font-semibold mb-4 font-heading">Produto</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#solution" className="hover:text-white transition">Motores de IA</a></li>
-              <li><a href="#comparison" className="hover:text-white transition">Comparativo</a></li>
-              <li><a href="#plans" className="hover:text-white transition">Planos</a></li>
-              <li><a href="#faq" className="hover:text-white transition">FAQ</a></li>
+              <li><a href="#solution" className="hover:text-white transition" style={{ color: 'inherit' }}>Motores de IA</a></li>
+              <li><a href="#comparison" className="hover:text-white transition" style={{ color: 'inherit' }}>Comparativo</a></li>
+              <li><a href="#plans" className="hover:text-white transition" style={{ color: 'inherit' }}>Planos</a></li>
+              <li><a href="#faq" className="hover:text-white transition" style={{ color: 'inherit' }}>FAQ</a></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Institucional</h4>
+            <h4 className="text-white font-semibold mb-4 font-heading">Institucional</h4>
             <ul className="space-y-2 text-sm">
               {data.links?.map((link, i) => (
                 <li key={i}>
                   {link.href?.startsWith('http') || link.href?.startsWith('mailto') ? (
-                    <a href={link.href} className="hover:text-white transition">{link.label}</a>
+                    <a href={link.href} className="hover:text-white transition" style={{ color: 'inherit' }}>{link.label}</a>
                   ) : (
-                    <Link to={link.href} className="hover:text-white transition">{link.label}</Link>
+                    <Link to={link.href} className="hover:text-white transition" style={{ color: 'inherit' }}>{link.label}</Link>
                   )}
                 </li>
               ))}
@@ -999,7 +1058,7 @@ export const FooterSection = ({ data }) => {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 pt-6 text-center text-xs">
+        <div className="pt-6 text-center text-xs" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <p>{data.copyright_text || '© 2025 SIMIDNAPE PRO — O Professor Inesquecível. Todos os direitos reservados.'}</p>
         </div>
       </div>
@@ -1098,7 +1157,7 @@ export const PopupSection = ({ data }) => {
             )}
 
             {/* Título */}
-            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight mb-2">
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight mb-2 font-heading">
               {data.title}
             </h3>
 
