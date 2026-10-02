@@ -106,7 +106,7 @@ export const HeroSection = ({ data }) => {
         )}
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-12 pb-20 md:pt-20 md:pb-28">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-[500px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-[560px] md:min-h-[620px] lg:min-h-[660px]">
             {/* Coluna esquerda — Texto do slide */}
             <div className="text-center lg:text-left">
               {slide.badge && (
@@ -291,7 +291,7 @@ export const HeroSection = ({ data }) => {
 
       {/* Vídeo principal (abaixo do carrossel) */}
       {data.video_enabled && data.video_url && (
-        <div className="max-w-4xl mx-auto px-4 md:px-6 -mt-12 mb-16 relative z-20">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 mb-16 relative z-20">
           <div className="aspect-video bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
             <VideoEmbed url={data.video_url} />
           </div>
