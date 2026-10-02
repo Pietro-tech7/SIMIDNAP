@@ -111,7 +111,7 @@ const LandingPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Carregando...</p>
+          <p className="text-gray-500">{config?.error_page?.loading_text || 'Carregando...'}</p>
         </div>
       </div>
     );
@@ -125,23 +125,23 @@ const LandingPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 px-4">
         <div className="text-center max-w-lg">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            SIMIDNAPE PRO
+            {config?.error_page?.title || 'SIMIDNAPE PRO'}
           </h1>
           <p className="text-lg text-gray-600 mb-8">
-            O assistente pedagógico com IA para professores brasileiros.
+            {config?.error_page?.subtitle || 'O assistente pedagógico com IA para professores brasileiros.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/register"
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-8 py-3 rounded-xl shadow-md"
             >
-              Criar conta grátis
+              {config?.error_page?.register_text || 'Criar conta grátis'}
             </Link>
             <Link
               to="/login"
               className="bg-white hover:bg-gray-50 text-gray-800 font-semibold px-8 py-3 rounded-xl border-2 border-gray-200"
             >
-              Já tenho conta
+              {config?.error_page?.login_text || 'Já tenho conta'}
             </Link>
           </div>
         </div>
@@ -163,25 +163,25 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              SIMIDNAPE PRO
+              {config?.header?.logo_text || 'SIMIDNAPE PRO'}
             </span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-7">
             <button onClick={() => scrollTo('solution')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
-              Motores de IA
+              {config?.header?.nav_motors_label || 'Motores de IA'}
             </button>
             <button onClick={() => scrollTo('how_it_works')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
-              Como funciona
+              {config?.header?.nav_how_label || 'Como funciona'}
             </button>
             <button onClick={() => scrollTo('comparison')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
-              Comparativo
+              {config?.header?.nav_comparison_label || 'Comparativo'}
             </button>
             <button onClick={() => scrollTo('plans')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
-              Planos
+              {config?.header?.nav_plans_label || 'Planos'}
             </button>
             <button onClick={() => scrollTo('faq')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
-              FAQ
+              {config?.header?.nav_faq_label || 'FAQ'}
             </button>
           </nav>
 
@@ -190,13 +190,13 @@ const LandingPage = () => {
               to="/login"
               className="text-gray-700 hover:text-blue-600 font-medium px-4 py-2 transition text-sm"
             >
-              Entrar
+              {config?.header?.login_text || 'Entrar'}
             </Link>
             <Link
               to="/register"
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-5 py-2.5 rounded-lg transition shadow-sm text-sm"
             >
-              Criar conta grátis
+              {config?.header?.register_text || 'Criar conta grátis'}
             </Link>
           </div>
 
@@ -212,29 +212,29 @@ const LandingPage = () => {
         {menuAberto && (
           <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3 shadow-lg">
             <button onClick={() => scrollTo('solution')} className="block w-full text-left text-gray-700 font-medium py-2">
-              Motores de IA
+              {config?.header?.nav_motors_label || 'Motores de IA'}
             </button>
             <button onClick={() => scrollTo('how_it_works')} className="block w-full text-left text-gray-700 font-medium py-2">
-              Como funciona
+              {config?.header?.nav_how_label || 'Como funciona'}
             </button>
             <button onClick={() => scrollTo('comparison')} className="block w-full text-left text-gray-700 font-medium py-2">
-              Comparativo
+              {config?.header?.nav_comparison_label || 'Comparativo'}
             </button>
             <button onClick={() => scrollTo('plans')} className="block w-full text-left text-gray-700 font-medium py-2">
-              Planos
+              {config?.header?.nav_plans_label || 'Planos'}
             </button>
             <button onClick={() => scrollTo('faq')} className="block w-full text-left text-gray-700 font-medium py-2">
-              FAQ
+              {config?.header?.nav_faq_label || 'FAQ'}
             </button>
             <div className="pt-3 border-t border-gray-100 space-y-2">
               <Link to="/login" className="block text-center text-gray-700 font-medium py-2">
-                Entrar
+                {config?.header?.login_text || 'Entrar'}
               </Link>
               <Link
                 to="/register"
                 className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2.5 rounded-lg"
               >
-                Criar conta grátis
+                {config?.header?.register_text || 'Criar conta grátis'}
               </Link>
             </div>
           </div>
