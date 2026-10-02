@@ -273,10 +273,10 @@ const AdminLanding = () => {
         {/* ============= EDITOR ============= */}
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           {secaoAtiva === '_theme' && <EditorTheme />}
-          {secaoAtiva === '_header' && <EditorHeader config={config} setConfig={setConfig} salvando={salvando} />}
-          {secaoAtiva === '_error_page' && <EditorErrorPage config={config} setConfig={setConfig} salvando={salvando} />}
-          {secaoAtiva === '_global' && <EditorGlobal config={config} setConfig={setConfig} salvando={salvando} />}
-          {secaoAtiva === '_popup' && <EditorPopup config={config} setConfig={setConfig} salvando={salvando} />}
+          {secaoAtiva === '_header' && <EditorHeader config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
+          {secaoAtiva === '_error_page' && <EditorErrorPage config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
+          {secaoAtiva === '_global' && <EditorGlobal config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
+          {secaoAtiva === '_popup' && <EditorPopup config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_sistema' && <EditorSistema />}
           {secaoAtiva !== '_theme' && secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
             <EditorSecao secao={secaoAtiva} data={config[secaoAtiva] || {}}
@@ -1053,16 +1053,23 @@ const EditorFooter = ({ data, onChange }) => {
 // ============================================================
 // EDITOR GLOBAL (SEO)
 // ============================================================
-const EditorGlobal = ({ config, setConfig, salvando }) => {
+const EditorGlobal = ({ config, setConfig, salvando, setMsg }) => {
   const update = (field, value) => setConfig(prev => ({ ...prev, [field]: value }));
   const salvar = async () => {
+    if (setMsg) setMsg(null);
     try {
       const res = await api.put('/landing/admin/config', {
         seo_title: config.seo_title,
         seo_description: config.seo_description,
       });
       setConfig(res.data.config);
-    } catch {}
+      if (setMsg) {
+        setMsg({ tipo: 'sucesso', texto: 'SEO salvo com sucesso!' });
+        setTimeout(() => setMsg(null), 3000);
+      }
+    } catch {
+      if (setMsg) setMsg({ tipo: 'erro', texto: 'Erro ao salvar SEO.' });
+    }
   };
   return (
     <div>
@@ -1090,14 +1097,21 @@ const EditorGlobal = ({ config, setConfig, salvando }) => {
 // ============================================================
 // EDITOR POPUP
 // ============================================================
-const EditorPopup = ({ config, setConfig, salvando }) => {
+const EditorPopup = ({ config, setConfig, salvando, setMsg }) => {
   const popup = config.popup || {};
   const update = (field, value) => setConfig(prev => ({ ...prev, popup: { ...prev.popup, [field]: value } }));
   const salvar = async () => {
+    if (setMsg) setMsg(null);
     try {
       const res = await api.put('/landing/admin/config', { popup: config.popup });
       setConfig(res.data.config);
-    } catch {}
+      if (setMsg) {
+        setMsg({ tipo: 'sucesso', texto: 'Pop-up salvo com sucesso!' });
+        setTimeout(() => setMsg(null), 3000);
+      }
+    } catch {
+      if (setMsg) setMsg({ tipo: 'erro', texto: 'Erro ao salvar pop-up.' });
+    }
   };
 
   const TEMAS = [
@@ -1228,14 +1242,21 @@ const EditorPopup = ({ config, setConfig, salvando }) => {
 // ============================================================
 // EDITOR HEADER — Logo, nav e botões do topo
 // ============================================================
-const EditorHeader = ({ config, setConfig, salvando }) => {
+const EditorHeader = ({ config, setConfig, salvando, setMsg }) => {
   const header = config.header || {};
   const update = (field, value) => setConfig(prev => ({ ...prev, header: { ...prev.header, [field]: value } }));
   const salvar = async () => {
+    if (setMsg) setMsg(null);
     try {
       const res = await api.put('/landing/admin/config', { header: config.header });
       setConfig(res.data.config);
-    } catch {}
+      if (setMsg) {
+        setMsg({ tipo: 'sucesso', texto: 'Header salvo com sucesso!' });
+        setTimeout(() => setMsg(null), 3000);
+      }
+    } catch {
+      if (setMsg) setMsg({ tipo: 'erro', texto: 'Erro ao salvar header.' });
+    }
   };
   return (
     <div>
@@ -1303,14 +1324,21 @@ const EditorHeader = ({ config, setConfig, salvando }) => {
 // ============================================================
 // EDITOR PÁGINA DE ERRO — textos de fallback quando backend cai
 // ============================================================
-const EditorErrorPage = ({ config, setConfig, salvando }) => {
+const EditorErrorPage = ({ config, setConfig, salvando, setMsg }) => {
   const page = config.error_page || {};
   const update = (field, value) => setConfig(prev => ({ ...prev, error_page: { ...prev.error_page, [field]: value } }));
   const salvar = async () => {
+    if (setMsg) setMsg(null);
     try {
       const res = await api.put('/landing/admin/config', { error_page: config.error_page });
       setConfig(res.data.config);
-    } catch {}
+      if (setMsg) {
+        setMsg({ tipo: 'sucesso', texto: 'Página de erro salva com sucesso!' });
+        setTimeout(() => setMsg(null), 3000);
+      }
+    } catch {
+      if (setMsg) setMsg({ tipo: 'erro', texto: 'Erro ao salvar página de erro.' });
+    }
   };
   return (
     <div>
