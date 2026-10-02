@@ -484,6 +484,35 @@ class PopupSection(BaseModel):
 
 
 # ============================================================
+# HEADER (topo da página) — textos e botões editáveis pelo admin
+# ============================================================
+class HeaderSection(BaseModel):
+    logo_text: str = "SIMIDNAPE PRO"
+
+    # Labels do menu de navegação
+    nav_motors_label: str = "Motores de IA"
+    nav_how_label: str = "Como funciona"
+    nav_comparison_label: str = "Comparativo"
+    nav_plans_label: str = "Planos"
+    nav_faq_label: str = "FAQ"
+
+    # Botões do topo
+    login_text: str = "Entrar"
+    register_text: str = "Criar conta grátis"
+
+
+# ============================================================
+# PÁGINA DE ERRO / CARREGAMENTO — textos editáveis pelo admin
+# ============================================================
+class ErrorPageSection(BaseModel):
+    loading_text: str = "Carregando..."
+    title: str = "SIMIDNAPE PRO"
+    subtitle: str = "O assistente pedagógico com IA para professores brasileiros."
+    register_text: str = "Criar conta grátis"
+    login_text: str = "Já tenho conta"
+
+
+# ============================================================
 # SCHEMA PRINCIPAL
 # ============================================================
 class LandingConfigSchema(BaseModel):
@@ -534,6 +563,8 @@ class LandingConfigSchema(BaseModel):
     final_cta: FinalCTASection = Field(default_factory=FinalCTASection)
     footer: FooterSection = Field(default_factory=FooterSection)
     popup: PopupSection = Field(default_factory=PopupSection)
+    header: HeaderSection = Field(default_factory=HeaderSection)
+    error_page: ErrorPageSection = Field(default_factory=ErrorPageSection)
 
 
 class LandingConfigOut(BaseModel):
