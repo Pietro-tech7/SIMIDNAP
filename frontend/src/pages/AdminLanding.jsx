@@ -29,11 +29,11 @@ const SECOES_INFO = {
 // GRADIENTES DISPONÍVEIS PARA OS SLIDES
 // ============================================================
 const GRADIENTES_SLIDES = [
-  { value: 'from-blue-50 via-white to-purple-50',   label: 'Claro · Azul/Roxo',     preview: 'bg-gradient-to-br from-blue-50 via-white to-purple-50' },
-  { value: 'from-white via-gray-50 to-white',       label: 'Claro · Neutro',         preview: 'bg-gradient-to-br from-white via-gray-50 to-white' },
-  { value: 'from-gray-900 via-blue-900 to-gray-900', label: 'Escuro · Azul premium',  preview: 'bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900' },
-  { value: 'from-gray-900 via-gray-900 to-blue-950', label: 'Escuro · Profundo',      preview: 'bg-gradient-to-br from-gray-900 via-gray-900 to-blue-950' },
-  { value: 'from-gray-50 via-white to-blue-50',      label: 'Claro · Azulado',        preview: 'bg-gradient-to-br from-gray-50 via-white to-blue-50' },
+  { value: 'from-cream via-cream-soft to-cream',              label: '☀️ Claro · Creme SIMIDNAPE',    preview: 'bg-gradient-to-br from-cream via-cream-soft to-cream' },
+  { value: 'from-cream via-badge-cream to-cream',             label: '🌟 Claro · Creme Dourado',       preview: 'bg-gradient-to-br from-cream via-badge-cream to-cream' },
+  { value: 'from-cream via-cream-soft to-petrol/5',           label: '🌊 Claro · Creme Azulado',       preview: 'bg-gradient-to-br from-cream via-cream-soft to-petrol/20' },
+  { value: 'from-petrol-deep via-petrol to-petrol-deep',      label: '🌙 Escuro · Petróleo',           preview: 'bg-gradient-to-br from-petrol-deep via-petrol to-petrol-deep' },
+  { value: 'from-petrol-deep via-petrol-deep to-petrol',      label: '🌌 Escuro · Petróleo Profundo',  preview: 'bg-gradient-to-br from-petrol-deep via-petrol-deep to-petrol' },
 ];
 
 // ============================================================

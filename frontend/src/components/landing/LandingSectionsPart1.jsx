@@ -5,13 +5,13 @@ import { Link } from 'react-router-dom';
 // HELPERS
 // ============================================================
 const ButtonPrimary = ({ children, to, onClick, className = '' }) => {
-  const base = "inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-7 py-3.5 rounded-lg shadow-sm hover:shadow-md transition";
+  const base = "inline-flex items-center justify-center gap-2 bg-amber hover:bg-amber/90 text-white font-semibold px-7 py-3.5 rounded-lg shadow-sm hover:shadow-md transition";
   if (to) return <Link to={to} className={`${base} ${className}`}>{children}</Link>;
   return <button onClick={onClick} className={`${base} ${className}`}>{children}</button>;
 };
 
 const ButtonSecondary = ({ children, to, onClick, className = '' }) => {
-  const base = "inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-7 py-3.5 rounded-lg border border-gray-300 transition";
+  const base = "inline-flex items-center justify-center gap-2 bg-transparent hover:bg-petrol/5 text-petrol font-semibold px-7 py-3.5 rounded-lg border-2 border-petrol/30 hover:border-petrol/60 transition";
   if (to) return <Link to={to} className={`${base} ${className}`}>{children}</Link>;
   return <button onClick={onClick} className={`${base} ${className}`}>{children}</button>;
 };
@@ -74,7 +74,7 @@ export const HeroSection = ({ data }) => {
     cta_secondary_text: data.cta_secondary_text,
     cta_secondary_video_url: data.cta_secondary_video_url,
     image: data.hero_image,
-    gradient: 'from-blue-50 via-white to-purple-50',
+    gradient: 'from-cream via-cream-soft to-cream',
   }];
 
   const slide = slidesEfetivos[slideAtivo] || slidesEfetivos[0];
@@ -85,7 +85,7 @@ export const HeroSection = ({ data }) => {
   return (
     <section id="hero" className="relative overflow-hidden">
       <div
-        className={`relative bg-gradient-to-br ${slide.gradient || 'from-blue-50 via-white to-purple-50'} transition-all duration-700`}
+        className={`relative bg-gradient-to-br ${slide.gradient || 'from-cream via-cream-soft to-cream'} transition-all duration-700`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -102,31 +102,31 @@ export const HeroSection = ({ data }) => {
             <div className="text-center lg:text-left">
               {slide.badge && (
                 <div className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 ${
-                  isDark ? 'bg-white/10 border border-white/20' : 'bg-badge-cream border border-terracotta/20'
+                  isDark ? 'bg-white/15 border border-amber/40' : 'bg-badge-cream border border-amber/40'
                 }`}>
                   <span className={`w-2 h-2 rounded-full animate-pulse ${isDark ? 'bg-amber' : 'bg-coral'}`} />
-                  <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-terracotta'}`}>
+                  <span className={`text-xs font-semibold ${isDark ? 'text-amber' : 'text-terracotta'}`}>
                     {slide.badge}
                   </span>
                 </div>
               )}
 
               {slide.brand_line && (
-                <p className={`text-sm font-bold uppercase tracking-wide mb-3 ${
-                  isDark ? 'text-gold' : 'text-petrol'
+                <p className={`text-sm font-bold uppercase tracking-widest mb-3 ${
+                  isDark ? 'text-gold' : 'text-terracotta'
                 }`}>
                   {slide.brand_line}
                 </p>
               )}
 
               <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 ${
-                isDark ? 'text-white' : 'text-petrol-deep'
+                isDark ? 'text-white' : 'text-petrol'
               }`}>
                 {slide.headline}
               </h1>
 
               <p className={`text-lg md:text-xl leading-relaxed mb-8 ${
-                isDark ? 'text-gray-200' : 'text-ink-soft'
+                isDark ? 'text-gray-200' : 'text-petrol-deep/85'
               }`}>
                 {slide.subheadline}
               </p>
