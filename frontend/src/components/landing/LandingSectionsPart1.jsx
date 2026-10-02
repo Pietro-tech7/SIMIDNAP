@@ -102,10 +102,10 @@ export const HeroSection = ({ data }) => {
             <div className="text-center lg:text-left">
               {slide.badge && (
                 <div className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 ${
-                  isDark ? 'bg-white/10 border border-white/20' : 'bg-white/80 backdrop-blur border border-blue-200'
+                  isDark ? 'bg-white/10 border border-white/20' : 'bg-badge-cream border border-terracotta/20'
                 }`}>
-                  <span className={`w-2 h-2 rounded-full animate-pulse ${isDark ? 'bg-blue-400' : 'bg-blue-600'}`} />
-                  <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-blue-700'}`}>
+                  <span className={`w-2 h-2 rounded-full animate-pulse ${isDark ? 'bg-amber' : 'bg-coral'}`} />
+                  <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-terracotta'}`}>
                     {slide.badge}
                   </span>
                 </div>
@@ -113,20 +113,20 @@ export const HeroSection = ({ data }) => {
 
               {slide.brand_line && (
                 <p className={`text-sm font-bold uppercase tracking-wide mb-3 ${
-                  isDark ? 'text-blue-300' : 'text-blue-700'
+                  isDark ? 'text-gold' : 'text-petrol'
                 }`}>
                   {slide.brand_line}
                 </p>
               )}
 
               <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 ${
-                isDark ? 'text-white' : 'text-gray-900'
+                isDark ? 'text-white' : 'text-petrol-deep'
               }`}>
                 {slide.headline}
               </h1>
 
               <p className={`text-lg md:text-xl leading-relaxed mb-8 ${
-                isDark ? 'text-gray-200' : 'text-gray-700'
+                isDark ? 'text-gray-200' : 'text-ink-soft'
               }`}>
                 {slide.subheadline}
               </p>
@@ -153,12 +153,12 @@ export const HeroSection = ({ data }) => {
               {/* Métricas (só no primeiro slide) */}
               {slideAtivo === 0 && data.metrics?.length > 0 && (
                 <div className={`grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0 pt-6 mt-8 border-t ${
-                  isDark ? 'border-white/20' : 'border-gray-200'
+                  isDark ? 'border-white/20' : 'border-petrol/15'
                 }`}>
                   {data.metrics.map((m, i) => (
                     <div key={i} className="text-center lg:text-left">
-                      <p className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{m.value}</p>
-                      <p className={`text-xs mt-1 leading-snug ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{m.label}</p>
+                      <p className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-petrol-deep'}`}>{m.value}</p>
+                      <p className={`text-xs mt-1 leading-snug ${isDark ? 'text-gray-300' : 'text-ink-soft'}`}>{m.label}</p>
                     </div>
                   ))}
                 </div>
@@ -193,13 +193,13 @@ export const HeroSection = ({ data }) => {
                 return (
                   <div
                     key={i}
-                    className="hidden md:flex absolute bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 items-center gap-3 max-w-[230px] z-10"
+                    className="hidden md:flex absolute bg-cream rounded-xl shadow-lg border border-petrol/15 px-4 py-3 items-center gap-3 max-w-[230px] z-10"
                     style={pos}
                   >
                     <span className="text-2xl flex-shrink-0">{badge.icon}</span>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate">{badge.title}</p>
-                      <p className="text-xs text-gray-600 truncate">{badge.subtitle}</p>
+                      <p className="text-sm font-bold text-petrol-deep truncate">{badge.title}</p>
+                      <p className="text-xs text-ink-soft truncate">{badge.subtitle}</p>
                     </div>
                   </div>
                 );
@@ -217,8 +217,8 @@ export const HeroSection = ({ data }) => {
                   aria-label={`Ir para o slide ${i + 1}`}
                   className={`transition-all rounded-full ${
                     i === slideAtivo
-                      ? `w-10 h-2.5 ${isDark ? 'bg-white' : 'bg-blue-600'}`
-                      : `w-2.5 h-2.5 ${isDark ? 'bg-white/40 hover:bg-white/60' : 'bg-gray-300 hover:bg-gray-400'}`
+                      ? `w-10 h-2.5 bg-amber`
+                      : `w-2.5 h-2.5 ${isDark ? 'bg-white/40 hover:bg-white/60' : 'bg-petrol/25 hover:bg-petrol/40'}`
                   }`}
                 />
               ))}
@@ -233,7 +233,7 @@ export const HeroSection = ({ data }) => {
               onClick={slideAnterior}
               aria-label="Slide anterior"
               className={`hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full shadow-lg items-center justify-center transition z-20 ${
-                isDark ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur' : 'bg-white hover:bg-gray-50 text-gray-800'
+                isDark ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur' : 'bg-cream hover:bg-cream-soft text-petrol-deep'
               }`}
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -244,7 +244,7 @@ export const HeroSection = ({ data }) => {
               onClick={proximoSlide}
               aria-label="Próximo slide"
               className={`hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full shadow-lg items-center justify-center transition z-20 ${
-                isDark ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur' : 'bg-white hover:bg-gray-50 text-gray-800'
+                isDark ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur' : 'bg-cream hover:bg-cream-soft text-petrol-deep'
               }`}
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
