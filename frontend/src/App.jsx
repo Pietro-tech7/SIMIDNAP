@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useTheme } from './hooks/useTheme';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
@@ -136,9 +137,17 @@ function AppRoutes() {
   );
 }
 
+// Componente silencioso: apenas carrega o tema do backend
+// e aplica como CSS variables no <html>. Não renderiza nada.
+function ThemeBootstrap() {
+  useTheme();
+  return null;
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <ThemeBootstrap />
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>

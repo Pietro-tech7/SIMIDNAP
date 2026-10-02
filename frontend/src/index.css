@@ -4,8 +4,42 @@
    TEMA SIMIDNAPE — paleta e tipografia oficiais
    Tokens semânticos reutilizáveis em toda a aplicação
    ============================================================ */
+/* ============================================================
+   TOKENS DINÂMICOS — controlados pelo super admin (Editor de Tema)
+   Estes valores são sobrescritos em runtime pelo hook useTheme.
+   Os defaults abaixo são apenas fallback para SSR / primeiro paint.
+   ============================================================ */
+:root {
+  --theme-primary:        #F59E0B;
+  --theme-accent:         #2C5F7C;
+  --theme-bg-light:       #FDFBF7;
+  --theme-bg-dark:        #1E3A4C;
+  --theme-text-primary:   #1F2937;
+  --theme-text-secondary: #4B5563;
+  --theme-success:        #7FA88D;
+  --theme-warning:        #E07856;
+  --theme-highlight:      #D4A843;
+  --theme-font-heading:   'Quicksand', system-ui, -apple-system, sans-serif;
+  --theme-font-body:      'Inter', system-ui, -apple-system, sans-serif;
+  --theme-font-accent:    'Lora', Georgia, 'Times New Roman', serif;
+}
+
 @theme {
-  /* Paleta SIMIDNAPE */
+  /* Tokens dinâmicos (leem das CSS variables controladas pelo admin) */
+  --color-primary:        var(--theme-primary);
+  --color-accent:         var(--theme-accent);
+  --color-bg-light:       var(--theme-bg-light);
+  --color-bg-dark:        var(--theme-bg-dark);
+  --color-text-primary:   var(--theme-text-primary);
+  --color-text-secondary: var(--theme-text-secondary);
+  --color-success:        var(--theme-success);
+  --color-warning:        var(--theme-warning);
+  --color-highlight:      var(--theme-highlight);
+  --font-heading:         var(--theme-font-heading);
+  --font-body:            var(--theme-font-body);
+  --font-accent:          var(--theme-font-accent);
+
+  /* Paleta SIMIDNAPE (estática — mantida para compatibilidade) */
   --color-cream:        #FDFBF7;   /* fundo claro quente */
   --color-cream-soft:   #F5F1EA;   /* fundo claro levemente mais escuro */
   --color-petrol:       #2C5F7C;   /* azul-sereno, cor do nome na logo */
