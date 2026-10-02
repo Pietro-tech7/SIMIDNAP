@@ -211,7 +211,25 @@ const AdminLanding = () => {
           </button>
 
           <div className="border-t border-slate-200 mt-3 pt-3">
-            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1">Global</p>
+            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1">Página</p>
+            <button onClick={() => setSecaoAtiva('_header')}
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
+                secaoAtiva === '_header'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}>
+              <span>🎯</span><span>Header (topo)</span>
+            </button>
+            <button onClick={() => setSecaoAtiva('_error_page')}
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left mt-0.5 ${
+                secaoAtiva === '_error_page'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}>
+              <span>⚠️</span><span>Página de Erro</span>
+            </button>
+
+            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1 mt-3">Global</p>
             <button onClick={() => setSecaoAtiva('_global')}
               className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
                 secaoAtiva === '_global'
@@ -244,10 +262,12 @@ const AdminLanding = () => {
 
         {/* ============= EDITOR ============= */}
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+          {secaoAtiva === '_header' && <EditorHeader config={config} setConfig={setConfig} salvando={salvando} />}
+          {secaoAtiva === '_error_page' && <EditorErrorPage config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva === '_global' && <EditorGlobal config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva === '_popup' && <EditorPopup config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva === '_sistema' && <EditorSistema />}
-          {secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
+          {secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
             <EditorSecao secao={secaoAtiva} data={config[secaoAtiva] || {}}
               onChange={updateField} onSave={salvarSecao} salvando={salvando} />
           )}
@@ -1153,8 +1173,135 @@ const EditorPopup = ({ config, setConfig, salvando }) => {
 };
 
 // ============================================================
-// EDITOR SISTEMA — Configurações globais (switch de imagens IA etc.)
+// EDITOR HEADER — Logo, nav e botões do topo
 // ============================================================
+const EditorHeader = ({ config, setConfig, salvando }) => {
+  const header = config.header || {};
+  const update = (field, value) => setConfig(prev => ({ ...prev, header: { ...prev.header, [field]: value } }));
+  const salvar = async () => {
+    try {
+      const res = await api.put('/landing/admin/config', { header: config.header });
+      setConfig(res.data.config);
+    } catch {}
+  };
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+        <span className="text-3xl">🎯</span>
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Header (topo da página)</h2>
+          <p className="text-xs text-slate-500">Logo, menu de navegação e botões de login/cadastro. Aparece no topo de todas as visitas.</p>
+        </div>
+      </div>
+
+      <Input label="Texto do logo" value={header.logo_text}
+        onChange={(v) => update('logo_text', v)}
+        placeholder="SIMIDNAPE PRO"
+        help="Aparece no canto esquerdo do topo." />
+
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">Menu de navegação</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Item 1" value={header.nav_motors_label}
+          onChange={(v) => update('nav_motors_label', v)}
+          placeholder="Motores de IA"
+          help="Vai para a seção Solução." />
+        <Input label="Item 2" value={header.nav_how_label}
+          onChange={(v) => update('nav_how_label', v)}
+          placeholder="Como funciona"
+          help="Vai para a seção Como Funciona." />
+        <Input label="Item 3" value={header.nav_comparison_label}
+          onChange={(v) => update('nav_comparison_label', v)}
+          placeholder="Comparativo"
+          help="Vai para a seção Comparativo." />
+        <Input label="Item 4" value={header.nav_plans_label}
+          onChange={(v) => update('nav_plans_label', v)}
+          placeholder="Planos"
+          help="Vai para a seção Planos." />
+        <Input label="Item 5" value={header.nav_faq_label}
+          onChange={(v) => update('nav_faq_label', v)}
+          placeholder="FAQ"
+          help="Vai para a seção Perguntas Frequentes." />
+      </div>
+
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">Botões</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Texto do botão Entrar" value={header.login_text}
+          onChange={(v) => update('login_text', v)}
+          placeholder="Entrar" />
+        <Input label="Texto do botão Cadastro" value={header.register_text}
+          onChange={(v) => update('register_text', v)}
+          placeholder="Criar conta grátis" />
+      </div>
+
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
+        <button onClick={salvar} disabled={salvando}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
+          {salvando ? 'Salvando...' : '💾 Salvar header'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// EDITOR PÁGINA DE ERRO — textos de fallback quando backend cai
+// ============================================================
+const EditorErrorPage = ({ config, setConfig, salvando }) => {
+  const page = config.error_page || {};
+  const update = (field, value) => setConfig(prev => ({ ...prev, error_page: { ...prev.error_page, [field]: value } }));
+  const salvar = async () => {
+    try {
+      const res = await api.put('/landing/admin/config', { error_page: config.error_page });
+      setConfig(res.data.config);
+    } catch {}
+  };
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+        <span className="text-3xl">⚠️</span>
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Página de Erro</h2>
+          <p className="text-xs text-slate-500">Textos que aparecem quando o backend está fora do ar ou a config não carrega. Raramente visíveis, mas importantes.</p>
+        </div>
+      </div>
+
+      <Input label="Texto de carregamento" value={page.loading_text}
+        onChange={(v) => update('loading_text', v)}
+        placeholder="Carregando..."
+        help="Aparece enquanto a página está buscando a configuração." />
+
+      <Input label="Título" value={page.title}
+        onChange={(v) => update('title', v)}
+        placeholder="SIMIDNAPE PRO"
+        help="Aparece centralizado quando a página não carrega." />
+
+      <Textarea label="Subtítulo" value={page.subtitle}
+        onChange={(v) => update('subtitle', v)} rows={2}
+        help="Uma linha abaixo do título explicando o que é o sistema." />
+
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Texto do botão Cadastro" value={page.register_text}
+          onChange={(v) => update('register_text', v)}
+          placeholder="Criar conta grátis" />
+        <Input label="Texto do botão Login" value={page.login_text}
+          onChange={(v) => update('login_text', v)}
+          placeholder="Já tenho conta" />
+      </div>
+
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
+        <button onClick={salvar} disabled={salvando}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
+          {salvando ? 'Salvando...' : '💾 Salvar página de erro'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const EditorSistema = () => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
