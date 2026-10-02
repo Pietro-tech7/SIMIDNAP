@@ -161,9 +161,26 @@ const LandingPage = () => {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {config?.header?.logo_text || 'SIMIDNAPE PRO'}
+          <Link to="/" className="flex flex-col items-start leading-none">
+            <div className="inline-flex items-end pt-3">
+              {'SIMIDNAPE'.split('').map((letra, i) => (
+                <span
+                  key={i}
+                  className="relative font-display text-2xl md:text-3xl font-bold text-petrol tracking-tight"
+                >
+                  {letra === 'I' && (
+                    <span
+                      className={`absolute -top-2.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
+                        i === 1 ? 'bg-coral' : 'bg-gold'
+                      }`}
+                    />
+                  )}
+                  {letra}
+                </span>
+              ))}
+            </div>
+            <span className="font-serif italic text-[10px] md:text-xs text-ink-soft mt-1 tracking-wide">
+              O Professor Inesquecível
             </span>
           </Link>
 
