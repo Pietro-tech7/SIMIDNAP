@@ -211,7 +211,17 @@ const AdminLanding = () => {
           </button>
 
           <div className="border-t border-slate-200 mt-3 pt-3">
-            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1">Página</p>
+            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1">Aparência</p>
+            <button onClick={() => setSecaoAtiva('_theme')}
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
+                secaoAtiva === '_theme'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}>
+              <span>🎨</span><span>Tema (Cores e Fontes)</span>
+            </button>
+
+            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1 mt-3">Página</p>
             <button onClick={() => setSecaoAtiva('_header')}
               className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
                 secaoAtiva === '_header'
@@ -262,12 +272,13 @@ const AdminLanding = () => {
 
         {/* ============= EDITOR ============= */}
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+          {secaoAtiva === '_theme' && <EditorTheme />}
           {secaoAtiva === '_header' && <EditorHeader config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva === '_error_page' && <EditorErrorPage config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva === '_global' && <EditorGlobal config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva === '_popup' && <EditorPopup config={config} setConfig={setConfig} salvando={salvando} />}
           {secaoAtiva === '_sistema' && <EditorSistema />}
-          {secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
+          {secaoAtiva !== '_theme' && secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
             <EditorSecao secao={secaoAtiva} data={config[secaoAtiva] || {}}
               onChange={updateField} onSave={salvarSecao} salvando={salvando} />
           )}
@@ -1338,6 +1349,185 @@ const EditorErrorPage = ({ config, setConfig, salvando }) => {
         <button onClick={salvar} disabled={salvando}
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
           {salvando ? 'Salvando...' : '💾 Salvar página de erro'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// EDITOR TEMA — cores e fontes de toda a plataforma
+// ============================================================
+const FONT_OPTIONS = [
+  'Quicksand', 'Inter', 'Lora', 'JetBrains Mono',
+  'Poppins', 'Playfair Display', 'Nunito', 'Merriweather',
+  'Montserrat', 'Open Sans', 'Roboto', 'Raleway',
+];
+
+const COLOR_FIELDS = [
+  { key: 'primary',        label: 'Cor Primária',         help: 'Botões principais e CTAs.' },
+  { key: 'accent',         label: 'Cor de Destaque',      help: 'Badges, kickers e destaques secundários.' },
+  { key: 'bg_light',       label: 'Fundo Claro',          help: 'Fundo das seções claras.' },
+  { key: 'bg_dark',        label: 'Fundo Escuro',         help: 'Fundo das seções escuras.' },
+  { key: 'text_primary',   label: 'Texto Principal',      help: 'Títulos e corpo de texto.' },
+  { key: 'text_secondary', label: 'Texto Secundário',     help: 'Legendas, subtítulos, textos auxiliares.' },
+  { key: 'success',        label: 'Sucesso (Verde)',      help: 'Checkmarks, reforço positivo.' },
+  { key: 'warning',        label: 'Atenção (Alerta)',     help: 'Cards "Antes", avisos.' },
+  { key: 'highlight',      label: 'Realce (Ouro)',        help: 'Selos, medalhas, destaques dourados.' },
+];
+
+const FONT_FIELDS = [
+  { key: 'font_heading', label: 'Fonte dos Títulos',  help: 'Aplicada em H1, H2 e H3.' },
+  { key: 'font_body',    label: 'Fonte do Corpo',     help: 'Aplicada no texto geral.' },
+  { key: 'font_accent',  label: 'Fonte de Destaque',  help: 'Slogans, citações e badges.' },
+];
+
+const EditorTheme = () => {
+  const [theme, setTheme] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  useEffect(() => {
+    api.get('/theme/admin/config')
+      .then(res => setTheme(res.data?.config || null))
+      .catch(() => setMsg({ tipo: 'erro', texto: 'Erro ao carregar tema.' }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const updateColor = (key, value) => {
+    setTheme(prev => ({ ...prev, colors: { ...prev.colors, [key]: value } }));
+  };
+  const updateFont = (key, value) => {
+    setTheme(prev => ({ ...prev, fonts: { ...prev.fonts, [key]: value } }));
+  };
+
+  const salvar = async () => {
+    setSalvando(true);
+    setMsg(null);
+    try {
+      const res = await api.put('/theme/admin/config', theme);
+      setTheme(res.data.config);
+      window.dispatchEvent(new CustomEvent('theme-updated'));
+      setMsg({ tipo: 'sucesso', texto: 'Tema salvo! Recarregue a landing para ver as mudanças.' });
+      setTimeout(() => setMsg(null), 4000);
+    } catch {
+      setMsg({ tipo: 'erro', texto: 'Erro ao salvar tema.' });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const resetar = async () => {
+    if (!window.confirm('Tem certeza? Vai reverter todas as cores e fontes para o padrão.')) return;
+    if (!window.confirm('Última confirmação: resetar tema?')) return;
+    setSalvando(true);
+    try {
+      const res = await api.post('/theme/admin/config/reset', {});
+      setTheme(res.data.config);
+      window.dispatchEvent(new CustomEvent('theme-updated'));
+      setMsg({ tipo: 'sucesso', texto: 'Tema resetado para o padrão.' });
+      setTimeout(() => setMsg(null), 4000);
+    } catch {
+      setMsg({ tipo: 'erro', texto: 'Erro ao resetar tema.' });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center text-slate-500">Carregando tema...</div>;
+  if (!theme) return <div className="p-8 text-center text-red-500">Erro: tema não carregado.</div>;
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+        <span className="text-3xl">🎨</span>
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Tema da Plataforma</h2>
+          <p className="text-xs text-slate-500">
+            Cores e fontes que se aplicam a toda a plataforma (landing page + painel do usuário).
+          </p>
+        </div>
+      </div>
+
+      {msg && (
+        <div className={`rounded-lg p-3 mb-6 text-sm ${
+          msg.tipo === 'sucesso'
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {msg.tipo === 'sucesso' ? '✅' : '⚠️'} {msg.texto}
+        </div>
+      )}
+
+      {/* ======================== CORES ======================== */}
+      <div className="mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-1">Paleta de Cores</p>
+        <p className="text-xs text-slate-400 mb-4">Clique no quadrado colorido para escolher, ou digite o código hex ao lado.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {COLOR_FIELDS.map(field => (
+          <div key={field.key} className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <input
+              type="color"
+              value={theme.colors?.[field.key] || '#000000'}
+              onChange={e => updateColor(field.key, e.target.value)}
+              className="w-12 h-12 rounded-lg cursor-pointer border border-slate-300 flex-shrink-0"
+              title={field.label}
+            />
+            <div className="flex-1 min-w-0">
+              <label className="block text-xs font-semibold text-slate-700 mb-0.5">{field.label}</label>
+              <p className="text-[10px] text-slate-500 leading-tight mb-1">{field.help}</p>
+              <input
+                type="text"
+                value={theme.colors?.[field.key] || ''}
+                onChange={e => updateColor(field.key, e.target.value)}
+                className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="#000000"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ======================== FONTES ======================== */}
+      <div className="mt-8 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-1">Fontes</p>
+        <p className="text-xs text-slate-400 mb-4">Escolha a família tipográfica para cada uso.</p>
+      </div>
+
+      <div className="space-y-4">
+        {FONT_FIELDS.map(field => (
+          <div key={field.key}>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">{field.label}</label>
+            <p className="text-xs text-slate-500 mb-1.5">{field.help}</p>
+            <select
+              value={theme.fonts?.[field.key] || ''}
+              onChange={e => updateFont(field.key, e.target.value)}
+              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {FONT_OPTIONS.map(f => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 leading-relaxed">
+        ℹ️ <strong>Nota:</strong> por enquanto, apenas <strong>Quicksand</strong>, <strong>Inter</strong>, <strong>Lora</strong> e <strong>JetBrains Mono</strong> estão carregadas no site. Se você escolher outra fonte, ela só aparecerá depois que adicionarmos as fontes extras (próximo bloco, T1d).
+      </div>
+
+      {/* ======================== AÇÕES ======================== */}
+      <div className="mt-8 pt-4 border-t border-slate-200 flex flex-wrap justify-between gap-2">
+        <button onClick={resetar} disabled={salvando}
+          className="bg-white hover:bg-red-50 text-red-600 font-medium px-4 py-2.5 rounded-lg text-sm border border-red-200 disabled:opacity-50 transition">
+          🔄 Resetar tema
+        </button>
+        <button onClick={salvar} disabled={salvando}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm transition">
+          {salvando ? 'Salvando...' : '💾 Salvar tema'}
         </button>
       </div>
     </div>
