@@ -202,32 +202,32 @@ const LandingPage = () => {
             </button>
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
             <Link
               to="/login"
-              className="text-gray-700 hover:text-blue-600 font-medium px-4 py-2 transition text-sm"
+              className="text-gray-700 hover:text-blue-600 font-medium px-2 md:px-4 py-2 transition text-xs sm:text-sm whitespace-nowrap"
             >
               {config?.header?.login_text || 'Entrar'}
             </Link>
             <Link
               to="/register"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-5 py-2.5 rounded-lg transition shadow-sm text-sm"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-3 md:px-5 py-2 md:py-2.5 rounded-lg transition shadow-sm text-xs sm:text-sm whitespace-nowrap"
             >
-              {config?.header?.register_text || 'Criar conta grátis'}
+              <span className="hidden sm:inline">{config?.header?.register_text || 'Criar conta grátis'}</span>
+              <span className="sm:hidden">Cadastrar</span>
             </Link>
+            <button
+              onClick={() => setMenuAberto(!menuAberto)}
+              className="lg:hidden text-gray-700 text-2xl ml-1"
+            >
+              ☰
+            </button>
           </div>
-
-          <button
-            onClick={() => setMenuAberto(!menuAberto)}
-            className="md:hidden text-gray-700 text-2xl"
-          >
-            ☰
-          </button>
         </div>
 
         {/* Menu mobile */}
         {menuAberto && (
-          <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3 shadow-lg">
+          <div className="lg:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3 shadow-lg">
             <button onClick={() => scrollTo('solution')} className="block w-full text-left text-gray-700 font-medium py-2">
               {config?.header?.nav_motors_label || 'Motores de IA'}
             </button>
