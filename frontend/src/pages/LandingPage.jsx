@@ -156,8 +156,10 @@ const LandingPage = () => {
     <div className="min-h-screen bg-white font-sans">
       {/* ===================== HEADER ===================== */}
       <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-          scrolled ? 'bg-white/95 shadow-md backdrop-blur-sm' : 'bg-white/80 backdrop-blur-sm'
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 border-b ${
+          scrolled
+            ? 'bg-cream/95 border-petrol/10 shadow-sm backdrop-blur-sm'
+            : 'bg-cream/80 border-transparent backdrop-blur-sm'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
@@ -185,19 +187,19 @@ const LandingPage = () => {
           </Link>
 
           <nav className="hidden lg:flex items-center gap-7">
-            <button onClick={() => scrollTo('solution')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
+            <button onClick={() => scrollTo('solution')} className="text-ink hover:text-petrol font-medium transition text-sm">
               {config?.header?.nav_motors_label || 'Motores de IA'}
             </button>
-            <button onClick={() => scrollTo('how_it_works')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
+            <button onClick={() => scrollTo('how_it_works')} className="text-ink hover:text-petrol font-medium transition text-sm">
               {config?.header?.nav_how_label || 'Como funciona'}
             </button>
-            <button onClick={() => scrollTo('comparison')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
+            <button onClick={() => scrollTo('comparison')} className="text-ink hover:text-petrol font-medium transition text-sm">
               {config?.header?.nav_comparison_label || 'Comparativo'}
             </button>
-            <button onClick={() => scrollTo('plans')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
+            <button onClick={() => scrollTo('plans')} className="text-ink hover:text-petrol font-medium transition text-sm">
               {config?.header?.nav_plans_label || 'Planos'}
             </button>
-            <button onClick={() => scrollTo('faq')} className="text-gray-700 hover:text-blue-600 font-medium transition text-sm">
+            <button onClick={() => scrollTo('faq')} className="text-ink hover:text-petrol font-medium transition text-sm">
               {config?.header?.nav_faq_label || 'FAQ'}
             </button>
           </nav>
@@ -205,20 +207,20 @@ const LandingPage = () => {
           <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
             <Link
               to="/login"
-              className="text-gray-700 hover:text-blue-600 font-medium px-2 md:px-4 py-2 transition text-xs sm:text-sm whitespace-nowrap"
+              className="text-ink hover:text-petrol font-medium px-2 md:px-4 py-2 transition text-xs sm:text-sm whitespace-nowrap"
             >
               {config?.header?.login_text || 'Entrar'}
             </Link>
             <Link
               to="/register"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-3 md:px-5 py-2 md:py-2.5 rounded-lg transition shadow-sm text-xs sm:text-sm whitespace-nowrap"
+              className="bg-amber hover:bg-amber/90 text-white font-semibold px-3 md:px-5 py-2 md:py-2.5 rounded-lg transition shadow-sm text-xs sm:text-sm whitespace-nowrap"
             >
               <span className="hidden sm:inline">{config?.header?.register_text || 'Criar conta grátis'}</span>
               <span className="sm:hidden">Cadastrar</span>
             </Link>
             <button
               onClick={() => setMenuAberto(!menuAberto)}
-              className="lg:hidden text-gray-700 text-2xl ml-1"
+              className="lg:hidden text-ink text-2xl ml-1"
             >
               ☰
             </button>
@@ -227,29 +229,29 @@ const LandingPage = () => {
 
         {/* Menu mobile */}
         {menuAberto && (
-          <div className="lg:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3 shadow-lg">
-            <button onClick={() => scrollTo('solution')} className="block w-full text-left text-gray-700 font-medium py-2">
+          <div className="lg:hidden bg-cream border-t border-petrol/10 px-4 py-4 space-y-3 shadow-lg">
+            <button onClick={() => scrollTo('solution')} className="block w-full text-left text-ink hover:text-petrol font-medium py-2">
               {config?.header?.nav_motors_label || 'Motores de IA'}
             </button>
-            <button onClick={() => scrollTo('how_it_works')} className="block w-full text-left text-gray-700 font-medium py-2">
+            <button onClick={() => scrollTo('how_it_works')} className="block w-full text-left text-ink hover:text-petrol font-medium py-2">
               {config?.header?.nav_how_label || 'Como funciona'}
             </button>
-            <button onClick={() => scrollTo('comparison')} className="block w-full text-left text-gray-700 font-medium py-2">
+            <button onClick={() => scrollTo('comparison')} className="block w-full text-left text-ink hover:text-petrol font-medium py-2">
               {config?.header?.nav_comparison_label || 'Comparativo'}
             </button>
-            <button onClick={() => scrollTo('plans')} className="block w-full text-left text-gray-700 font-medium py-2">
+            <button onClick={() => scrollTo('plans')} className="block w-full text-left text-ink hover:text-petrol font-medium py-2">
               {config?.header?.nav_plans_label || 'Planos'}
             </button>
-            <button onClick={() => scrollTo('faq')} className="block w-full text-left text-gray-700 font-medium py-2">
+            <button onClick={() => scrollTo('faq')} className="block w-full text-left text-ink hover:text-petrol font-medium py-2">
               {config?.header?.nav_faq_label || 'FAQ'}
             </button>
-            <div className="pt-3 border-t border-gray-100 space-y-2">
-              <Link to="/login" className="block text-center text-gray-700 font-medium py-2">
+            <div className="pt-3 border-t border-petrol/10 space-y-2">
+              <Link to="/login" className="block text-center text-ink hover:text-petrol font-medium py-2">
                 {config?.header?.login_text || 'Entrar'}
               </Link>
               <Link
                 to="/register"
-                className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2.5 rounded-lg"
+                className="block text-center bg-amber hover:bg-amber/90 text-white font-semibold py-2.5 rounded-lg transition"
               >
                 {config?.header?.register_text || 'Criar conta grátis'}
               </Link>
