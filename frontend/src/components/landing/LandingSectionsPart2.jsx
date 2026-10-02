@@ -32,8 +32,8 @@ export const MetricsSection = ({ data }) => {
             <source src={data.background_video_url} />
           </video>
           <div
-            className="absolute inset-0 bg-gray-900"
-            style={{ opacity: overlay }}
+            className="absolute inset-0"
+            style={{ backgroundColor: 'var(--theme-bg-dark)', opacity: overlay }}
           />
         </div>
       ) : data.background_image ? (
@@ -45,23 +45,23 @@ export const MetricsSection = ({ data }) => {
             className="w-full h-full object-cover"
           />
           <div
-            className="absolute inset-0 bg-gray-900"
-            style={{ opacity: overlay }}
+            className="absolute inset-0"
+            style={{ backgroundColor: 'var(--theme-bg-dark)', opacity: overlay }}
           />
         </div>
       ) : (
         /* Fallback: fundo sólido */
-        <div className="absolute inset-0 bg-gray-900 z-0" />
+        <div className="absolute inset-0 z-0" style={{ backgroundColor: 'var(--theme-bg-dark)' }} />
       )}
 
       {/* Conteúdo */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-6">
         <div className="text-center mb-14">
-          <h2 className="text-2xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 font-heading">
             {data.title}
           </h2>
           {data.subtitle && (
-            <p className="text-base md:text-lg text-gray-300 max-w-2xl mx-auto">
+            <p className="text-base md:text-lg max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.75)' }}>
               {data.subtitle}
             </p>
           )}
@@ -70,10 +70,10 @@ export const MetricsSection = ({ data }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
           {data.metrics.map((m, i) => (
             <div key={i} className="text-center">
-              <p className="text-4xl md:text-6xl font-bold text-white mb-3 leading-none">
+              <p className="text-4xl md:text-6xl font-bold text-white mb-3 leading-none font-heading">
                 {m.value}
               </p>
-              <p className="text-sm md:text-base text-gray-300 leading-snug">
+              <p className="text-sm md:text-base leading-snug" style={{ color: 'rgba(255,255,255,0.75)' }}>
                 {m.label}
               </p>
             </div>
@@ -95,15 +95,26 @@ export const TestimonialsSection = ({ data }) => {
   // Placeholder: sem nada
   if (!temDestaque && !temTestemunhos) {
     return (
-      <section id="testimonials" className="py-20 md:py-28 bg-gray-50">
+      <section id="testimonials" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
         <div className="max-w-6xl mx-auto px-4 md:px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
-            {data.subtitle && <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>}
+            <h2
+              className="text-3xl md:text-4xl font-bold mb-4 font-heading"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >{data.title}</h2>
+            {data.subtitle && (
+              <p
+                className="text-lg max-w-2xl mx-auto"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >{data.subtitle}</p>
+            )}
           </div>
-          <div className="text-center bg-white border-2 border-dashed border-gray-200 rounded-2xl p-12 max-w-2xl mx-auto">
+          <div
+            className="text-center border-2 border-dashed rounded-2xl p-12 max-w-2xl mx-auto"
+            style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 25%, transparent)' }}
+          >
             <p className="text-5xl mb-3">💬</p>
-            <p className="text-gray-500">
+            <p style={{ color: 'var(--theme-text-secondary)' }}>
               {data.empty_message || 'Em breve: depoimentos de professores que estão usando o SIMIDNAPE PRO.'}
             </p>
           </div>
@@ -115,20 +126,34 @@ export const TestimonialsSection = ({ data }) => {
   // Com destaque (foto + vídeo)
   if (temDestaque) {
     return (
-      <section id="testimonials" className="py-20 md:py-28 bg-gray-50">
+      <section id="testimonials" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
         <div className="max-w-6xl mx-auto px-4 md:px-6">
           <div className="text-center mb-14">
-            <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-3">
+            <p
+              className="text-xs font-bold uppercase tracking-wider mb-3"
+              style={{ color: 'var(--theme-accent)' }}
+            >
               {data.kicker || 'Depoimentos'}
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
-            {data.subtitle && <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>}
+            <h2
+              className="text-3xl md:text-4xl font-bold mb-4 font-heading"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >{data.title}</h2>
+            {data.subtitle && (
+              <p
+                className="text-lg max-w-2xl mx-auto"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >{data.subtitle}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
             {/* Foto */}
             <div className="lg:col-span-2">
-              <div className="relative rounded-2xl overflow-hidden shadow-lg aspect-[3/4] bg-gray-200">
+              <div
+                className="relative rounded-2xl overflow-hidden shadow-lg aspect-[3/4]"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--theme-accent) 10%, white)' }}
+              >
                 {data.image ? (
                   <>
                     <img src={data.image} alt="Depoimento destaque" className="w-full h-full object-cover" />
@@ -140,7 +165,7 @@ export const TestimonialsSection = ({ data }) => {
                         className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition"
                       >
                         <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-2xl">
-                          <svg className="w-10 h-10 text-blue-600 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-10 h-10 ml-1" style={{ color: 'var(--theme-primary)' }} fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z" />
                           </svg>
                         </div>
@@ -148,7 +173,7 @@ export const TestimonialsSection = ({ data }) => {
                     )}
                   </>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                  <div className="w-full h-full flex flex-col items-center justify-center" style={{ color: 'var(--theme-text-secondary)' }}>
                     <span className="text-8xl mb-3">🎤</span>
                     <span className="text-sm font-medium">{data.image_placeholder || 'Foto do depoimento'}</span>
                   </div>
@@ -157,22 +182,34 @@ export const TestimonialsSection = ({ data }) => {
             </div>
 
             {/* Quote */}
-            <div className="lg:col-span-3 bg-white rounded-2xl p-8 md:p-10 border border-gray-200 shadow-sm">
+            <div
+              className="lg:col-span-3 bg-white rounded-2xl p-8 md:p-10 border shadow-sm"
+              style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}
+            >
               {data.testimonials?.[0] ? (
                 <>
-                  <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-4">
+                  <p
+                    className="text-xs font-bold uppercase tracking-wider mb-4"
+                    style={{ color: 'var(--theme-accent)' }}
+                  >
                     {data.testimonials[0].school || 'Depoimento'}
                   </p>
-                  <blockquote className="text-xl md:text-2xl text-gray-900 leading-relaxed mb-6">
+                  <blockquote
+                    className="text-xl md:text-2xl leading-relaxed mb-6 font-accent italic"
+                    style={{ color: 'var(--theme-text-primary)' }}
+                  >
                     "{data.testimonials[0].text}"
                   </blockquote>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                    <div
+                      className="w-12 h-12 rounded-full text-white flex items-center justify-center font-bold"
+                      style={{ backgroundColor: 'var(--theme-primary)' }}
+                    >
                       {data.testimonials[0].name?.charAt(0) || '?'}
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{data.testimonials[0].name}</p>
-                      <p className="text-sm text-gray-600">{data.testimonials[0].school}</p>
+                      <p className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>{data.testimonials[0].name}</p>
+                      <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>{data.testimonials[0].school}</p>
                     </div>
                   </div>
                   {data.video_url && (
@@ -180,7 +217,8 @@ export const TestimonialsSection = ({ data }) => {
                       href={data.video_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-lg transition"
+                      className="inline-flex items-center gap-2 text-white font-semibold px-5 py-3 rounded-lg transition hover:opacity-90"
+                      style={{ backgroundColor: 'var(--theme-primary)' }}
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />
@@ -192,7 +230,7 @@ export const TestimonialsSection = ({ data }) => {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-5xl mb-3">💬</p>
-                  <p className="text-gray-500">Depoimento em breve.</p>
+                  <p style={{ color: 'var(--theme-text-secondary)' }}>Depoimento em breve.</p>
                 </div>
               )}
             </div>
@@ -202,17 +240,24 @@ export const TestimonialsSection = ({ data }) => {
           {data.testimonials?.length > 1 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
               {data.testimonials.slice(1).map((t, i) => (
-                <div key={i} className="bg-white rounded-2xl p-6 border border-gray-200">
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-6 border"
+                  style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}
+                >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                    <div
+                      className="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold text-sm"
+                      style={{ backgroundColor: 'var(--theme-primary)' }}
+                    >
                       {t.name?.charAt(0) || '?'}
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
-                      <p className="text-xs text-gray-500">{t.school}</p>
+                      <p className="font-semibold text-sm" style={{ color: 'var(--theme-text-primary)' }}>{t.name}</p>
+                      <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>{t.school}</p>
                     </div>
                   </div>
-                  <p className="text-gray-700 text-sm leading-relaxed italic">"{t.text}"</p>
+                  <p className="text-sm leading-relaxed italic" style={{ color: 'var(--theme-text-secondary)' }}>"{t.text}"</p>
                 </div>
               ))}
             </div>
@@ -224,25 +269,40 @@ export const TestimonialsSection = ({ data }) => {
 
   // Só depoimentos em cards
   return (
-    <section id="testimonials" className="py-20 md:py-28 bg-gray-50">
+    <section id="testimonials" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
-          {data.subtitle && <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>}
+          <h2
+            className="text-3xl md:text-4xl font-bold mb-4 font-heading"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >{data.title}</h2>
+          {data.subtitle && (
+            <p
+              className="text-lg max-w-2xl mx-auto"
+              style={{ color: 'var(--theme-text-secondary)' }}
+            >{data.subtitle}</p>
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {data.testimonials.map((t, i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 border border-gray-200">
+            <div
+              key={i}
+              className="bg-white rounded-2xl p-6 border"
+              style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}
+            >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                <div
+                  className="w-12 h-12 rounded-full text-white flex items-center justify-center font-bold"
+                  style={{ backgroundColor: 'var(--theme-primary)' }}
+                >
                   {t.name?.charAt(0) || '?'}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
-                  <p className="text-xs text-gray-500">{t.school}</p>
+                  <p className="font-semibold text-sm" style={{ color: 'var(--theme-text-primary)' }}>{t.name}</p>
+                  <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>{t.school}</p>
                 </div>
               </div>
-              <p className="text-gray-700 text-sm leading-relaxed italic">"{t.text}"</p>
+              <p className="text-sm leading-relaxed italic" style={{ color: 'var(--theme-text-secondary)' }}>"{t.text}"</p>
             </div>
           ))}
         </div>
@@ -257,44 +317,69 @@ export const TestimonialsSection = ({ data }) => {
 // ============================================================
 export const ComparisonSection = ({ data }) => {
   return (
-    <section id="comparison" className="py-20 md:py-28 bg-white">
+    <section id="comparison" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       <div className="max-w-5xl mx-auto px-4 md:px-6">
         <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
+          <h2
+            className="text-3xl md:text-4xl font-bold mb-4 font-heading"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >{data.title}</h2>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div
+          className="overflow-hidden rounded-2xl border bg-white shadow-sm"
+          style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}
+        >
           <div className="overflow-x-auto">
             <table className="min-w-full">
-              <thead className="bg-gray-50">
+              <thead style={{ backgroundColor: 'color-mix(in srgb, var(--theme-accent) 6%, white)' }}>
                 <tr>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                  <th
+                    className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-semibold uppercase tracking-wide"
+                    style={{ color: 'var(--theme-text-secondary)' }}
+                  >
                     {data.feature_column_label || 'Recurso'}
                   </th>
                   {data.columns?.map((col, i) => (
                     <th
                       key={i}
-                      className={`px-4 md:px-6 py-4 text-center text-xs md:text-sm font-bold uppercase tracking-wide ${
-                        i === 0 ? 'text-blue-700 bg-blue-50' : 'text-gray-500'
-                      }`}
+                      className="px-4 md:px-6 py-4 text-center text-xs md:text-sm font-bold uppercase tracking-wide"
+                      style={
+                        i === 0
+                          ? {
+                              color: 'var(--theme-accent)',
+                              backgroundColor: 'color-mix(in srgb, var(--theme-accent) 12%, white)',
+                            }
+                          : { color: 'var(--theme-text-secondary)' }
+                      }
                     >
                       {col}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {data.rows?.map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50 transition">
-                    <td className="px-4 md:px-6 py-4 text-sm text-gray-900 font-medium">
+                  <tr
+                    key={i}
+                    className="transition"
+                    style={{ borderTop: '1px solid color-mix(in srgb, var(--theme-accent) 10%, transparent)' }}
+                  >
+                    <td
+                      className="px-4 md:px-6 py-4 text-sm font-medium"
+                      style={{ color: 'var(--theme-text-primary)' }}
+                    >
                       {row.feature}
                     </td>
                     {row.values?.map((val, j) => (
                       <td
                         key={j}
-                        className={`px-4 md:px-6 py-4 text-center text-lg ${
-                          j === 0 ? 'bg-blue-50/50' : ''
-                        }`}
+                        className="px-4 md:px-6 py-4 text-center text-lg"
+                        style={
+                          j === 0
+                            ? { backgroundColor: 'color-mix(in srgb, var(--theme-accent) 6%, transparent)' }
+                            : {}
+                        }
                       >
                         {val}
                       </td>
