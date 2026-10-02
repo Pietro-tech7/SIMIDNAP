@@ -1,5 +1,31 @@
 @import "tailwindcss";
 
+/* ============================================================
+   TEMA SIMIDNAPE — paleta e tipografia oficiais
+   Tokens semânticos reutilizáveis em toda a aplicação
+   ============================================================ */
+@theme {
+  /* Paleta SIMIDNAPE */
+  --color-cream:        #FDFBF7;   /* fundo claro quente */
+  --color-cream-soft:   #F5F1EA;   /* fundo claro levemente mais escuro */
+  --color-petrol:       #2C5F7C;   /* azul-sereno, cor do nome na logo */
+  --color-petrol-deep:  #1E3A4C;   /* azul-petróleo profundo para fundos escuros */
+  --color-sage:         #7FA88D;   /* verde-suave de reforço positivo */
+  --color-coral:        #E07856;   /* coral, bolinha da logo e alertas suaves */
+  --color-gold:         #D4A843;   /* ouro, bolinha da logo e destaques */
+  --color-amber:        #F59E0B;   /* laranja âmbar dos CTAs principais */
+  --color-terracotta:   #B45309;   /* terracota para textos de badge */
+  --color-badge-cream:  #FEF3C7;   /* fundo de badge suave (estilo Ensinei) */
+  --color-ink:          #1F2937;   /* texto principal */
+  --color-ink-soft:     #4B5563;   /* texto secundário */
+
+  /* Fontes SIMIDNAPE */
+  --font-display: 'Quicksand', system-ui, -apple-system, sans-serif;
+  --font-serif:   'Lora', Georgia, 'Times New Roman', serif;
+  --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   margin: 0;
