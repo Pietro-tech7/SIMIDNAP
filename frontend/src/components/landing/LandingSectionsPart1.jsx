@@ -18,8 +18,15 @@ const ButtonSecondary = ({ children, to, onClick, className = '' }) => {
   return <button onClick={onClick} className={`${base} ${className}`} style={style}>{children}</button>;
 };
 
-const Check = ({ className = 'text-blue-600' }) => (
-  <svg className={`w-5 h-5 ${className} flex-shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+const Check = ({ className = '' }) => (
+  <svg
+    className={`w-5 h-5 flex-shrink-0 ${className}`}
+    style={{ color: 'var(--theme-success)' }}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth="3"
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
   </svg>
 );
@@ -547,18 +554,29 @@ export const BeforeAfterSection = ({ data }) => {
 // ============================================================
 export const SolutionSection = ({ data }) => {
   return (
-    <section id="solution" className="py-20 md:py-28 bg-gray-50">
+    <section id="solution" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-5 leading-tight">
+          <h2
+            className="text-3xl md:text-5xl font-bold mb-5 leading-tight font-heading"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >
             {data.title}
           </h2>
-          {data.subtitle && <p className="text-lg text-gray-600 leading-relaxed">{data.subtitle}</p>}
+          {data.subtitle && (
+            <p
+              className="text-lg leading-relaxed"
+              style={{ color: 'var(--theme-text-secondary)' }}
+            >{data.subtitle}</p>
+          )}
         </div>
 
         {data.image && (
           <div className="max-w-4xl mx-auto mb-14">
-            <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200">
+            <div
+              className="rounded-2xl overflow-hidden shadow-lg border"
+              style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}
+            >
               <img src={data.image} alt="Interface do SIMIDNAPE PRO" className="w-full h-auto" />
             </div>
           </div>
@@ -570,19 +588,29 @@ export const SolutionSection = ({ data }) => {
             return (
               <div
                 key={i}
-                className="bg-white border border-gray-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition flex flex-col"
+                className="rounded-2xl p-6 transition hover:shadow-lg flex flex-col bg-white border"
+                style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}
               >
                 <div className={`inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br ${motor.gradient || 'from-blue-500 to-indigo-500'} text-3xl mb-4 shadow-sm`}>
                   {motor.icon}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{motor.name}</h3>
-                <p className="text-sm text-gray-700 leading-relaxed mb-5">{motor.description}</p>
+                <h3
+                  className="text-xl font-bold mb-2 font-heading"
+                  style={{ color: 'var(--theme-text-primary)' }}
+                >{motor.name}</h3>
+                <p
+                  className="text-sm leading-relaxed mb-5"
+                  style={{ color: 'var(--theme-text-secondary)' }}
+                >{motor.description}</p>
 
                 {features.length > 0 && (
-                  <ul className="space-y-2 border-t border-gray-100 pt-5 mt-auto">
+                  <ul
+                    className="space-y-2 border-t pt-5 mt-auto"
+                    style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)' }}
+                  >
                     {features.map((feature, j) => (
-                      <li key={j} className="flex items-start gap-2 text-sm text-gray-700">
-                        <Check className="text-blue-600 w-4 h-4 mt-0.5" />
+                      <li key={j} className="flex items-start gap-2 text-sm" style={{ color: 'var(--theme-text-secondary)' }}>
+                        <Check className="w-4 h-4 mt-0.5 flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -603,17 +631,20 @@ export const SolutionSection = ({ data }) => {
 // ============================================================
 export const FounderSection = ({ data }) => {
   return (
-    <section id="founder" className="py-20 md:py-28 bg-gray-900">
+    <section id="founder" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-dark)' }}>
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-start">
           {/* Foto + Stats */}
           <div className="lg:col-span-2">
             <div className="relative">
-              <div className="rounded-2xl overflow-hidden shadow-2xl aspect-[4/5] bg-gray-800">
+              <div
+                className="rounded-2xl overflow-hidden shadow-2xl aspect-[4/5]"
+                style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+              >
                 {data.photo ? (
                   <img src={data.photo} alt={data.name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                  <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
                     <span className="text-9xl font-bold text-white">
                       {data.name?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'DC'}
                     </span>
@@ -627,8 +658,8 @@ export const FounderSection = ({ data }) => {
               <div className="grid grid-cols-3 gap-4 mt-8">
                 {data.highlight_stats.map((s, i) => (
                   <div key={i} className="text-center">
-                    <p className="text-2xl md:text-3xl font-bold text-white">{s.value}</p>
-                    <p className="text-xs text-gray-400 mt-1 leading-snug">{s.label}</p>
+                    <p className="text-2xl md:text-3xl font-bold text-white font-heading">{s.value}</p>
+                    <p className="text-xs mt-1 leading-snug" style={{ color: 'rgba(255,255,255,0.6)' }}>{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -637,22 +668,30 @@ export const FounderSection = ({ data }) => {
 
           {/* Bio + Quote + Brand */}
           <div className="lg:col-span-3">
-            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">
+            <p
+              className="text-xs font-bold uppercase tracking-wider mb-3"
+              style={{ color: 'var(--theme-highlight)' }}
+            >
               {data.title || 'Uma palavra do criador'}
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
+            <h2
+              className="text-3xl md:text-4xl font-bold text-white mb-2 font-heading"
+            >
               {data.name}
             </h2>
-            <p className="text-gray-400 mb-8">{data.subtitle}</p>
+            <p className="mb-8" style={{ color: 'rgba(255,255,255,0.65)' }}>{data.subtitle}</p>
 
             {data.quote && (
-              <blockquote className="border-l-4 border-blue-500 pl-5 mb-8 italic text-xl md:text-2xl text-gray-100 leading-relaxed">
+              <blockquote
+                className="pl-5 mb-8 italic text-xl md:text-2xl leading-relaxed border-l-4"
+                style={{ borderColor: 'var(--theme-primary)', color: 'rgba(255,255,255,0.95)' }}
+              >
                 "{data.quote}"
               </blockquote>
             )}
 
             {data.bio && (
-              <div className="text-gray-300 leading-relaxed space-y-4">
+              <div className="leading-relaxed space-y-4" style={{ color: 'rgba(255,255,255,0.75)' }}>
                 {data.bio.split('\n\n').map((paragrafo, i) => (
                   <p key={i}>{paragrafo}</p>
                 ))}
@@ -661,8 +700,11 @@ export const FounderSection = ({ data }) => {
 
             {/* Bloco do significado */}
             {data.brand_explanation && (
-              <div className="mt-8 bg-blue-600 rounded-xl p-6">
-                <p className="text-xs font-bold text-blue-100 uppercase tracking-wider mb-2">
+              <div
+                className="mt-8 rounded-xl p-6"
+                style={{ backgroundColor: 'var(--theme-primary)' }}
+              >
+                <p className="text-xs font-bold uppercase tracking-wider mb-2 text-white/80">
                   O que significa SIMIDNAPE?
                 </p>
                 <p className="text-white leading-relaxed">
@@ -691,14 +733,16 @@ export const VideoSection = ({ data }) => {
   if (!data.video_url) return null;
 
   return (
-    <section id="video" className="py-20 md:py-28 bg-black">
+    <section id="video" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-dark)' }}>
       <div className="max-w-5xl mx-auto px-4 md:px-6">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{data.title}</h2>
-          {data.subtitle && <p className="text-lg text-gray-400">{data.subtitle}</p>}
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-heading">{data.title}</h2>
+          {data.subtitle && (
+            <p className="text-lg" style={{ color: 'rgba(255,255,255,0.65)' }}>{data.subtitle}</p>
+          )}
         </div>
 
-        <div className="aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl">
           <VideoEmbed url={data.video_url} />
         </div>
       </div>
@@ -712,23 +756,37 @@ export const VideoSection = ({ data }) => {
 // ============================================================
 export const HowItWorksSection = ({ data }) => {
   return (
-    <section id="how_it_works" className="py-20 md:py-28 bg-white">
+    <section id="how_it_works" className="py-20 md:py-28" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-5 leading-tight">
+          <h2
+            className="text-3xl md:text-5xl font-bold mb-5 leading-tight font-heading"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >
             {data.title}
           </h2>
-          {data.subtitle && <p className="text-lg text-gray-600">{data.subtitle}</p>}
+          {data.subtitle && (
+            <p className="text-lg" style={{ color: 'var(--theme-text-secondary)' }}>{data.subtitle}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {data.steps?.map((step, i) => (
             <div key={i} className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 text-white text-2xl font-bold mb-5">
+              <div
+                className="inline-flex items-center justify-center w-16 h-16 rounded-full text-2xl font-bold mb-5 font-heading text-white"
+                style={{ backgroundColor: 'var(--theme-primary)' }}
+              >
                 {step.number}
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
-              <p className="text-gray-600 leading-relaxed">{step.description}</p>
+              <h3
+                className="text-xl font-bold mb-3 font-heading"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >{step.title}</h3>
+              <p
+                className="leading-relaxed"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >{step.description}</p>
             </div>
           ))}
         </div>
