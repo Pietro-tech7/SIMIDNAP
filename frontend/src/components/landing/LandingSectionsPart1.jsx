@@ -176,7 +176,7 @@ export const HeroSection = ({ data }) => {
                   <div className="w-full h-full flex flex-col items-center justify-center">
                     <span className="text-8xl mb-4">👩‍🏫</span>
                     <span className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Foto do slide
+                      {data.image_placeholder || 'Foto do slide'}
                     </span>
                   </div>
                 )}
