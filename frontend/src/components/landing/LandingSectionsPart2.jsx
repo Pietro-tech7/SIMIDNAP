@@ -104,7 +104,7 @@ export const TestimonialsSection = ({ data }) => {
           <div className="text-center bg-white border-2 border-dashed border-gray-200 rounded-2xl p-12 max-w-2xl mx-auto">
             <p className="text-5xl mb-3">💬</p>
             <p className="text-gray-500">
-              Em breve: depoimentos de professores que estão usando o SIMIDNAPE PRO.
+              {data.empty_message || 'Em breve: depoimentos de professores que estão usando o SIMIDNAPE PRO.'}
             </p>
           </div>
         </div>
@@ -119,7 +119,7 @@ export const TestimonialsSection = ({ data }) => {
         <div className="max-w-6xl mx-auto px-4 md:px-6">
           <div className="text-center mb-14">
             <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-3">
-              Depoimentos
+              {data.kicker || 'Depoimentos'}
             </p>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{data.title}</h2>
             {data.subtitle && <p className="text-lg text-gray-600 max-w-2xl mx-auto">{data.subtitle}</p>}
@@ -150,7 +150,7 @@ export const TestimonialsSection = ({ data }) => {
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
                     <span className="text-8xl mb-3">🎤</span>
-                    <span className="text-sm font-medium">Foto do depoimento</span>
+                    <span className="text-sm font-medium">{data.image_placeholder || 'Foto do depoimento'}</span>
                   </div>
                 )}
               </div>
@@ -269,7 +269,7 @@ export const ComparisonSection = ({ data }) => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                    Recurso
+                    {data.feature_column_label || 'Recurso'}
                   </th>
                   {data.columns?.map((col, i) => (
                     <th
@@ -715,7 +715,7 @@ export const FAQSection = ({ data }) => {
           {/* Coluna esquerda */}
           <div className="lg:col-span-2">
             <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-3">
-              Perguntas frequentes
+              {data.kicker || 'Perguntas frequentes'}
             </p>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
               {data.title}
@@ -723,8 +723,8 @@ export const FAQSection = ({ data }) => {
             {data.subtitle && (
               <p className="text-lg text-gray-600 mb-6">
                 {data.subtitle}{' '}
-                <a href="mailto:contato@simidnape.com.br" className="text-blue-700 hover:underline font-semibold">
-                  Entre em contato conosco.
+                <a href={`mailto:${data.contact_email || 'contato@simidnape.com.br'}`} className="text-blue-700 hover:underline font-semibold">
+                  {data.contact_text || 'Entre em contato conosco.'}
                 </a>
               </p>
             )}
@@ -737,7 +737,7 @@ export const FAQSection = ({ data }) => {
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
                     <span className="text-8xl mb-3">👩‍🏫</span>
-                    <span className="text-sm font-medium">Foto da professora</span>
+                    <span className="text-sm font-medium">{data.image_placeholder || 'Foto da professora'}</span>
                   </div>
                 )}
               </div>
