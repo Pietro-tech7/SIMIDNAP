@@ -4,7 +4,80 @@ import api from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { gerarPdfPlanejamento } from '../utils/gerarPdfPlanejamento';
 
-// Lista de UFs do Brasil (para o campo de estado no cabeçalho)
+// ============================================================
+// HELPERS — extração robusta (NUNCA retorna [object Object])
+// ============================================================
+function stringificar(valor) {
+  if (valor === null || valor === undefined) return '';
+  if (typeof valor === 'string') return valor;
+  if (typeof valor === 'number' || typeof valor === 'boolean') return String(valor);
+  if (Array.isArray(valor)) {
+    return valor.map(v => stringificar(v)).filter(Boolean).join(' · ');
+  }
+  if (typeof valor === 'object') {
+    if ('texto' in valor) return valor.texto || '';
+    if ('nome' in valor) return valor.nome || '';
+    if ('codigo' in valor) return valor.codigo || '';
+    return '';
+  }
+  return String(valor);
+}
+
+function separarHabilidade(valor) {
+  const str = stringificar(valor).trim();
+  if (!str) return { codigo: '', texto: '' };
+  const match = str.match(/^([A-Z]{2}\d{2}[A-Z]{2}\d{2,3}|EI\d{2}[A-Z]{2}\d{2}|EM\d{2}[A-Z]{3}\d{3})\s*[—–-]\s*(.+)$/i);
+  if (match) {
+    return { codigo: match[1].trim(), texto: match[2].trim() };
+  }
+  if (str.includes(' — ')) {
+    const [codigo, ...resto] = str.split(' — ');
+    return { codigo: codigo.trim(), texto: resto.join(' — ').trim() };
+  }
+  if (str.includes(' - ')) {
+    const [codigo, ...resto] = str.split(' - ');
+    return { codigo: codigo.trim(), texto: resto.join(' - ').trim() };
+  }
+  return { codigo: str, texto: '' };
+}
+
+function separarRecurso(valor) {
+  const str = stringificar(valor).trim();
+  if (!str) return { nome: '', uso: '' };
+  if (str.includes(' — ')) {
+    const [nome, ...resto] = str.split(' — ');
+    return { nome: nome.trim(), uso: resto.join(' — ').trim() };
+  }
+  if (str.includes(' - ')) {
+    const [nome, ...resto] = str.split(' - ');
+    return { nome: nome.trim(), uso: resto.join(' - ').trim() };
+  }
+  return { nome: str, uso: '' };
+}
+
+function normalizarMetodologia(metodologia, duracaoTotal) {
+  if (metodologia && typeof metodologia === 'object' && !Array.isArray(metodologia)) {
+    return {
+      introducao: metodologia.introducao || null,
+      desenvolvimento: metodologia.desenvolvimento || null,
+      fechamento: metodologia.fechamento || null,
+    };
+  }
+  if (typeof metodologia === 'string' && metodologia.trim()) {
+    return {
+      introducao: null,
+      desenvolvimento: {
+        duracao_minutos: duracaoTotal || 0,
+        estrategia: '',
+        passos: [metodologia],
+      },
+      fechamento: null,
+    };
+  }
+  return { introducao: null, desenvolvimento: null, fechamento: null };
+}
+
+// Lista de UFs do Brasil
 const UFS = [
   ['AC', 'Acre'], ['AL', 'Alagoas'], ['AP', 'Amapá'], ['AM', 'Amazonas'],
   ['BA', 'Bahia'], ['CE', 'Ceará'], ['DF', 'Distrito Federal'], ['ES', 'Espírito Santo'],
@@ -47,12 +120,55 @@ const PERIODOS_EI = [
   { value: 'mes', label: '1 mês' },
 ];
 
+// ============================================================
+// POPUP DE VALIDAÇÃO — modal centralizado
+// ============================================================
+const PopupValidacao = ({ mensagem, onFechar }) => {
+  useEffect(() => {
+    const timer = setTimeout(onFechar, 8000);
+    return () => clearTimeout(timer);
+  }, [onFechar]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      onClick={onFechar}
+    >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border-l-4 border-red-500"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-bold text-gray-900 mb-1">
+              Falta preencher
+            </h3>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {mensagem}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={onFechar}
+          className="mt-5 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg transition"
+        >
+          Entendi
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// MAIN — PLANEJADOR MODO PLANEJAMENTO
+// ============================================================
 const PlanejadorModoPlanejamento = () => {
   const { user } = useAuth();
 
-  // ============================================================
-  // ESTADO — Identificação (D9-REBUILD-3b: cabeçalho completo)
-  // ============================================================
   const [nomeProfessor, setNomeProfessor] = useState(user?.full_name || '');
   const [nomeEscola, setNomeEscola] = useState('');
   const [municipio, setMunicipio] = useState('');
@@ -62,15 +178,11 @@ const PlanejadorModoPlanejamento = () => {
   const [ano, setAno] = useState(5);
   const [componente, setComponente] = useState('');
 
-  // ============================================================
-  // ESTADO — Privacidade na Comunidade (D12d-automática)
-  // ============================================================
   const [mostrarNome, setMostrarNome] = useState(true);
   const [mostrarEscola, setMostrarEscola] = useState(true);
   const [mostrarMunicipio, setMostrarMunicipio] = useState(true);
   const [mostrarTitulo, setMostrarTitulo] = useState(true);
 
-  // Preenche nome do professor quando o usuário carrega (pode chegar depois)
   useEffect(() => {
     if (user?.full_name && !nomeProfessor) {
       setNomeProfessor(user.full_name);
@@ -78,14 +190,8 @@ const PlanejadorModoPlanejamento = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // ============================================================
-  // ESTADO — Referenciais
-  // ============================================================
   const [referenciais, setReferenciais] = useState(['bncc']);
 
-  // ============================================================
-  // ESTADO — Cascata
-  // ============================================================
   const [componentes, setComponentes] = useState([]);
   const [unidadesTematicas, setUnidadesTematicas] = useState([]);
   const [objetosPorUnidade, setObjetosPorUnidade] = useState({});
@@ -105,40 +211,28 @@ const PlanejadorModoPlanejamento = () => {
     },
   ]);
 
-  // ============================================================
-  // ESTADO — Período
-  // ============================================================
   const [periodoTipo, setPeriodoTipo] = useState('semana');
   const [tempoAula, setTempoAula] = useState(50);
   const [aulasPorSemana, setAulasPorSemana] = useState(5);
   const [totalAulas, setTotalAulas] = useState(5);
   const [totalEditadoManualmente, setTotalEditadoManualmente] = useState(false);
 
-  // ============================================================
-  // ESTADO — Perfil da turma (absorvido do Aula que Funciona)
-  // ============================================================
   const [numAlunos, setNumAlunos] = useState(25);
   const [conhecimentosPrevios, setConhecimentosPrevios] = useState('');
   const [dificuldades, setDificuldades] = useState('');
   const [diferenciado, setDiferenciado] = useState(false);
 
-  // ============================================================
-  // ESTADO — Geração
-  // ============================================================
   const [gerando, setGerando] = useState(false);
   const [progressoLote, setProgressoLote] = useState(null);
-  const [erro, setErro] = useState('');
+  const [popupErro, setPopupErro] = useState(null);
   const [sucesso, setSucesso] = useState('');
   const [resultado, setResultado] = useState(null);
 
-  // ============================================================
-  // ESTADO — Rascunho
-  // ============================================================
   const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
   const [rascunhoSalvo, setRascunhoSalvo] = useState(false);
 
   // ============================================================
-  // RASCUNHO — Carregar na montagem
+  // RASCUNHO
   // ============================================================
   useEffect(() => {
     try {
@@ -185,9 +279,6 @@ const PlanejadorModoPlanejamento = () => {
     setRascunhoCarregado(true);
   }, []);
 
-  // ============================================================
-  // RASCUNHO — Salvar automaticamente
-  // ============================================================
   useEffect(() => {
     if (!rascunhoCarregado) return;
     try {
@@ -215,9 +306,7 @@ const PlanejadorModoPlanejamento = () => {
     mostrarNome, mostrarEscola, mostrarMunicipio, mostrarTitulo,
   ]);
 
-  // ============================================================
-  // CÁLCULO AUTOMÁTICO DO TOTAL DE AULAS
-  // ============================================================
+  // CÁLCULO AUTOMÁTICO
   useEffect(() => {
     if (totalEditadoManualmente) return;
     let total = 0;
@@ -228,18 +317,14 @@ const PlanejadorModoPlanejamento = () => {
     setTotalAulas(total);
   }, [periodoTipo, aulasPorSemana, totalEditadoManualmente]);
 
-  // ============================================================
-  // CARREGAR COMPONENTES (depende da etapa)
-  // ============================================================
+  // CARREGAR COMPONENTES
   useEffect(() => {
     api.get(`/bncc/componentes?etapa=${etapa}`)
       .then(res => setComponentes(res.data || []))
       .catch(() => setComponentes([]));
   }, [etapa]);
 
-  // ============================================================
-  // CARREGAR UNIDADES TEMÁTICAS (depende de componente, etapa, ano)
-  // ============================================================
+  // CARREGAR UNIDADES
   useEffect(() => {
     if (!componente) { setUnidadesTematicas([]); return; }
     const params = { componente, etapa };
@@ -249,9 +334,7 @@ const PlanejadorModoPlanejamento = () => {
       .catch(() => setUnidadesTematicas([]));
   }, [componente, ano, etapa]);
 
-  // ============================================================
-  // CARREGAR HABILIDADES DISPONÍVEIS
-  // ============================================================
+  // CARREGAR HABILIDADES
   useEffect(() => {
     if (!componente) { setHabilidadesDisponiveis([]); return; }
     const params = { componente, etapa };
@@ -261,9 +344,6 @@ const PlanejadorModoPlanejamento = () => {
       .catch(() => setHabilidadesDisponiveis([]));
   }, [componente, ano, etapa]);
 
-  // ============================================================
-  // INVALIDAR CACHE quando componente/ano/etapa mudam
-  // ============================================================
   useEffect(() => {
     setObjetosPorUnidade({});
     setUnidadesTematicas([]);
@@ -281,9 +361,6 @@ const PlanejadorModoPlanejamento = () => {
     }
   };
 
-  // ============================================================
-  // MANIPULAÇÃO DE HABILIDADES
-  // ============================================================
   const adicionarHabilidade = () => {
     setHabilidades(prev => [...prev, {
       unidade_tematica: '', objeto_conhecimento: '', codigo: '', texto: '',
@@ -293,7 +370,7 @@ const PlanejadorModoPlanejamento = () => {
   };
 
   const removerHabilidade = (index) => {
-    if (habilidades.length === 1) { alert('Mantenha ao menos 1 habilidade.'); return; }
+    if (habilidades.length === 1) { setPopupErro('Mantenha ao menos 1 habilidade.'); return; }
     setHabilidades(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -301,7 +378,6 @@ const PlanejadorModoPlanejamento = () => {
     setHabilidades(prev => prev.map((h, i) => {
       if (i !== index) return h;
       const nova = { ...h, [campo]: valor };
-
       if (campo === 'unidade_tematica') {
         nova.objeto_conhecimento = '';
         nova.codigo = '';
@@ -368,16 +444,16 @@ const PlanejadorModoPlanejamento = () => {
   };
 
   // ============================================================
-  // GERAR PLANEJAMENTO
+  // GERAR PLANEJAMENTO (validação com POPUP)
   // ============================================================
   const gerar = async () => {
-    setErro(''); setSucesso(''); setResultado(null);
+    setPopupErro(null); setSucesso(''); setResultado(null);
 
-    if (!titulo.trim()) { setErro('Dê um título ao planejamento.'); return; }
-    if (!componente) { setErro('Escolha o componente.'); return; }
-    if (!totalAulas || totalAulas < 1) { setErro('O total de aulas precisa ser pelo menos 1.'); return; }
+    if (!titulo.trim()) { setPopupErro('Dê um título ao planejamento.'); return; }
+    if (!componente) { setPopupErro('Escolha o componente curricular.'); return; }
+    if (!totalAulas || totalAulas < 1) { setPopupErro('O total de aulas precisa ser pelo menos 1.'); return; }
     for (let i = 0; i < habilidades.length; i++) {
-      if (!habilidades[i].codigo) { setErro(`Habilidade ${i + 1}: selecione um código.`); return; }
+      if (!habilidades[i].codigo) { setPopupErro(`Habilidade ${i + 1}: selecione um código.`); return; }
     }
 
     const habPayload = habilidades.map(h => ({
@@ -392,8 +468,6 @@ const PlanejadorModoPlanejamento = () => {
       }))),
     }));
 
-    // Descritores detalhados (código + texto + tema + fonte) — para a IA
-    // preencher o texto exato no plano.
     const descritoresDetalhados = [];
     const vistos = new Set();
     habilidades.forEach(h => {
@@ -472,7 +546,6 @@ const PlanejadorModoPlanejamento = () => {
       let batchStart = 1;
       while (batchStart <= total) {
         const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, total);
-
         const res = await api.post('/lesson-plans/generate-batch', {
           ...payloadBase,
           batch_start: batchStart,
@@ -484,33 +557,22 @@ const PlanejadorModoPlanejamento = () => {
         if (!acumulado.cabecalho && sd.cabecalho) acumulado.cabecalho = sd.cabecalho;
         if (!acumulado.logica_pedagogica && sd.logica_pedagogica) acumulado.logica_pedagogica = sd.logica_pedagogica;
         if ((!acumulado.eixos_predominantes || acumulado.eixos_predominantes.length === 0)
-            && sd.eixos_predominantes?.length) {
-          acumulado.eixos_predominantes = sd.eixos_predominantes;
-        }
+            && sd.eixos_predominantes?.length) acumulado.eixos_predominantes = sd.eixos_predominantes;
         if ((!acumulado.descritores_trabalhados || acumulado.descritores_trabalhados.length === 0)
-            && sd.descritores_trabalhados?.length) {
-          acumulado.descritores_trabalhados = sd.descritores_trabalhados;
-        }
+            && sd.descritores_trabalhados?.length) acumulado.descritores_trabalhados = sd.descritores_trabalhados;
         if (!acumulado.objetivos_gerais && sd.objetivos_gerais) acumulado.objetivos_gerais = sd.objetivos_gerais;
         if ((!acumulado.objetivos_especificos || acumulado.objetivos_especificos.length === 0)
-            && sd.objetivos_especificos?.length) {
-          acumulado.objetivos_especificos = sd.objetivos_especificos;
-        }
+            && sd.objetivos_especificos?.length) acumulado.objetivos_especificos = sd.objetivos_especificos;
         if ((!acumulado.habilidades || acumulado.habilidades.length === 0) && sd.habilidades?.length) {
           acumulado.habilidades = sd.habilidades;
         }
         if (!acumulado.justificativa && sd.justificativa) acumulado.justificativa = sd.justificativa;
-        if (sd.sequencia_didatica?.length) {
-          acumulado.sequencia_didatica.push(...sd.sequencia_didatica);
-        }
-        if ((!acumulado.avaliacao_geral || !acumulado.avaliacao_geral.instrumentos)
-            && sd.avaliacao_geral) {
+        if (sd.sequencia_didatica?.length) acumulado.sequencia_didatica.push(...sd.sequencia_didatica);
+        if ((!acumulado.avaliacao_geral || !acumulado.avaliacao_geral.instrumentos) && sd.avaliacao_geral) {
           acumulado.avaliacao_geral = sd.avaliacao_geral;
         }
         if ((!acumulado.adaptacoes_inclusivas || acumulado.adaptacoes_inclusivas.length === 0)
-            && sd.adaptacoes_inclusivas?.length) {
-          acumulado.adaptacoes_inclusivas = sd.adaptacoes_inclusivas;
-        }
+            && sd.adaptacoes_inclusivas?.length) acumulado.adaptacoes_inclusivas = sd.adaptacoes_inclusivas;
         if (!acumulado.consideracoes_finais && sd.consideracoes_finais) {
           acumulado.consideracoes_finais = sd.consideracoes_finais;
         }
@@ -551,8 +613,8 @@ const PlanejadorModoPlanejamento = () => {
       setSucesso(`Planejamento gerado com ${acumulado.sequencia_didatica.length} aula(s).`);
       window.dispatchEvent(new CustomEvent('subscription-updated'));
     } catch (err) {
-      if (err?.response?.status === 402) setErro('Créditos insuficientes. Faça upgrade do seu plano.');
-      else setErro(err?.response?.data?.detail || 'Erro ao gerar o planejamento. Tente novamente.');
+      if (err?.response?.status === 402) setPopupErro('Créditos insuficientes. Faça upgrade do seu plano.');
+      else setPopupErro(err?.response?.data?.detail || 'Erro ao gerar o planejamento. Tente novamente.');
     } finally {
       setGerando(false);
       setProgressoLote(null);
@@ -575,13 +637,15 @@ const PlanejadorModoPlanejamento = () => {
     setTotalAulas(5); setTotalEditadoManualmente(false);
     setNumAlunos(25); setConhecimentosPrevios(''); setDificuldades(''); setDiferenciado(false);
     setMostrarNome(true); setMostrarEscola(true); setMostrarMunicipio(true); setMostrarTitulo(true);
-    setResultado(null); setErro(''); setSucesso('');
+    setResultado(null); setPopupErro(null); setSucesso('');
   };
 
   const periodosDisponiveis = etapa === 'EI' ? PERIODOS_EI : PERIODOS_EF_EM;
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto">
+      {popupErro && <PopupValidacao mensagem={popupErro} onFechar={() => setPopupErro(null)} />}
+
       <Link to="/planejador" className="text-blue-600 text-sm hover:underline">
         ← Voltar ao Planejador
       </Link>
@@ -620,7 +684,6 @@ const PlanejadorModoPlanejamento = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">📋 Passo 1 — Identificação</h2>
 
-        {/* Cabeçalho: dados do professor e da escola (D9-REBUILD-3b) */}
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
           <p className="text-xs font-semibold text-blue-900 mb-3">
             🎓 Quem está planejando — esses dados aparecem no cabeçalho do plano
@@ -680,7 +743,6 @@ const PlanejadorModoPlanejamento = () => {
           />
         </div>
 
-        {/* Privacidade na Comunidade */}
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
           <div className="flex items-start gap-2 mb-3">
             <span className="text-lg">🌐</span>
@@ -812,7 +874,7 @@ const PlanejadorModoPlanejamento = () => {
         </div>
       </div>
 
-      {/* PASSO 2 — PERÍODO E TEMPO (sem datas) */}
+      {/* PASSO 2 — PERÍODO E TEMPO */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">📅 Passo 2 — Período e tempo</h2>
 
@@ -1192,7 +1254,6 @@ const PlanejadorModoPlanejamento = () => {
         </div>
       </div>
 
-      {erro && <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-6 text-sm">⚠️ {erro}</div>}
       {sucesso && <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 mb-6 text-sm">✅ {sucesso}</div>}
 
       {/* RESULTADO */}
@@ -1202,7 +1263,7 @@ const PlanejadorModoPlanejamento = () => {
 };
 
 // ============================================================
-// RESULTADO — exibição completa do novo schema
+// RESULTADO
 // ============================================================
 const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }) => {
   const sd = resultado.structured_data || {};
@@ -1223,7 +1284,6 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
 
   return (
     <div className="space-y-5">
-      {/* BOTÃO PDF (topo) */}
       <div className="flex justify-end">
         <button
           onClick={baixarPdf}
@@ -1234,9 +1294,7 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
         </button>
       </div>
 
-      {/* CABEÇALHO */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-5 text-white">
-        {/* Marca SIMIDNAPE */}
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2 border-b border-blue-400/40 pb-3">
           <div>
             <p className="text-xs uppercase tracking-widest text-blue-200 font-bold">
@@ -1244,29 +1302,17 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
             </p>
             <p className="text-[10px] text-blue-100">O Professor Inesquecível</p>
           </div>
-          <p className="text-[10px] text-blue-200 font-mono">
-            simidnape.com.br
-          </p>
+          <p className="text-[10px] text-blue-200 font-mono">simidnape.com.br</p>
         </div>
 
-        {/* Título do plano */}
         <h2 className="text-xl font-bold">📘 {cab.titulo || tituloFallback}</h2>
 
-        {/* Cabeçalho institucional — quem está planejando */}
         {(cab.nome_professor || cab.nome_escola || cab.municipio) && (
           <div className="mt-2 mb-3 text-xs text-blue-100">
-            {cab.nome_professor && (
-              <span><strong className="text-white">Professor(a):</strong> {cab.nome_professor}</span>
-            )}
-            {cab.nome_escola && (
-              <span> · <strong className="text-white">Escola:</strong> {cab.nome_escola}</span>
-            )}
-            {cab.municipio && (
-              <span> · <strong className="text-white">Município:</strong> {cab.municipio}</span>
-            )}
-            {cab.estado && (
-              <span> - {cab.estado}</span>
-            )}
+            {cab.nome_professor && <span><strong className="text-white">Professor(a):</strong> {cab.nome_professor}</span>}
+            {cab.nome_escola && <span> · <strong className="text-white">Escola:</strong> {cab.nome_escola}</span>}
+            {cab.municipio && <span> · <strong className="text-white">Município:</strong> {cab.municipio}</span>}
+            {cab.estado && <span> - {cab.estado}</span>}
           </div>
         )}
 
@@ -1290,7 +1336,6 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
         </div>
       </div>
 
-      {/* LÓGICA PEDAGÓGICA */}
       {sd.logica_pedagogica && (
         <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-5">
           <h3 className="font-semibold text-purple-900 mb-2">🎼 Lógica pedagógica do período</h3>
@@ -1298,7 +1343,6 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
         </div>
       )}
 
-      {/* EIXOS + DESCRITORES */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {sd.eixos_predominantes?.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-100 p-5">
@@ -1345,7 +1389,6 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
         )}
       </div>
 
-      {/* OBJETIVOS */}
       {sd.objetivos_gerais && (
         <div className="bg-white rounded-xl border border-gray-100 p-5">
           <h3 className="font-semibold text-gray-800 mb-2">🎯 Objetivos gerais</h3>
@@ -1362,7 +1405,6 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
         </div>
       )}
 
-      {/* JUSTIFICATIVA */}
       {sd.justificativa && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
           <h3 className="font-semibold text-blue-900 mb-2">💡 Justificativa</h3>
@@ -1370,7 +1412,6 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
         </div>
       )}
 
-      {/* SEQUÊNCIA DIDÁTICA */}
       {sd.sequencia_didatica?.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 p-5">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -1384,7 +1425,6 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
         </div>
       )}
 
-      {/* AVALIAÇÃO GERAL */}
       {sd.avaliacao_geral && (
         <div className="bg-white rounded-xl border border-gray-100 p-5">
           <h3 className="font-semibold text-gray-800 mb-3">📊 Avaliação geral do período</h3>
@@ -1413,7 +1453,6 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
         </div>
       )}
 
-      {/* ADAPTAÇÕES INCLUSIVAS */}
       {sd.adaptacoes_inclusivas?.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
           <h3 className="font-semibold text-blue-900 mb-3">🧩 Adaptações inclusivas</h3>
@@ -1432,7 +1471,6 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
         </div>
       )}
 
-      {/* CONSIDERAÇÕES FINAIS */}
       {sd.consideracoes_finais && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
           <h3 className="font-semibold text-amber-900 mb-2">📌 Considerações finais</h3>
@@ -1444,14 +1482,30 @@ const ResultadoPlanejamento = ({ resultado, tituloFallback, totalAulasFallback }
 };
 
 // ============================================================
-// CARD DE AULA — exibe cada aula com todos os campos novos
+// CARD DE AULA — 8 SEÇÕES (com extração robusta)
 // ============================================================
 const AulaCard = ({ aula, index, sd }) => {
   const [expandido, setExpandido] = useState(false);
 
+  // Extrações seguras
+  const habilidadeSeparada = separarHabilidade(aula.habilidade_foco);
+  const foco = stringificar(aula.foco);
+  const recursos = (aula.recursos || []).map(separarRecurso).filter(r => r.nome);
+  const metodo = normalizarMetodologia(aula.metodologia, aula.duracao_minutos);
+
+  const descritoresDaAula = (aula.descritores || []).map(codigoOriginal => {
+    let chave = String(codigoOriginal || '').trim();
+    if (chave.includes(':')) chave = chave.split(':').pop();
+    chave = chave.toUpperCase().trim();
+    const detalhe = (sd.descritores_detalhados || []).find(d =>
+      String(d.codigo || '').trim().toUpperCase() === chave
+    );
+    return detalhe || { codigo: chave, texto: '', fonte: '' };
+  });
+
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden">
-      {/* Header */}
+      {/* HEADER */}
       <button
         type="button"
         onClick={() => setExpandido(!expandido)}
@@ -1463,12 +1517,17 @@ const AulaCard = ({ aula, index, sd }) => {
               {aula.semana ? `Semana ${aula.semana} · ` : ''}
               Aula {aula.numero_aula || index + 1}
             </p>
-            <p className="font-semibold truncate">{aula.titulo}</p>
+            <p className="font-semibold truncate">{stringificar(aula.titulo)}</p>
+            {aula.tema && (
+              <p className="text-[11px] text-blue-200 italic truncate mt-0.5">
+                Tema: {stringificar(aula.tema)}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {aula.principio_cognitivo && (
               <span className="text-[10px] bg-white/30 text-white px-2 py-0.5 rounded font-semibold border border-white/40">
-                🧠 {aula.principio_cognitivo}
+                🧠 {stringificar(aula.principio_cognitivo)}
               </span>
             )}
             {aula.duracao_minutos && (
@@ -1481,172 +1540,291 @@ const AulaCard = ({ aula, index, sd }) => {
         </div>
       </button>
 
-      {/* Body */}
+      {/* BODY — 8 seções */}
       {expandido && (
-        <div className="p-4 space-y-3 text-sm bg-white">
-          {/* PERGUNTA PROBLEMATIZADORA — Freire */}
-          {aula.pergunta_problematizadora && (
-            <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg p-3">
-              <p className="text-xs font-bold text-yellow-900 uppercase mb-1">
-                ❓ Pergunta problematizadora
+        <div className="p-4 space-y-4 text-sm bg-white">
+
+          {/* SEÇÃO 2 — HABILIDADES E DESCRITORES */}
+          {(habilidadeSeparada.codigo || descritoresDaAula.length > 0) && (
+            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-3">
+              <p className="text-xs font-bold text-blue-900 uppercase mb-2">
+                🎯 Habilidades e descritores desta aula
               </p>
-              <p className="text-yellow-900 font-semibold italic leading-relaxed">
-                "{aula.pergunta_problematizadora}"
-              </p>
-            </div>
-          )}
-
-          {/* Foco + Habilidade + Descritores */}
-          <div className="flex flex-wrap gap-2">
-            {aula.habilidade_foco && (
-              <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-semibold">
-                🎯 {aula.habilidade_foco}
-              </span>
-            )}
-            {aula.foco && (
-              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
-                📌 {aula.foco}
-              </span>
-            )}
-            {(aula.descritores || []).map((d, i) => {
-              // Procura o texto completo desse descritor no cabeçalho
-              const detalhe = (sd.descritores_detalhados || []).find(x => x.codigo === d);
-              return (
-                <span
-                  key={i}
-                  className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-semibold"
-                  title={detalhe?.texto || ''}
-                >
-                  {d}
-                </span>
-              );
-            })}
-          </div>
-
-          {aula.objetivo_da_aula && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-0.5">🎯 Objetivo</p>
-              <p className="text-gray-800">{aula.objetivo_da_aula}</p>
-            </div>
-          )}
-
-          {aula.conteudo && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-0.5">📖 Conteúdo</p>
-              <p className="text-gray-800">{aula.conteudo}</p>
-            </div>
-          )}
-
-          {/* ESTRATÉGIA — destacada */}
-          {aula.estrategia && (
-            <div className="bg-purple-50 border-l-4 border-purple-500 rounded-r-lg p-3">
-              <p className="text-xs font-semibold text-purple-900 uppercase mb-1">🎨 Estratégia concreta</p>
-              <p className="text-purple-900 leading-relaxed">{aula.estrategia}</p>
-            </div>
-          )}
-
-          {aula.metodologia && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-0.5">👨‍🏫 Metodologia (passo a passo)</p>
-              <p className="text-gray-800 leading-relaxed">{aula.metodologia}</p>
-            </div>
-          )}
-
-          {aula.atividades?.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-1">👥 Atividades dos alunos</p>
-              <ul className="space-y-1">
-                {aula.atividades.map((a, j) => (
-                  <li key={j} className="flex items-start gap-2 text-gray-700">
-                    <span className="text-blue-500 mt-0.5">•</span><span>{a}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {aula.recursos?.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-1">📦 Recursos</p>
-              <div className="flex flex-wrap gap-1.5">
-                {aula.recursos.map((r, j) => (
-                  <span key={j} className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
-                    {r}
+              {habilidadeSeparada.codigo && (
+                <div className="flex flex-wrap gap-2 items-start mb-2">
+                  <span className="text-xs bg-white text-blue-800 px-2 py-1 rounded font-mono font-bold border border-blue-300">
+                    {habilidadeSeparada.codigo}
                   </span>
+                  {foco && (
+                    <span className="text-xs bg-white text-gray-700 px-2 py-1 rounded border border-gray-200">
+                      {foco}
+                    </span>
+                  )}
+                </div>
+              )}
+              {habilidadeSeparada.texto && (
+                <p className="text-gray-800 leading-relaxed mb-2 text-xs">
+                  {habilidadeSeparada.texto}
+                </p>
+              )}
+              {descritoresDaAula.length > 0 && (
+                <div className="border-t border-blue-200 pt-2 mt-2 space-y-1.5">
+                  <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wide">Descritores</p>
+                  {descritoresDaAula.map((d, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs">
+                      <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded font-mono font-bold flex-shrink-0">
+                        {d.codigo}
+                      </span>
+                      {d.fonte && (
+                        <span className="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-bold uppercase text-[9px] flex-shrink-0">
+                          {d.fonte}
+                        </span>
+                      )}
+                      <span className="text-gray-700 leading-snug">{d.texto || ''}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SEÇÃO 3 — OBJETIVO E EVIDÊNCIA */}
+          {(aula.objetivo_da_aula || aula.conteudo || aula.evidencia_de_aprendizagem) && (
+            <div className="bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg p-3">
+              <p className="text-xs font-bold text-emerald-900 uppercase mb-2">
+                🎯 Objetivo e evidência
+              </p>
+              {aula.objetivo_da_aula && (
+                <p className="text-gray-800 mb-1">
+                  <strong className="text-emerald-700">Objetivo:</strong> {stringificar(aula.objetivo_da_aula)}
+                </p>
+              )}
+              {aula.conteudo && (
+                <p className="text-gray-800 mb-1">
+                  <strong className="text-blue-700">Conteúdo:</strong> {stringificar(aula.conteudo)}
+                </p>
+              )}
+              {aula.evidencia_de_aprendizagem && (
+                <div className="bg-white rounded p-2 mt-2 border border-emerald-200">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase mb-1">O que observar</p>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    {stringificar(aula.evidencia_de_aprendizagem)}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SEÇÃO 4 — METODOLOGIA */}
+          {(metodo.introducao || metodo.desenvolvimento || metodo.fechamento) && (
+            <div>
+              <p className="text-xs font-bold text-gray-700 uppercase mb-2">
+                👨🏫 Metodologia
+              </p>
+
+              {metodo.introducao && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg p-3 mb-2">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[10px] font-bold text-yellow-800 uppercase">
+                      1 · Introdução / Problematização
+                    </p>
+                    {metodo.introducao.duracao_minutos && (
+                      <span className="text-[10px] bg-white text-yellow-800 px-2 py-0.5 rounded font-mono font-bold">
+                        {metodo.introducao.duracao_minutos} min
+                      </span>
+                    )}
+                  </div>
+                  {metodo.introducao.gancho_de_curiosidade && (
+                    <div className="bg-white rounded p-2 mb-2">
+                      <p className="text-[9px] font-bold text-orange-600 uppercase mb-1">Gancho de curiosidade</p>
+                      <p className="text-xs text-gray-800 italic leading-relaxed">
+                        {stringificar(metodo.introducao.gancho_de_curiosidade)}
+                      </p>
+                    </div>
+                  )}
+                  {(metodo.introducao.passos || []).map((p, i) => (
+                    <p key={i} className="text-xs text-gray-800 leading-relaxed pl-4 relative mb-0.5">
+                      <span className="absolute left-0 text-yellow-700 font-bold">{i + 1}.</span>
+                      {stringificar(p)}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {metodo.desenvolvimento && (
+                <div className="bg-white border border-gray-200 border-l-4 border-blue-500 rounded-r-lg p-3 mb-2">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[10px] font-bold text-blue-800 uppercase">
+                      2 · Desenvolvimento
+                    </p>
+                    {metodo.desenvolvimento.duracao_minutos && (
+                      <span className="text-[10px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
+                        {metodo.desenvolvimento.duracao_minutos} min
+                      </span>
+                    )}
+                  </div>
+                  {metodo.desenvolvimento.estrategia && (
+                    <div className="bg-orange-50 rounded p-2 mb-2">
+                      <p className="text-[9px] font-bold text-orange-700 uppercase mb-1">Estratégia concreta</p>
+                      <p className="text-xs text-gray-800 leading-relaxed">
+                        {stringificar(metodo.desenvolvimento.estrategia)}
+                      </p>
+                    </div>
+                  )}
+                  {(metodo.desenvolvimento.passos || []).map((p, i) => (
+                    <p key={i} className="text-xs text-gray-800 leading-relaxed pl-4 relative mb-0.5">
+                      <span className="absolute left-0 text-blue-700 font-bold">{i + 1}.</span>
+                      {stringificar(p)}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {metodo.fechamento && (
+                <div className="bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[10px] font-bold text-emerald-800 uppercase">
+                      3 · Fechamento / Síntese
+                    </p>
+                    {metodo.fechamento.duracao_minutos && (
+                      <span className="text-[10px] bg-white text-emerald-800 px-2 py-0.5 rounded font-mono font-bold">
+                        {metodo.fechamento.duracao_minutos} min
+                      </span>
+                    )}
+                  </div>
+                  {metodo.fechamento.sistematizacao && (
+                    <p className="text-xs text-gray-800 leading-relaxed mb-2">
+                      <strong className="text-emerald-700">Sistematização:</strong> {stringificar(metodo.fechamento.sistematizacao)}
+                    </p>
+                  )}
+                  {metodo.fechamento.aplicacao_no_cotidiano && (
+                    <div className="bg-white rounded p-2 mb-2 border border-emerald-200">
+                      <p className="text-[9px] font-bold text-emerald-700 uppercase mb-1">Aplicação no cotidiano</p>
+                      <p className="text-xs text-gray-800 italic leading-relaxed">
+                        {stringificar(metodo.fechamento.aplicacao_no_cotidiano)}
+                      </p>
+                    </div>
+                  )}
+                  {(metodo.fechamento.passos || []).map((p, i) => (
+                    <p key={i} className="text-xs text-gray-800 leading-relaxed pl-4 relative mb-0.5">
+                      <span className="absolute left-0 text-emerald-700 font-bold">{i + 1}.</span>
+                      {stringificar(p)}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SEÇÃO 5 — RECURSOS */}
+          {recursos.length > 0 && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <p className="text-xs font-bold text-gray-600 uppercase mb-2">📦 Recursos didáticos</p>
+              <div className="space-y-1.5">
+                {recursos.map((r, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-xs bg-white text-gray-800 px-2 py-0.5 rounded font-bold border border-gray-200 flex-shrink-0">
+                      {r.nome}
+                    </span>
+                    {r.uso && (
+                      <span className="text-xs text-gray-600 leading-relaxed pt-0.5">
+                        {r.uso}
+                      </span>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
           )}
 
-          {aula.avaliacao_da_aula && (
-            <div className="bg-emerald-50 border border-emerald-100 rounded p-2">
-              <p className="text-xs font-semibold text-emerald-900 uppercase mb-0.5">✅ Avaliação</p>
-              <p className="text-emerald-800 text-xs">{aula.avaliacao_da_aula}</p>
-            </div>
-          )}
-
-          {/* EVIDÊNCIA DE APRENDIZAGEM — Backward Design */}
-          {aula.evidencia_de_aprendizagem && (
-            <div className="bg-teal-50 border-l-4 border-teal-600 rounded-r-lg p-3">
-              <p className="text-xs font-bold text-teal-900 uppercase mb-1">
-                🎯 Evidência de aprendizagem (como saber que aprenderam)
+          {/* SEÇÃO 6 — AVALIAÇÃO E INTERVENÇÕES */}
+          {(aula.avaliacao_da_aula || aula.onde_pode_travar || aula.diferenciacao) && (
+            <div className="bg-white border border-gray-200 border-l-4 border-emerald-500 rounded-r-lg p-3">
+              <p className="text-xs font-bold text-emerald-800 uppercase mb-2">
+                ✅ Avaliação e intervenções
               </p>
-              <p className="text-teal-900 leading-relaxed text-xs">{aula.evidencia_de_aprendizagem}</p>
+              {aula.avaliacao_da_aula && (
+                <div className="mb-2">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase mb-0.5">Como avaliar</p>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    {stringificar(aula.avaliacao_da_aula)}
+                  </p>
+                </div>
+              )}
+              {aula.onde_pode_travar && (
+                <div className="bg-yellow-50 rounded p-2 mb-2">
+                  <p className="text-[10px] font-bold text-yellow-800 uppercase mb-0.5">Se o aluno travar</p>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    {stringificar(aula.onde_pode_travar)}
+                  </p>
+                </div>
+              )}
+              {aula.diferenciacao && (
+                <div className="bg-orange-50 rounded p-2">
+                  <p className="text-[10px] font-bold text-orange-800 uppercase mb-0.5">Diferenciação</p>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    {stringificar(aula.diferenciacao)}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* ONDE PODE TRAVAR */}
-          {aula.onde_pode_travar && (
-            <div className="bg-amber-50 border border-amber-200 rounded p-3">
-              <p className="text-xs font-semibold text-amber-900 uppercase mb-1">⚠️ Onde pode travar</p>
-              <p className="text-amber-900 text-xs leading-relaxed">{aula.onde_pode_travar}</p>
-            </div>
-          )}
-
-          {/* DIFERENCIAÇÃO */}
-          {aula.diferenciacao && (
-            <div className="bg-fuchsia-50 border border-fuchsia-200 rounded p-3">
-              <p className="text-xs font-bold text-fuchsia-900 uppercase mb-1">
-                🎚️ Diferenciação (para quem trava e para quem avança)
-              </p>
-              <p className="text-fuchsia-900 text-xs leading-relaxed">{aula.diferenciacao}</p>
-            </div>
-          )}
-
-          {/* MOMENTO DE ENCANTAMENTO */}
-          {aula.momento_de_encantamento && (
-            <div className="bg-pink-50 border border-pink-200 rounded p-3">
-              <p className="text-xs font-semibold text-pink-900 uppercase mb-1">✨ Momento de encantamento</p>
-              <p className="text-pink-900 text-xs leading-relaxed">{aula.momento_de_encantamento}</p>
-            </div>
-          )}
-
-          {/* LEITURA RELACIONAL */}
+          {/* SEÇÃO 7 — NOTA PEDAGÓGICA */}
           {aula.leitura_relacional && (
-            <div className="bg-indigo-50 border-l-4 border-indigo-500 rounded-r-lg p-3">
-              <p className="text-xs font-semibold text-indigo-900 uppercase mb-1">💭 Leitura relacional (vínculo)</p>
-              <p className="text-indigo-900 text-xs leading-relaxed italic">{aula.leitura_relacional}</p>
+            <div className="border-l-4 border-gray-300 bg-gray-50 rounded-r-lg p-3">
+              <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Nota pedagógica</p>
+              <p className="text-xs text-gray-600 italic leading-relaxed">
+                {stringificar(aula.leitura_relacional)}
+              </p>
             </div>
           )}
 
-          {/* RESULTADO VISÍVEL */}
-          {aula.resultado_visivel && (
-            <div className="bg-green-50 border border-green-200 rounded p-3">
-              <p className="text-xs font-semibold text-green-900 uppercase mb-1">🎯 Resultado visível</p>
-              <p className="text-green-900 text-xs leading-relaxed">{aula.resultado_visivel}</p>
-            </div>
-          )}
+          {/* SEÇÃO 8 — REFLEXÃO PÓS-AULA */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-3">
+            <p className="text-xs font-bold text-gray-500 uppercase mb-1">📝 Reflexão pós-aula</p>
+            <p className="text-[11px] text-gray-500 italic mb-2">
+              Espaço reservado para o professor registrar, após a aula, o que funcionou bem e o que precisa ser ajustado.
+            </p>
+            {aula.reflexao_pos_aula ? (
+              <p className="text-xs text-gray-800 leading-relaxed">
+                {stringificar(aula.reflexao_pos_aula)}
+              </p>
+            ) : (
+              <div className="space-y-2 pt-2">
+                <div className="h-3 border-b border-gray-200"></div>
+                <div className="h-3 border-b border-gray-200"></div>
+              </div>
+            )}
+          </div>
 
-          {/* CONEXÃO COM A VIDA — Freire */}
-          {aula.conexao_com_a_vida && (
-            <div className="bg-orange-50 border-l-4 border-orange-500 rounded-r-lg p-3">
-              <p className="text-xs font-bold text-orange-900 uppercase mb-1">
-                🌍 Conexão com a vida (como isso aparece no cotidiano do aluno)
-              </p>
-              <p className="text-orange-900 text-xs leading-relaxed italic">
-                {aula.conexao_com_a_vida}
-              </p>
-            </div>
+          {/* Campos complementares (opcionais — mostrados se existirem) */}
+          {(aula.momento_de_encantamento || aula.resultado_visivel || aula.conexao_com_a_vida) && (
+            <details className="text-xs">
+              <summary className="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">
+                Ver notas complementares
+              </summary>
+              <div className="mt-2 space-y-2">
+                {aula.momento_de_encantamento && (
+                  <div className="bg-pink-50 rounded p-2 border border-pink-200">
+                    <p className="text-[10px] font-bold text-pink-800 uppercase mb-0.5">Momento de encantamento</p>
+                    <p className="text-gray-800 leading-relaxed">{stringificar(aula.momento_de_encantamento)}</p>
+                  </div>
+                )}
+                {aula.resultado_visivel && (
+                  <div className="bg-green-50 rounded p-2 border border-green-200">
+                    <p className="text-[10px] font-bold text-green-800 uppercase mb-0.5">Resultado visível</p>
+                    <p className="text-gray-800 leading-relaxed">{stringificar(aula.resultado_visivel)}</p>
+                  </div>
+                )}
+                {aula.conexao_com_a_vida && (
+                  <div className="bg-orange-50 rounded p-2 border border-orange-200">
+                    <p className="text-[10px] font-bold text-orange-800 uppercase mb-0.5">Conexão com a vida</p>
+                    <p className="text-gray-800 italic leading-relaxed">{stringificar(aula.conexao_com_a_vida)}</p>
+                  </div>
+                )}
+              </div>
+            </details>
           )}
         </div>
       )}
