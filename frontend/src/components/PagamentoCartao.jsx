@@ -51,15 +51,12 @@ function extrairMensagemErro(err) {
 
 // ============================================================
 // Extrai o formData do argumento do CardPayment Brick.
-// Aceita:
-//   - { formData: {...} }   ← formato antigo
-//   - { token, ... }        ← formato direto (v1.0.7+)
 // ============================================================
 function extrairFormData(arg) {
   if (!arg) return null;
   if (arg.formData && typeof arg.formData === 'object') return arg.formData;
-  if (arg.token) return arg; // formato direto
-  return arg; // fallback
+  if (arg.token) return arg;
+  return arg;
 }
 
 /**
@@ -74,24 +71,37 @@ export default function PagamentoCartao({
   onClose,
   onSuccess,
 }) {
-  const [estado, setEstado] = useState('form'); // form | processando | sucesso | erro
+  const [estado, setEstado] = useState('form');
   const [msgErro, setMsgErro] = useState(null);
   const [mpOk, setMpOk] = useState(true);
+  const [config, setConfig] = useState(null);
 
   useEffect(() => {
     setMpOk(garantirInitMP());
+
+    api.get('/landing/config')
+      .then(res => setConfig(res.data?.config || null))
+      .catch(() => setConfig(null));
   }, []);
 
   const formatBRL = (v) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+
+  const paymentCfg = config?.payment || {};
+  const emitterName = paymentCfg.emitter_name || '';
+  const emitterDocument = paymentCfg.emitter_document || '';
+  const supportEmail = paymentCfg.support_email || '';
+  const supportPhone = paymentCfg.support_phone || '';
+  const termsText = paymentCfg.terms_text || '';
+  const termsLink = paymentCfg.terms_link || '/termos';
+  const privacyLink = paymentCfg.privacy_link || '/privacidade';
+
+  const temRodape = emitterName || emitterDocument || supportEmail || supportPhone || termsText;
 
   // ============================================================
   // Callback chamado pelo CardPayment quando o cliente clica em Pagar
   // ============================================================
   const handleSubmit = async (arg) => {
-    console.log('[PagamentoCartao] arg recebido do Brick:', arg);
-
     const formData = extrairFormData(arg);
-    console.log('[PagamentoCartao] formData extraído:', formData);
 
     if (!formData || !formData.token) {
       setEstado('erro');
@@ -114,8 +124,6 @@ export default function PagamentoCartao({
         tipo === 'subscription'
           ? { plan: codigo, card: formData }
           : { package: codigo, card: formData };
-
-      console.log('[PagamentoCartao] payload enviado:', payload);
 
       const res = await api.post(endpoint, payload);
       const status = res.data?.status;
@@ -230,6 +238,45 @@ export default function PagamentoCartao({
                 </>
               )}
             </>
+          )}
+
+          {/* ==================== RODAPÉ DE CONFIANÇA ==================== */}
+          {temRodape && (
+            <div className="mt-6 pt-4 border-t border-gray-100 text-center space-y-1">
+              {(emitterName || emitterDocument) && (
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Emitente: <strong className="text-gray-700">{emitterName}</strong>
+                  {emitterDocument && (
+                    <>
+                      {' · '}
+                      <span className="font-mono">{emitterDocument}</span>
+                    </>
+                  )}
+                </p>
+              )}
+
+              {(supportEmail || supportPhone) && (
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Suporte:{' '}
+                  {supportEmail && (
+                    <a href={`mailto:${supportEmail}`} className="text-blue-600 hover:underline">
+                      {supportEmail}
+                    </a>
+                  )}
+                  {supportEmail && supportPhone && ' · '}
+                  {supportPhone && <span>{supportPhone}</span>}
+                </p>
+              )}
+
+              {termsText && (
+                <p className="text-[10px] text-gray-400 leading-relaxed pt-1">
+                  {termsText}{' '}
+                  <a href={termsLink} className="hover:underline">Termos</a>
+                  {' · '}
+                  <a href={privacyLink} className="hover:underline">Privacidade</a>
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>

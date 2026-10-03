@@ -6,7 +6,17 @@ const PagamentoPix = ({ paymentData, onClose, onSuccess }) => {
   const [segundos, setSegundos] = useState(0);
   const [copiado, setCopiado] = useState(false);
   const [erro, setErro] = useState(null);
+  const [config, setConfig] = useState(null);
   const pollingRef = useRef(null);
+
+  // ============================================================
+  // CONFIG — dados do emitente / suporte / termos
+  // ============================================================
+  useEffect(() => {
+    api.get('/landing/config')
+      .then(res => setConfig(res.data?.config || null))
+      .catch(() => setConfig(null));
+  }, []);
 
   // ============================================================
   // POLLING — consulta status a cada 3s
@@ -62,7 +72,6 @@ const PagamentoPix = ({ paymentData, onClose, onSuccess }) => {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 3000);
     } catch (err) {
-      // Fallback para navegadores antigos
       const textarea = document.createElement('textarea');
       textarea.value = paymentData.qr_code;
       document.body.appendChild(textarea);
@@ -86,9 +95,23 @@ const PagamentoPix = ({ paymentData, onClose, onSuccess }) => {
 
   const qrSrc = getQrImageSrc();
 
+  // ============================================================
+  // DADOS DO CONFIG
+  // ============================================================
+  const paymentCfg = config?.payment || {};
+  const emitterName = paymentCfg.emitter_name || '';
+  const emitterDocument = paymentCfg.emitter_document || '';
+  const supportEmail = paymentCfg.support_email || '';
+  const supportPhone = paymentCfg.support_phone || '';
+  const termsText = paymentCfg.terms_text || '';
+  const termsLink = paymentCfg.terms_link || '/termos';
+  const privacyLink = paymentCfg.privacy_link || '/privacidade';
+
+  const temRodape = emitterName || emitterDocument || supportEmail || supportPhone || termsText;
+
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-8">
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-4">
         {/* ============= CABEÇALHO ============= */}
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
           <div>
@@ -126,7 +149,7 @@ const PagamentoPix = ({ paymentData, onClose, onSuccess }) => {
             </div>
           )}
 
-          {/* --- STATUS: REJEITADO --- */}
+          {/* --- STATUS: REJEITADO / CANCELADO --- */}
           {(status === 'rejected' || status === 'cancelled') && (
             <div className="text-center py-8">
               <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -150,7 +173,6 @@ const PagamentoPix = ({ paymentData, onClose, onSuccess }) => {
           {/* --- STATUS: AGUARDANDO PAGAMENTO --- */}
           {status === 'pending' && (
             <>
-              {/* Valor */}
               <div className="text-center mb-5">
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Valor a pagar</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">
@@ -158,7 +180,6 @@ const PagamentoPix = ({ paymentData, onClose, onSuccess }) => {
                 </p>
               </div>
 
-              {/* QR Code */}
               {qrSrc ? (
                 <div className="flex justify-center mb-5">
                   <div className="bg-white p-4 border-2 border-gray-200 rounded-xl">
@@ -175,12 +196,10 @@ const PagamentoPix = ({ paymentData, onClose, onSuccess }) => {
                 </div>
               )}
 
-              {/* Instruções */}
               <p className="text-sm text-gray-700 text-center mb-4">
                 Abra o app do seu banco, escolha <strong>Pix</strong> e leia o QR Code.
               </p>
 
-              {/* Copia e cola */}
               {paymentData?.qr_code && (
                 <div className="mb-5">
                   <p className="text-xs font-medium text-gray-500 mb-2 text-center">
@@ -204,7 +223,6 @@ const PagamentoPix = ({ paymentData, onClose, onSuccess }) => {
                 </div>
               )}
 
-              {/* Status + timer */}
               <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
@@ -221,15 +239,53 @@ const PagamentoPix = ({ paymentData, onClose, onSuccess }) => {
             </>
           )}
 
-          {/* Erro genérico */}
           {erro && (
             <div className="mt-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
               {erro}
             </div>
           )}
+
+          {/* ==================== RODAPÉ DE CONFIANÇA ==================== */}
+          {temRodape && (
+            <div className="mt-6 pt-4 border-t border-gray-100 text-center space-y-1">
+              {(emitterName || emitterDocument) && (
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Emitente: <strong className="text-gray-700">{emitterName}</strong>
+                  {emitterDocument && (
+                    <>
+                      {' · '}
+                      <span className="font-mono">{emitterDocument}</span>
+                    </>
+                  )}
+                </p>
+              )}
+
+              {(supportEmail || supportPhone) && (
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Suporte:{' '}
+                  {supportEmail && (
+                    <a href={`mailto:${supportEmail}`} className="text-blue-600 hover:underline">
+                      {supportEmail}
+                    </a>
+                  )}
+                  {supportEmail && supportPhone && ' · '}
+                  {supportPhone && <span>{supportPhone}</span>}
+                </p>
+              )}
+
+              {termsText && (
+                <p className="text-[10px] text-gray-400 leading-relaxed pt-1">
+                  {termsText}{' '}
+                  <a href={termsLink} className="hover:underline">Termos</a>
+                  {' · '}
+                  <a href={privacyLink} className="hover:underline">Privacidade</a>
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* ============= RODAPÉ ============= */}
+        {/* ============= RODAPÉ (botão cancelar) ============= */}
         {status === 'pending' && (
           <div className="p-4 bg-gray-50 border-t border-gray-100 rounded-b-2xl">
             <button
