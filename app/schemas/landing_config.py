@@ -600,6 +600,23 @@ class ApiBannerSection(BaseModel):
 
 
 # ============================================================
+# PAGAMENTO — dados fiscais e de suporte editáveis pelo admin
+# ============================================================
+class PaymentSection(BaseModel):
+    enabled: bool = True
+    # Emitente (aparece no rodapé do modal)
+    emitter_name: str = "SIMIDNAPE PRO"
+    emitter_document: str = ""  # "CNPJ 00.000.000/0001-00" ou "CPF 000.000.000-00"
+    # Contato de suporte
+    support_email: str = "contato@simidnape.com.br"
+    support_phone: str = ""
+    # Textos legais
+    terms_text: str = "Ao concluir, você aceita os Termos de Uso e a Política de Privacidade."
+    terms_link: str = "/termos"
+    privacy_link: str = "/privacidade"
+
+
+# ============================================================
 # SCHEMA PRINCIPAL
 # ============================================================
 class LandingConfigSchema(BaseModel):
@@ -656,6 +673,7 @@ class LandingConfigSchema(BaseModel):
     register: RegisterSection = Field(default_factory=RegisterSection)
     dashboard: DashboardSection = Field(default_factory=DashboardSection)
     api_banner: ApiBannerSection = Field(default_factory=ApiBannerSection)
+    payment: PaymentSection = Field(default_factory=PaymentSection)
 
 
 class LandingConfigOut(BaseModel):
