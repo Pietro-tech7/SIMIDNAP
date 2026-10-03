@@ -461,6 +461,19 @@ class FooterSection(BaseModel):
         "SIMIDNAPE significa Sistema Municipal Integral de Desenvolvimento da "
         "Neuroaprendizagem e Performance Educacional."
     )
+    tagline: str = (
+        "Assistente pedagógico com IA para professores brasileiros. "
+        "Neuroeducação, ciência da aprendizagem e respeito à autonomia docente."
+    )
+    badge_text: str = "🇧🇷 Feito no Brasil · Alinhado à BNCC"
+    product_column_title: str = "Produto"
+    institutional_column_title: str = "Institucional"
+    product_links: List[Dict[str, str]] = Field(default_factory=lambda: [
+        {"label": "Motores de IA", "href": "#solution"},
+        {"label": "Comparativo", "href": "#comparison"},
+        {"label": "Planos", "href": "#plans"},
+        {"label": "FAQ", "href": "#faq"},
+    ])
     links: List[Dict[str, str]] = Field(default_factory=lambda: [
         {"label": "Sobre", "href": "/sobre"},
         {"label": "Termos de Uso", "href": "/termos"},
