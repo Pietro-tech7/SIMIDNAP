@@ -2300,16 +2300,18 @@ SCHEMAS = {
     {
       "numero": 1,
       "titulo": "string (nome curto e claro da ação)",
+      "tema": "string (tema central da ação, separado do título. Deve nomear o FOCO específico. Ex: 'Análise dos descritores críticos do SAEPI de LP', 'Acompanhamento formativo em duplas', 'Devolutiva sobre gestão de sala')",
       "descricao": "string (o que será feito, como, com quem — CONCRETO e EXECUTÁVEL)",
       "responsavel": "string (ex: 'coordenador(a)', 'professores do 5º ano', 'equipe gestora')",
       "prazo": "string (ex: 'semana 1', 'até 15/10')",
-      "recursos": ["string"],
+      "recursos": ["string no formato 'Nome — uso específico'. Ex: 'Matriz do SAEPI impressa — Cada trio analisa um descritor diferente'. Sempre separar nome e uso com ' — ' (espaço, travessão, espaço)."],
       "como_avaliar": "string (o que observar para saber se a ação funcionou)",
       "principio_pedagogico": "string (princípio de andragogia, neuroeducação ou psicologia educacional que fundamenta esta ação. Ex: 'Aprendizagem entre pares', 'Uso pedagógico de dados', 'Aprendizagem por descoberta', 'Avaliação formativa')",
       "leitura_relacional": "string (leitura psicanalítica ESPECÍFICA e ÚNICA do vínculo coordenador-professor nesta ação. Deve falar do vínculo, não do conteúdo. Ex: 'Ao colocar o professor como analista — não como aluno — validamos sua expertise e reduzimos a resistência à formação')",
       "onde_pode_resistir": "string (antecipação: onde o professor/equipe provavelmente vai resistir + o que o coordenador faz se isso acontecer)",
       "momento_de_encantamento": "string (o momento 'uau' da ação — o instante em que o professor percebe que a ação vale a pena)",
-      "resultado_visivel": "string (o que o professor SABERÁ, SABERÁ FAZER e SENTIRÁ ao final)"
+      "resultado_visivel": "string (o que o professor SABERÁ, SABERÁ FAZER e SENTIRÁ ao final)",
+      "reflexao_pos_encontro": ""
     }
   ],
   "cronograma": [
@@ -2324,7 +2326,8 @@ SCHEMAS = {
     "indicadores": ["string (ex: 'aumento de 15% no desempenho do descritor D01')"],
     "como_registrar_evidencias": ["string (ex: 'fotos da formação', 'ata de reunião', 'planilha de acompanhamento')"]
   },
-  "consideracoes_finais": "string (orientações para o coordenador executar a ação)"
+  "consideracoes_finais": "string (orientações para o coordenador executar a ação)",
+  "reflexao_pos_periodo": ""
 }
 """,
 }
