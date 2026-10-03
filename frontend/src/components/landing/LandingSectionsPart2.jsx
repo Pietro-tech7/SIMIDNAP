@@ -1024,26 +1024,40 @@ export const FooterSection = ({ data }) => {
               </p>
             )}
             <p className="text-sm leading-relaxed max-w-md" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              Assistente pedagógico com IA para professores brasileiros.
-              Neuroeducação, ciência da aprendizagem e respeito à autonomia docente.
+              {data.tagline || 'Assistente pedagógico com IA para professores brasileiros. Neuroeducação, ciência da aprendizagem e respeito à autonomia docente.'}
             </p>
             <p className="text-xs mt-4" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              🇧🇷 Feito no Brasil · Alinhado à BNCC
+              {data.badge_text || '🇧🇷 Feito no Brasil · Alinhado à BNCC'}
             </p>
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4 font-heading">Produto</h4>
+            <h4 className="text-white font-semibold mb-4 font-heading">
+              {data.product_column_title || 'Produto'}
+            </h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#solution" className="hover:text-white transition" style={{ color: 'inherit' }}>Motores de IA</a></li>
-              <li><a href="#comparison" className="hover:text-white transition" style={{ color: 'inherit' }}>Comparativo</a></li>
-              <li><a href="#plans" className="hover:text-white transition" style={{ color: 'inherit' }}>Planos</a></li>
-              <li><a href="#faq" className="hover:text-white transition" style={{ color: 'inherit' }}>FAQ</a></li>
+              {(data.product_links?.length
+                ? data.product_links
+                : [
+                    { label: 'Motores de IA', href: '#solution' },
+                    { label: 'Comparativo', href: '#comparison' },
+                    { label: 'Planos', href: '#plans' },
+                    { label: 'FAQ', href: '#faq' },
+                  ]
+              ).map((link, i) => (
+                <li key={i}>
+                  <a href={link.href} className="hover:text-white transition" style={{ color: 'inherit' }}>
+                    {link.label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4 font-heading">Institucional</h4>
+            <h4 className="text-white font-semibold mb-4 font-heading">
+              {data.institutional_column_title || 'Institucional'}
+            </h4>
             <ul className="space-y-2 text-sm">
               {data.links?.map((link, i) => (
                 <li key={i}>
