@@ -16,8 +16,8 @@ import { gerarPdfCoordenacao } from '../utils/gerarPdfCoordenacao';
  * Para os view-only, o botão "Editar" fica oculto — o professor regenera
  * no motor original se quiser alterar.
  */
-const ModalPlano = ({ plano, onFechar, onSalvar }) => {
-  const [modo, setModo] = useState('ver');
+const ModalPlano = ({ plano, onFechar, onSalvar, modoInicial = 'ver' }) => {
+  const [modo, setModo] = useState(modoInicial);
   const [titulo, setTitulo] = useState(plano.title || '');
   const [conteudo, setConteudo] = useState(
     JSON.parse(JSON.stringify(plano.structured_data || {}))
