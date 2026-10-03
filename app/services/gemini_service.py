@@ -363,6 +363,29 @@ Esses dados NÃO são inventados. Vêm do formulário. Você apenas os inclui no
    - Cada aula tem um RESULTADO VISÍVEL
 
 ═══════════════════════════════════════════════════════════════
+METODOLOGIA EM 3 MOMENTOS (OBRIGATÓRIO)
+═══════════════════════════════════════════════════════════════
+
+Cada aula deve ter a `metodologia` estruturada em 3 objetos:
+
+1. INTRODUÇÃO (aprox. 15% do tempo total da aula)
+   - `gancho_de_curiosidade`: o momento "uau" que abre a aula
+   - `passos`: 2-3 passos curtos
+   - Aqui entra a `pergunta_problematizadora` como disparador
+
+2. DESENVOLVIMENTO (aprox. 70% do tempo total da aula)
+   - `estrategia`: a estratégia concreta principal desta parte
+   - `passos`: 4-6 passos claros
+   - Aqui entram as atividades dos alunos
+
+3. FECHAMENTO (aprox. 15% do tempo total da aula)
+   - `sistematizacao`: como o professor fecha o raciocínio com a turma
+   - `aplicacao_no_cotidiano`: onde o aluno verá isso na vida real
+   - `passos`: 2-3 passos curtos
+
+A soma dos `duracao_minutos` dos 3 momentos DEVE ser igual a `duracao_minutos` da aula.
+
+═══════════════════════════════════════════════════════════════
 REGRA CRÍTICA: ESTRATÉGIA CONCRETA (PROIBIDO GENÉRICO)
 ═══════════════════════════════════════════════════════════════
 
@@ -2175,6 +2198,7 @@ SCHEMAS = {
       "numero_aula": 1,
       "semana": 1,
       "titulo": "string (título curto e memorável da aula)",
+      "tema": "string (tema central da aula, separado do título. Deve nomear o CONTEÚDO específico trabalhado. Ex: 'Comparação de frações com mesmo denominador', 'Identificação do tema de uma notícia', 'Estados físicos da água')",
       "habilidade_foco": "string (ex: 'D01 — Usos dos números naturais' ou 'EF05MA03 — Comparar frações')",
       "foco": "string (ex: 'Números, sequências e operações')",
       "descritores": ["string (descritores trabalhados nesta aula específica)"],
@@ -2183,7 +2207,24 @@ SCHEMAS = {
       "evidencia_de_aprendizagem": "string (Backward Design: qual PRODUTO OBSERVÁVEL mostra que o aluno aprendeu? Ex: 'Resolver 4 comparações de fração no caderno justificando a escolha', 'Registrar em uma frase o que entendeu sobre o tema da notícia', 'Explicar para o colega como chegou à resposta')",
       "conteudo": "string (o que será trabalhado)",
       "estrategia": "string (ESTRATÉGIA CONCRETA E EXECUTÁVEL — proibido usar termos genéricos como 'desenvolvimento' ou 'apresentação'. Ex: 'Trabalhar centena, dezena e unidade com material dourado e quadro posicional', 'Jogo Monte o número: 245 = 200 + 40 + 5', 'Circuito de problemas envolvendo adição e subtração')",
-      "metodologia": "string (passo a passo do que o professor faz — 5 a 8 passos claros)",
+      "metodologia": {
+        "introducao": {
+          "duracao_minutos": 0,
+          "gancho_de_curiosidade": "string (o momento 'uau' de abertura — o que faz o aluno querer aprender. Ex: 'Escreva na lousa a pergunta Por que a água da poça desaparece? e fique em silêncio por 5 segundos')",
+          "passos": ["string (passo 1 da introdução)", "string (passo 2)"]
+        },
+        "desenvolvimento": {
+          "duracao_minutos": 0,
+          "estrategia": "string (estratégia concreta executada nesta parte — mesma qualidade da estratégia geral, mas específica deste momento)",
+          "passos": ["string (passo 1 do desenvolvimento)", "string (passo 2)", "string (passo 3)", "string (passo 4)"]
+        },
+        "fechamento": {
+          "duracao_minutos": 0,
+          "sistematizacao": "string (resumo do que foi aprendido nesta aula — como o professor fecha o raciocínio com a turma)",
+          "aplicacao_no_cotidiano": "string (onde o aluno verá isso na vida real. Ex: 'Ampliar figuras é o que acontece quando usamos o zoom em fotos digitais')",
+          "passos": ["string (passo 1 do fechamento)", "string (passo 2)"]
+        }
+      },
       "atividades": ["string (ações dos alunos)"],
       "recursos": ["string (apenas recursos simples e comuns)"],
       "diferenciacao": "string (o que fazer com quem NÃO acompanha e com quem AVANÇA mais rápido. Ex: 'Se o aluno travar, oferecer tiras de papel já divididas; se avançar, propor comparação com denominadores diferentes')",
@@ -2194,7 +2235,8 @@ SCHEMAS = {
       "onde_pode_travar": "string (antecipação: onde o aluno provavelmente vai errar + o que o professor faz se isso acontecer)",
       "momento_de_encantamento": "string (o momento 'uau' da aula — o instante em que o aluno sente curiosidade genuína)",
       "resultado_visivel": "string (o que o aluno SABERÁ, SABERÁ FAZER e SENTIRÁ ao final da aula)",
-      "conexao_com_a_vida": "string (como esse conteúdo se aplica na vida real do aluno — inspirado em Paulo Freire. Ex: 'Usar frações no dia a dia: dividir uma pizza, medir meia xícara, calcular desconto')"
+      "conexao_com_a_vida": "string (como esse conteúdo se aplica na vida real do aluno — inspirado em Paulo Freire. Ex: 'Usar frações no dia a dia: dividir uma pizza, medir meia xícara, calcular desconto')",
+      "reflexao_pos_aula": ""
     }
   ],
   "avaliacao_geral": {
@@ -2208,7 +2250,8 @@ SCHEMAS = {
       "estrategias": ["string (ações concretas integradas à sequência)"]
     }
   ],
-  "consideracoes_finais": "string (orientações práticas para o professor conduzir o período)"
+  "consideracoes_finais": "string (orientações práticas para o professor conduzir o período)",
+  "reflexao_pos_periodo": ""
 }
 """,
     "coordenacao": """
