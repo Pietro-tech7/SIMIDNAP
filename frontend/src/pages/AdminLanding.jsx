@@ -241,6 +241,16 @@ const AdminLanding = () => {
               <span>🏠</span><span>Painel e Modo Turbo</span>
             </button>
 
+            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1 mt-3">Financeiro</p>
+            <button onClick={() => setSecaoAtiva('_payment')}
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
+                secaoAtiva === '_payment'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}>
+              <span>💳</span><span>Pagamento (Fiscal)</span>
+            </button>
+
             <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1 mt-3">Página</p>
             <button onClick={() => setSecaoAtiva('_header')}
               className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
@@ -295,12 +305,13 @@ const AdminLanding = () => {
           {secaoAtiva === '_theme' && <EditorTheme />}
           {secaoAtiva === '_login' && <EditorLogin config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_dashboard' && <EditorDashboard config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
+          {secaoAtiva === '_payment' && <EditorPayment config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_header' && <EditorHeader config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_error_page' && <EditorErrorPage config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_global' && <EditorGlobal config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_popup' && <EditorPopup config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_sistema' && <EditorSistema />}
-          {secaoAtiva !== '_theme' && secaoAtiva !== '_login' && secaoAtiva !== '_dashboard' && secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
+          {secaoAtiva !== '_theme' && secaoAtiva !== '_login' && secaoAtiva !== '_dashboard' && secaoAtiva !== '_payment' && secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
             <EditorSecao secao={secaoAtiva} data={config[secaoAtiva] || {}}
               onChange={updateField} onSave={salvarSecao} salvando={salvando} />
           )}
@@ -1465,6 +1476,120 @@ const EditorErrorPage = ({ config, setConfig, salvando, setMsg }) => {
     </div>
   );
 };
+
+// ============================================================
+// EDITOR PAGAMENTO — dados fiscais e de suporte dos modais
+// ============================================================
+const EditorPayment = ({ config, setConfig, salvando, setMsg }) => {
+  const paymentCfg = config.payment || {};
+  const update = (field, value) =>
+    setConfig(prev => ({ ...prev, payment: { ...prev.payment, [field]: value } }));
+
+  const salvar = async () => {
+    if (setMsg) setMsg(null);
+    try {
+      const res = await api.put('/landing/admin/config', { payment: config.payment });
+      setConfig(res.data.config);
+      if (setMsg) {
+        setMsg({ tipo: 'sucesso', texto: 'Dados de pagamento salvos com sucesso!' });
+        setTimeout(() => setMsg(null), 3000);
+      }
+    } catch {
+      if (setMsg) setMsg({ tipo: 'erro', texto: 'Erro ao salvar dados de pagamento.' });
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+        <span className="text-3xl">💳</span>
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Pagamento (Fiscal)</h2>
+          <p className="text-xs text-slate-500">
+            Dados que aparecem no rodapé dos modais de cartão e Pix.
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-xs text-blue-800 leading-relaxed">
+        ℹ️ Esses dados aparecem <strong>abaixo</strong> do formulário de pagamento, num rodapé de
+        confiança. É uma exigência legal no Brasil (Lei do E-commerce) e aumenta a conversão.
+        Se você deixar vazio, o rodapé não aparece — sem quebrar nada.
+      </div>
+
+      {/* ======================== EMITENTE ======================== */}
+      <div className="mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">
+          Emitente (obrigatório por lei)
+        </p>
+      </div>
+
+      <Input label="Razão social / Nome"
+        value={paymentCfg.emitter_name}
+        onChange={(v) => update('emitter_name', v)}
+        placeholder="Ex: Darilson Cornélio ME"
+        help="Nome que aparece como emitente do pagamento." />
+
+      <Input label="CNPJ ou CPF"
+        value={paymentCfg.emitter_document}
+        onChange={(v) => update('emitter_document', v)}
+        placeholder="Ex: CNPJ 00.000.000/0001-00"
+        help="Use o formato que quiser mostrar: 'CNPJ 00.000.000/0001-00' ou 'CPF 000.000.000-00'." />
+
+      {/* ======================== SUPORTE ======================== */}
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">
+          Suporte ao cliente
+        </p>
+      </div>
+
+      <Input label="E-mail de suporte"
+        value={paymentCfg.support_email}
+        onChange={(v) => update('support_email', v)}
+        placeholder="contato@simidnape.com.br"
+        help="Aparece como link clicável no rodapé dos modais." />
+
+      <Input label="Telefone / WhatsApp (opcional)"
+        value={paymentCfg.support_phone}
+        onChange={(v) => update('support_phone', v)}
+        placeholder="Ex: (86) 99999-9999" />
+
+      {/* ======================== TERMOS ======================== */}
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">
+          Textos legais
+        </p>
+      </div>
+
+      <Textarea label="Frase de aceite dos termos"
+        value={paymentCfg.terms_text}
+        onChange={(v) => update('terms_text', v)}
+        rows={2}
+        placeholder="Ao concluir, você aceita os Termos de Uso e a Política de Privacidade."
+        help="Aparece no rodapé com links para Termos e Privacidade." />
+
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Link dos Termos"
+          value={paymentCfg.terms_link}
+          onChange={(v) => update('terms_link', v)}
+          placeholder="/termos" />
+        <Input label="Link da Privacidade"
+          value={paymentCfg.privacy_link}
+          onChange={(v) => update('privacy_link', v)}
+          placeholder="/privacidade" />
+      </div>
+
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
+        <button onClick={salvar} disabled={salvando}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
+          {salvando ? 'Salvando...' : '💾 Salvar dados de pagamento'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
 
 // ============================================================
 // EDITOR PAINEL — textos do Dashboard + banner Modo Turbo
