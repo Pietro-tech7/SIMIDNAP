@@ -2226,10 +2226,7 @@ SCHEMAS = {
       "semana": 1,
       "titulo": "string (título curto e memorável da aula)",
       "tema": "string (tema central da aula, separado do título. Deve nomear o CONTEÚDO específico trabalhado. Ex: 'Comparação de frações com mesmo denominador', 'Identificação do tema de uma notícia', 'Estados físicos da água')",
-      "habilidade_foco": {
-        "codigo": "string (código da habilidade BNCC. Ex: 'EF02MA13')",
-        "texto": "string (TEXTO COMPLETO E LITERAL da habilidade BNCC, copiado EXATAMENTE do payload recebido em 'habilidades[i].texto'. NUNCA resuma, NUNCA omita, NUNCA invente. Ex: 'Esboçar roteiros a ser seguidos ou plantas de ambientes familiares, assinalando entradas, saídas e alguns pontos de referência.')"
-      },
+      "habilidade_foco": "string no formato 'CODIGO — texto literal da habilidade'. Ex: 'EF02MA13 — Esboçar roteiros a ser seguidos ou plantas de ambientes familiares, assinalando entradas, saídas e alguns pontos de referência.' Sempre separar código e texto com ' — ' (espaço, travessão, espaço). Copiar o texto LITERALMENTE do payload recebido.",
       "foco": "string (ex: 'Números, sequências e operações')",
       "descritores": ["string (descritores trabalhados nesta aula específica)"],
       "pergunta_problematizadora": "string (pergunta que abre a aula e conecta o conteúdo à vida do aluno — inspirado em Paulo Freire. Deve ser uma pergunta que provoca curiosidade e que o aluno não responde de imediato. Ex: 'Por que a água da poça desaparece no sol?', 'Se eu dobrar a receita, o que acontece com cada ingrediente?')",
@@ -2256,12 +2253,7 @@ SCHEMAS = {
         }
       },
       "atividades": ["string (ações dos alunos)"],
-      "recursos": [
-        {
-          "nome": "string (nome do recurso. Ex: 'Lousa e giz')",
-          "uso": "string (para que serve ESTE recurso NESTA aula específica. Ex: 'Registrar a charada inicial e os pontos de referência citados pela turma')"
-        }
-      ],
+      "recursos": ["string no formato 'Nome — uso específico'. Ex: 'Lousa e giz — Registrar a charada inicial e os pontos de referência citados pela turma'. Sempre separar nome e uso com ' — ' (espaço, travessão, espaço)."],
       "diferenciacao": "string (o que fazer com quem NÃO acompanha e com quem AVANÇA mais rápido. Ex: 'Se o aluno travar, oferecer tiras de papel já divididas; se avançar, propor comparação com denominadores diferentes')",
       "avaliacao_da_aula": "string (como verificar se a aula funcionou)",
       "duracao_minutos": 0,

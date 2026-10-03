@@ -16,7 +16,7 @@ const CAPA_ALTURA_PX = 1096;
 const PICAPAU_URL = '/icons/comparacao/simidnape-picapau.svg';
 
 // ============================================================
-// PALETA SUAVE
+// PALETA
 // ============================================================
 const CREME         = '#FDFBF7';
 const BRANCO        = '#FFFFFF';
@@ -35,7 +35,7 @@ const TEXTO_2       = '#6B6B6B';
 const BORDA         = '#E5E0D8';
 
 // ============================================================
-// TAMANHOS DE FONTE
+// FONTES
 // ============================================================
 const F_BODY       = 26;
 const F_BODY_SM    = 22;
@@ -51,11 +51,129 @@ const F_COVER_BADGE = 16;
 const F_COVER_CARD = 22;
 
 // ============================================================
-// HELPERS
+// HELPERS — LIMPEZA E EXTRAÇÃO ROBUSTA
 // ============================================================
+
+/**
+ * FUNÇÃO UNIVERSAL DE STRINGIFICAÇÃO
+ * Trata QUALQUER formato: string, número, array, objeto {codigo, texto},
+ * objeto {nome, uso}, objeto desconhecido, null, undefined.
+ * NUNCA retorna "[object Object]".
+ */
+function stringificar(valor) {
+  if (valor === null || valor === undefined) return '';
+  if (typeof valor === 'string') return valor;
+  if (typeof valor === 'number' || typeof valor === 'boolean') return String(valor);
+
+  if (Array.isArray(valor)) {
+    return valor
+      .map(v => stringificar(v))
+      .filter(Boolean)
+      .join(' · ');
+  }
+
+  if (typeof valor === 'object') {
+    // Formato {codigo, texto} (habilidade)
+    if ('codigo' in valor || 'texto' in valor) {
+      const c = valor.codigo || '';
+      const t = valor.texto || '';
+      return c && t ? `${c} — ${t}` : (c || t || '');
+    }
+    // Formato {nome, uso} (recurso)
+    if ('nome' in valor || 'uso' in valor) {
+      const n = valor.nome || '';
+      const u = valor.uso || '';
+      return n && u ? `${n} — ${u}` : (n || u || '');
+    }
+    // Fallback: concatena todos os valores string
+    const vals = Object.values(valor)
+      .map(v => stringificar(v))
+      .filter(Boolean);
+    if (vals.length > 0) return vals.join(' — ');
+    // Último recurso: JSON (mas limpo)
+    try {
+      const j = JSON.stringify(valor);
+      return j.length > 200 ? j.substring(0, 200) + '...' : j;
+    } catch {
+      return '';
+    }
+  }
+
+  return String(valor);
+}
+
+/**
+ * SEPARA HABILIDADE em { codigo, texto }
+ * Aceita: "EF02MA13 — texto", "EF02MA13 - texto", { codigo, texto }, etc.
+ */
+function separarHabilidade(valor) {
+  const str = stringificar(valor).trim();
+  if (!str) return { codigo: '', texto: '' };
+
+  // Tenta separar por travessão (—) ou hífen espaçado ( - )
+  const match = str.match(/^([A-Z]{2}\d{2}[A-Z]{2}\d{2}|EI\d{2}[A-Z]{2}\d{2}|EF\d{2}[A-Z]{2}\d{2})\s*[—–-]\s*(.+)$/i);
+  if (match) {
+    return { codigo: match[1].trim(), texto: match[2].trim() };
+  }
+
+  // Tenta separar por " — " simples
+  if (str.includes(' — ')) {
+    const [codigo, ...resto] = str.split(' — ');
+    return { codigo: codigo.trim(), texto: resto.join(' — ').trim() };
+  }
+  if (str.includes(' - ')) {
+    const [codigo, ...resto] = str.split(' - ');
+    return { codigo: codigo.trim(), texto: resto.join(' - ').trim() };
+  }
+
+  // Se for só código, retorna
+  return { codigo: str, texto: '' };
+}
+
+/**
+ * SEPARA RECURSO em { nome, uso }
+ */
+function separarRecurso(valor) {
+  const str = stringificar(valor).trim();
+  if (!str) return { nome: '', uso: '' };
+
+  if (str.includes(' — ')) {
+    const [nome, ...resto] = str.split(' — ');
+    return { nome: nome.trim(), uso: resto.join(' — ').trim() };
+  }
+  if (str.includes(' - ')) {
+    const [nome, ...resto] = str.split(' - ');
+    return { nome: nome.trim(), uso: resto.join(' - ').trim() };
+  }
+  return { nome: str, uso: '' };
+}
+
+/**
+ * Sanitiza texto: remove lixo/strings corrompidas
+ * - Remove sequências de caracteres repetidos absurdos (ex: "iiiiiiiiiii")
+ * - Limita tamanho de strings sem espaço
+ * - Remove caracteres estranhos
+ */
+function sanitizarTexto(valor) {
+  let str = stringificar(valor);
+  if (!str) return '';
+
+  // Remove sequências de 15+ caracteres iguais
+  str = str.replace(/(.)\1{14,}/g, '$1$1$1...');
+
+  // Se tem uma palavra gigante (100+ chars sem espaço), corta
+  str = str.replace(/\S{100,}/g, (match) => match.substring(0, 100) + '...');
+
+  // Remove caracteres de controle
+  str = str.replace(/[\u0000-\u001F\u007F]/g, '');
+
+  return str.trim();
+}
+
 function escapeHtml(texto) {
-  if (!texto) return '';
-  return String(texto)
+  const limpo = sanitizarTexto(texto);
+  if (!limpo) return '';
+  return String(limpo)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -71,37 +189,6 @@ function slug(texto) {
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '')
     .substring(0, 60) || 'planejamento';
-}
-
-function normalizarCodigo(codigo) {
-  if (!codigo) return '';
-  let s = String(codigo).trim();
-  if (s.includes(':')) s = s.split(':').pop();
-  return s.trim().toUpperCase();
-}
-
-// Extrai código+texto de uma habilidade (objeto novo ou string antiga)
-function extrairHabilidade(h) {
-  if (!h) return { codigo: '', texto: '' };
-  if (typeof h === 'object') {
-    return { codigo: h.codigo || '', texto: h.texto || '' };
-  }
-  // Fallback: string. Pode ser "EF02MA13" ou "EF02MA13 — texto"
-  const str = String(h);
-  if (str.includes('—') || str.includes(' - ')) {
-    const partes = str.split(/—|\s-\s/);
-    return { codigo: partes[0].trim(), texto: partes.slice(1).join(' - ').trim() };
-  }
-  return { codigo: str, texto: '' };
-}
-
-// Extrai nome+uso de um recurso (objeto novo ou string antiga)
-function extrairRecurso(r) {
-  if (!r) return { nome: '', uso: '' };
-  if (typeof r === 'object') {
-    return { nome: r.nome || '', uso: r.uso || '' };
-  }
-  return { nome: String(r), uso: '' };
 }
 
 function preloadImage(src) {
@@ -145,7 +232,7 @@ async function renderizarBloco(html, opcoes = {}) {
 }
 
 // ============================================================
-// LOGO SIMIDNAPE (inalterado)
+// LOGO SIMIDNAPE
 // ============================================================
 function htmlLogo(opcoes = {}) {
   const {
@@ -155,18 +242,16 @@ function htmlLogo(opcoes = {}) {
     gap = 28,
   } = opcoes;
 
-  const corBolinha1 = CORAL;
-  const corBolinha2 = OURO;
   const dotSize = Math.round(tamanhoNome * 0.11);
   const dotTop  = Math.round(tamanhoNome * 0.12);
 
   const letras = 'SIMIDNAPE'.split('');
   const conteudo = letras.map((letra, i) => {
     if (i === 1) {
-      return `<span style="position: relative; display: inline-block;">${letra}<span style="position: absolute; top: -${dotTop}px; left: 50%; transform: translateX(-50%); width: ${dotSize}px; height: ${dotSize}px; border-radius: 50%; background: ${corBolinha1}; display: block;"></span></span>`;
+      return `<span style="position: relative; display: inline-block;">${letra}<span style="position: absolute; top: -${dotTop}px; left: 50%; transform: translateX(-50%); width: ${dotSize}px; height: ${dotSize}px; border-radius: 50%; background: ${CORAL}; display: block;"></span></span>`;
     }
     if (i === 3) {
-      return `<span style="position: relative; display: inline-block;">${letra}<span style="position: absolute; top: -${dotTop}px; left: 50%; transform: translateX(-50%); width: ${dotSize}px; height: ${dotSize}px; border-radius: 50%; background: ${corBolinha2}; display: block;"></span></span>`;
+      return `<span style="position: relative; display: inline-block;">${letra}<span style="position: absolute; top: -${dotTop}px; left: 50%; transform: translateX(-50%); width: ${dotSize}px; height: ${dotSize}px; border-radius: 50%; background: ${OURO}; display: block;"></span></span>`;
     }
     return letra;
   }).join('');
@@ -200,17 +285,17 @@ function htmlLogo(opcoes = {}) {
 }
 
 // ============================================================
-// CAPA (inalterada)
+// CAPA
 // ============================================================
 function htmlCapa(cab) {
-  const nome   = cab.nome_professor || '—';
-  const escola = cab.nome_escola || '—';
-  const muni   = cab.municipio || '—';
-  const uf     = cab.estado || '—';
-  const comp   = cab.componente || '—';
-  const ano    = cab.ano || '—';
-  const per    = cab.periodo_texto || '—';
-  const total  = cab.total_aulas || '—';
+  const nome   = sanitizarTexto(cab.nome_professor) || '—';
+  const escola = sanitizarTexto(cab.nome_escola) || '—';
+  const muni   = sanitizarTexto(cab.municipio) || '—';
+  const uf     = sanitizarTexto(cab.estado) || '—';
+  const comp   = sanitizarTexto(cab.componente) || '—';
+  const ano    = sanitizarTexto(cab.ano) || '—';
+  const per    = sanitizarTexto(cab.periodo_texto) || '—';
+  const total  = sanitizarTexto(cab.total_aulas) || '—';
 
   return `
     <div style="
@@ -298,7 +383,7 @@ function htmlCapa(cab) {
           <div><span style="color: ${TEXTO_2};">Município:</span> <strong style="color: ${TEXTO}; font-weight: 700;">${escapeHtml(muni)} - ${escapeHtml(uf)}</strong></div>
           <div><span style="color: ${TEXTO_2};">Período:</span> <strong style="color: ${TEXTO}; font-weight: 700;">${escapeHtml(per)}</strong></div>
           <div></div>
-          <div><span style="color: ${TEXTO_2};">Total de aulas:</span> <strong style="color: ${TEXTO}; font-weight: 700;">${escapeHtml(String(total))}</strong></div>
+          <div><span style="color: ${TEXTO_2};">Total de aulas:</span> <strong style="color: ${TEXTO}; font-weight: 700;">${escapeHtml(total)}</strong></div>
         </div>
       </div>
     </div>
@@ -306,7 +391,7 @@ function htmlCapa(cab) {
 }
 
 // ============================================================
-// CABEÇALHO DO PLANO (inalterado)
+// CABEÇALHO DO PLANO
 // ============================================================
 function htmlMicroCabecalho(sd) {
   const cab = sd.cabecalho || {};
@@ -341,7 +426,7 @@ function htmlMicroCabecalho(sd) {
           <strong style="color:${TEXTO};">Componente:</strong> ${escapeHtml(cab.componente || '')} · 
           <strong style="color:${TEXTO};">Ano:</strong> ${escapeHtml(cab.ano || '')} · 
           <strong style="color:${TEXTO};">Período:</strong> ${escapeHtml(cab.periodo_texto || '')} · 
-          <strong style="color:${TEXTO};">Total de aulas:</strong> ${escapeHtml(String(cab.total_aulas || ''))}
+          <strong style="color:${TEXTO};">Total de aulas:</strong> ${escapeHtml(cab.total_aulas || '')}
         </div>
       </div>
     </div>
@@ -349,12 +434,11 @@ function htmlMicroCabecalho(sd) {
 }
 
 // ============================================================
-// MACRO — ordem: Estruturação → Objetivos → Progressão
+// MACRO
 // ============================================================
 function htmlMicroMacro(sd) {
   const blocos = [];
 
-  // -------- 1. ESTRUTURAÇÃO CURRICULAR --------
   const habilidades = sd.habilidades || [];
   const descritores = sd.descritores_detalhados || [];
   const temEstrutura = habilidades.length > 0 || descritores.length > 0;
@@ -365,7 +449,7 @@ function htmlMicroMacro(sd) {
         Habilidades BNCC
       </div>
       ${habilidades.map(h => {
-        const { codigo, texto } = extrairHabilidade(h);
+        const { codigo, texto } = separarHabilidade(h);
         return `
           <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px;">
             <span style="background: ${AZUL_CLARO}; color: ${AZUL}; padding: 6px 16px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px; border: 1px solid ${AZUL};">${escapeHtml(codigo)}</span>
@@ -403,7 +487,6 @@ function htmlMicroMacro(sd) {
     `);
   }
 
-  // -------- 2. OBJETIVOS --------
   if (sd.objetivos_gerais || sd.justificativa) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
@@ -429,7 +512,6 @@ function htmlMicroMacro(sd) {
     `);
   }
 
-  // -------- 3. PROGRESSÃO COGNITIVA --------
   const eixos = sd.eixos_predominantes || [];
   if (sd.logica_pedagogica || eixos.length > 0) {
     const htmlEixos = eixos.length > 0 ? `
@@ -488,27 +570,25 @@ function normalizarMetodologia(metodologia, duracaoTotal) {
 }
 
 // ============================================================
-// UMA AULA — 8 seções, com Metodologia dividida em 3 micro-blocos
+// UMA AULA
 // ============================================================
 function htmlMicroAula(aula, index, sd) {
   const blocos = [];
 
-  // Mapa de descritores por código normalizado
   const mapaDescritores = {};
   (sd.descritores_detalhados || []).forEach(d => {
-    const chave = normalizarCodigo(d.codigo);
+    const chave = (d.codigo || '').toUpperCase().trim();
     if (chave) mapaDescritores[chave] = d;
   });
 
   const descritoresDaAula = (aula.descritores || []).map(codigoOriginal => {
-    const chave = normalizarCodigo(codigoOriginal);
-    const detalhe = mapaDescritores[chave];
-    return detalhe || { codigo: chave || String(codigoOriginal), texto: '', fonte: '' };
+    let chave = String(codigoOriginal || '').trim();
+    if (chave.includes(':')) chave = chave.split(':').pop();
+    chave = chave.toUpperCase().trim();
+    return mapaDescritores[chave] || { codigo: chave, texto: '', fonte: '' };
   });
 
-  // ==========================
   // SEÇÃO 1 — CABEÇALHO
-  // ==========================
   const headerBadges = [
     aula.principio_cognitivo ? `<span style="background: ${BRANCO}; color: ${AZUL}; padding: 8px 18px; border-radius: 999px; font-size: ${F_LABEL}px; font-weight: 700; border: 1px solid ${BORDA};">${escapeHtml(aula.principio_cognitivo)}</span>` : '',
     aula.duracao_minutos ? `<span style="background: ${BRANCO}; color: ${TEXTO_2}; padding: 8px 18px; border-radius: 999px; font-size: ${F_LABEL}px; font-weight: 700; border: 1px solid ${BORDA}; font-family: 'JetBrains Mono', monospace;">${aula.duracao_minutos} min</span>` : '',
@@ -537,12 +617,10 @@ function htmlMicroAula(aula, index, sd) {
     </div>
   `);
 
-  // ==========================
   // SEÇÃO 2 — HABILIDADES E DESCRITORES
-  // ==========================
-  const habilidadeExtraida = extrairHabilidade(aula.habilidade_foco);
-  const foco = aula.foco || '';
-  const temHabilidades = habilidadeExtraida.codigo || descritoresDaAula.length > 0;
+  const habilidadeSeparada = separarHabilidade(aula.habilidade_foco);
+  const foco = sanitizarTexto(aula.foco);
+  const temHabilidades = habilidadeSeparada.codigo || descritoresDaAula.length > 0;
 
   if (temHabilidades) {
     blocos.push(`
@@ -551,13 +629,13 @@ function htmlMicroAula(aula, index, sd) {
           <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${AZUL}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 14px;">
             Habilidades e descritores desta aula
           </div>
-          ${habilidadeExtraida.codigo ? `
+          ${habilidadeSeparada.codigo ? `
             <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap;">
-              <span style="background: ${BRANCO}; color: ${AZUL}; padding: 8px 18px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px; border: 1px solid ${AZUL};">${escapeHtml(habilidadeExtraida.codigo)}</span>
+              <span style="background: ${BRANCO}; color: ${AZUL}; padding: 8px 18px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px; border: 1px solid ${AZUL};">${escapeHtml(habilidadeSeparada.codigo)}</span>
               ${foco ? `<span style="background: ${BRANCO}; color: ${TEXTO_2}; padding: 8px 16px; border-radius: 6px; font-size: ${F_LABEL}px; font-weight: 600; border: 1px solid ${BORDA};">${escapeHtml(foco)}</span>` : ''}
             </div>
-            ${habilidadeExtraida.texto ? `
-              <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; margin-bottom: 12px;">${escapeHtml(habilidadeExtraida.texto)}</div>
+            ${habilidadeSeparada.texto ? `
+              <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; margin-bottom: 12px;">${escapeHtml(habilidadeSeparada.texto)}</div>
             ` : ''}
           ` : ''}
           ${descritoresDaAula.length > 0 ? `
@@ -577,9 +655,7 @@ function htmlMicroAula(aula, index, sd) {
     `);
   }
 
-  // ==========================
   // SEÇÃO 3 — OBJETIVO E EVIDÊNCIA
-  // ==========================
   if (aula.objetivo_da_aula || aula.conteudo || aula.evidencia_de_aprendizagem) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 4px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
@@ -608,12 +684,9 @@ function htmlMicroAula(aula, index, sd) {
     `);
   }
 
-  // ==========================
-  // SEÇÃO 4 — METODOLOGIA (3 micro-blocos separados)
-  // ==========================
+  // SEÇÃO 4 — METODOLOGIA
   const metodo = normalizarMetodologia(aula.metodologia, aula.duracao_minutos);
 
-  // 4.0 — Cabeçalho da Metodologia
   if (metodo.introducao || metodo.desenvolvimento || metodo.fechamento) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 4px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
@@ -624,7 +697,6 @@ function htmlMicroAula(aula, index, sd) {
     `);
   }
 
-  // 4.1 — INTRODUÇÃO
   if (metodo.introducao) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 4px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
@@ -651,11 +723,10 @@ function htmlMicroAula(aula, index, sd) {
     `);
   }
 
-  // 4.2 — DESENVOLVIMENTO
   if (metodo.desenvolvimento) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 4px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${BRANCO}; border-radius: 12px; padding: 18px 24px; border-left: 5px solid ${AZUL}; border: 1px solid ${BORDA}; border-left: 5px solid ${AZUL};">
+        <div style="background: ${BRANCO}; border-radius: 12px; padding: 18px 24px; border: 1px solid ${BORDA}; border-left: 5px solid ${AZUL};">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${AZUL}; text-transform: uppercase; letter-spacing: 2.5px;">
               2 · Desenvolvimento
@@ -678,7 +749,6 @@ function htmlMicroAula(aula, index, sd) {
     `);
   }
 
-  // 4.3 — FECHAMENTO
   if (metodo.fechamento) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 4px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
@@ -710,19 +780,18 @@ function htmlMicroAula(aula, index, sd) {
     `);
   }
 
-  // ==========================
   // SEÇÃO 5 — RECURSOS DIDÁTICOS
-  // ==========================
   if ((aula.recursos || []).length > 0) {
-    const recursosExtraidos = aula.recursos.map(extrairRecurso);
-    const recursosComUso = recursosExtraidos.filter(r => r.nome);
+    const recursosSeparados = (aula.recursos || [])
+      .map(separarRecurso)
+      .filter(r => r.nome);
 
-    if (recursosComUso.length > 0) {
+    if (recursosSeparados.length > 0) {
       blocos.push(`
         <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 4px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
           <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 10px; padding: 18px 24px;">
             <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Recursos didáticos</div>
-            ${recursosComUso.map(r => `
+            ${recursosSeparados.map(r => `
               <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px;">
                 <span style="background: ${CREME}; color: ${TEXTO}; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: ${F_BODY_SM}px; border: 1px solid ${BORDA}; flex-shrink: 0;">${escapeHtml(r.nome)}</span>
                 ${r.uso ? `<span style="color: ${TEXTO_2}; line-height: 1.55; font-size: ${F_BODY_SM}px; padding-top: 4px;">${escapeHtml(r.uso)}</span>` : ''}
@@ -734,11 +803,8 @@ function htmlMicroAula(aula, index, sd) {
     }
   }
 
-  // ==========================
   // SEÇÃO 6 — AVALIAÇÃO E INTERVENÇÕES
-  // ==========================
-  const temAvaliacao = aula.avaliacao_da_aula || aula.onde_pode_travar || aula.diferenciacao;
-  if (temAvaliacao) {
+  if (aula.avaliacao_da_aula || aula.onde_pode_travar || aula.diferenciacao) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 4px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
         <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-left: 6px solid ${VERDE}; border-radius: 12px; padding: 20px 26px;">
@@ -768,9 +834,7 @@ function htmlMicroAula(aula, index, sd) {
     `);
   }
 
-  // ==========================
-  // SEÇÃO 7 — NOTA PEDAGÓGICA
-  // ==========================
+  // SEÇÃO 7 — NOTA PEDAGÓGICA (sem emoji)
   if (aula.leitura_relacional) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 4px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
@@ -782,9 +846,7 @@ function htmlMicroAula(aula, index, sd) {
     `);
   }
 
-  // ==========================
   // SEÇÃO 8 — REFLEXÃO PÓS-AULA
-  // ==========================
   blocos.push(`
     <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 4px 40px 12px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
       <div style="background: ${BRANCO}; border: 1.5px dashed ${BORDA}; border-radius: 12px; padding: 18px 24px;">
