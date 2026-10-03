@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { gerarPdfPlanejamento } from '../utils/gerarPdfPlanejamento';
+import { gerarPDF } from '../utils/pdf';
+import { gerarPdfCoordenacao } from '../utils/gerarPdfCoordenacao';
 
 /**
- * Modal que mostra um planejamento e permite editá-lo inline.
+ * Modal que mostra um plano e permite editá-lo inline (quando aplicável).
  *
- * Modos:
- *   - "ver": visualiza o conteúdo. Botão "✏️ Editar" muda para edição.
- *   - "editar": edita o conteúdo. Botões "💾 Salvar" e "💾 Salvar como novo".
+ * Modos EDITÁVEIS inline:
+ *   - "aula", "planejamento", "coordenacao"
  *
- * Neste bloco (D11b), apenas o Modo Aula é editável.
- * Modo Planejamento e Modo Coordenação mostram "edição em breve" no modo editar.
+ * Modos SOMENTE-LEITURA (view-only):
+ *   - "neuroaula" (tem identidade própria, PDF próprio)
+ *   - "aula_que_funciona" (idem)
+ *
+ * Para os view-only, o botão "Editar" fica oculto — o professor regenera
+ * no motor original se quiser alterar.
  */
 const ModalPlano = ({ plano, onFechar, onSalvar }) => {
   const [modo, setModo] = useState('ver');
@@ -20,12 +25,61 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
   const [salvando, setSalvando] = useState(false);
   const [gerandoPdf, setGerandoPdf] = useState(false);
 
-  const modoPlano = plano.modo || 'aula';
+  // Detecta o tipo do plano (plan_type tem prioridade; fallback para modo)
+  const planType = plano.plan_type || plano.modo || 'aula';
 
+  // Modos view-only (não permitem edição inline)
+  const isViewOnly = planType === 'neuroaula' || planType === 'aula_que_funciona';
+
+  // ============================================================
+  // BAIXAR PDF — despacha para o gerador correto por tipo
+  // ============================================================
   const baixarPdf = async () => {
     setGerandoPdf(true);
     try {
-      await gerarPdfPlanejamento(plano);
+      if (planType === 'coordenacao') {
+        await gerarPdfCoordenacao(plano);
+      } else if (planType === 'neuroaula') {
+        // Usa o PDF genérico com capa institucional (mesmo padrão do Planejador)
+        const el = document.getElementById('modal-plano-conteudo');
+        if (el) {
+          const sd = plano.structured_data || {};
+          const cab = sd.cabecalho || {};
+          const bncc = cab.bncc || {};
+          const nome = (cab.titulo || 'neuroaula').replace(/\s+/g, '_');
+          const dadosCapa = [
+            { label: 'Disciplina', valor: cab.disciplina },
+            { label: 'Ano', valor: cab.ano },
+            { label: 'Duração', valor: cab.duracao },
+            { label: 'Alunos', valor: cab.num_alunos },
+          ];
+          if (bncc.codigo) dadosCapa.push({ label: 'Habilidade BNCC', valor: bncc.codigo });
+          await gerarPDF(el, nome, {
+            capa: { badge: 'NeuroAula · Design de Aprendizagem', titulo: cab.titulo, dados: dadosCapa },
+          });
+        }
+      } else if (planType === 'aula_que_funciona') {
+        const el = document.getElementById('modal-plano-conteudo');
+        if (el) {
+          const sd = plano.structured_data || {};
+          const cab = sd.cabecalho || {};
+          const bncc = cab.bncc || {};
+          const nome = (cab.titulo || 'aula_que_funciona').replace(/\s+/g, '_');
+          const dadosCapa = [
+            { label: 'Disciplina', valor: cab.disciplina },
+            { label: 'Ano', valor: cab.ano },
+            { label: 'Duração', valor: cab.duracao },
+            { label: 'Alunos', valor: cab.num_alunos },
+          ];
+          if (bncc.codigo) dadosCapa.push({ label: 'Habilidade BNCC', valor: bncc.codigo });
+          await gerarPDF(el, nome, {
+            capa: { badge: 'Aula que Funciona · Script Cronometrado', titulo: cab.titulo, dados: dadosCapa },
+          });
+        }
+      } else {
+        // aula, planejamento
+        await gerarPdfPlanejamento(plano);
+      }
     } catch (e) {
       console.error('Erro ao gerar PDF:', e);
       alert('Erro ao gerar o PDF. Tente novamente.');
@@ -101,7 +155,7 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
   };
 
   // ============================================================
-  // EDIÇÃO — Modo Planejamento (D11c)
+  // EDIÇÃO — Modo Planejamento
   // ============================================================
   const atualizarAula = (index, campo, valor) => {
     const novo = { ...conteudo };
@@ -187,7 +241,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
     setConteudo(novo);
   };
 
-  // Adaptações do modo Planejamento (estrutura diferente: { necessidade, estrategias[] })
   const atualizarAdaptacaoPlano = (index, campo, valor) => {
     const novo = { ...conteudo };
     novo.adaptacoes_inclusivas = [...(novo.adaptacoes_inclusivas || [])];
@@ -240,7 +293,7 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
   };
 
   // ============================================================
-  // EDIÇÃO — Modo Coordenação (D11d)
+  // EDIÇÃO — Modo Coordenação
   // ============================================================
   const atualizarAcao = (index, campo, valor) => {
     const novo = { ...conteudo };
@@ -304,7 +357,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
     setConteudo(novo);
   };
 
-  // Cronograma
   const atualizarCronograma = (index, campo, valor) => {
     const novo = { ...conteudo };
     novo.cronograma = [...(novo.cronograma || [])];
@@ -324,7 +376,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
     setConteudo(novo);
   };
 
-  // Objetivos específicos (coordenador)
   const atualizarObjetivoEspecificoCoord = (index, valor) => {
     const novo = { ...conteudo };
     novo.objetivos = {
@@ -374,11 +425,236 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
   };
 
   // ============================================================
-  // RENDER — VIEW
+  // VIEW — NEUROAULA (read-only)
+  // ============================================================
+  const renderViewNeuroAula = () => {
+    const sd = conteudo;
+    const cab = sd.cabecalho || {};
+    const isDiferenciado = !!(sd.versao_principal && sd.versao_adaptada);
+    const prof = isDiferenciado ? (sd.versao_principal?.para_o_professor || {}) : (sd.para_o_professor || {});
+    const inc = sd.inclusao || {};
+    const principios = isDiferenciado ? (sd.versao_principal?.principios_cognitivos || []) : (sd.principios_cognitivos || []);
+    const etapas = isDiferenciado ? (sd.versao_principal?.etapas || []) : (sd.etapas || []);
+    const etapasAdapt = isDiferenciado ? (sd.versao_adaptada?.etapas_adaptadas || []) : [];
+
+    return (
+      <div className="space-y-4">
+        {/* Cabeçalho */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h3 className="text-xl font-bold text-gray-900">{cab.titulo || titulo}</h3>
+          <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            {cab.disciplina && <div><span className="text-gray-500">Disciplina:</span> <strong>{cab.disciplina}</strong></div>}
+            {cab.ano && <div><span className="text-gray-500">Ano:</span> <strong>{cab.ano}</strong></div>}
+            {cab.duracao && <div><span className="text-gray-500">Duração:</span> <strong>{cab.duracao}</strong></div>}
+            {cab.num_alunos && <div><span className="text-gray-500">Alunos:</span> <strong>{cab.num_alunos}</strong></div>}
+          </div>
+          {cab.objetivo && (
+            <div className="mt-3">
+              <p className="text-xs font-semibold text-gray-700">🎯 Objetivo</p>
+              <p className="text-sm text-gray-700">{cab.objetivo}</p>
+            </div>
+          )}
+          {cab.bncc?.codigo && (
+            <div className="mt-3 bg-blue-50 border border-blue-100 rounded p-2">
+              <p className="text-xs font-mono font-bold text-blue-800">{cab.bncc.codigo}</p>
+              <p className="text-xs text-blue-800 mt-0.5">{cab.bncc.texto}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Princípios cognitivos */}
+        {principios.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-gray-800 mb-2">🧠 Princípios cognitivos aplicados</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {principios.map((p, i) => (
+                <div key={i} className="bg-purple-50 border border-purple-100 rounded-lg p-3">
+                  <p className="font-semibold text-sm text-purple-900">{p.nome}</p>
+                  <p className="text-xs text-purple-800 mt-1">{p.explicacao}</p>
+                  <p className="text-xs text-purple-700 italic mt-1"><strong>Nesta aula:</strong> {p.aplicacao}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Etapas */}
+        {etapas.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-gray-800 mb-2">📋 Sequência da aula</h3>
+            <div className="space-y-3">
+              {etapas.map((et, i) => (
+                <div key={i} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-3 py-2 flex justify-between items-center">
+                    <span className="font-semibold text-sm">Etapa {et.numero} — {et.titulo}</span>
+                    <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded">{et.tempo}</span>
+                  </div>
+                  <div className="p-3 space-y-2 bg-white">
+                    {et.professor_faca && <p className="text-xs text-gray-700"><strong>Professor faça:</strong> {et.professor_faca}</p>}
+                    {et.diga && <p className="text-xs text-gray-700"><strong>Diga:</strong> "{et.diga}"</p>}
+                    {et.pergunte && <p className="text-xs text-gray-700"><strong>Pergunte:</strong> {et.pergunte}</p>}
+                    {et.alunos_deverao && <p className="text-xs text-gray-700"><strong>Alunos deverão:</strong> {et.alunos_deverao}</p>}
+                    {et.apoio_visual && <p className="text-xs text-blue-800"><strong>Apoio visual:</strong> {et.apoio_visual}</p>}
+                    {et.porque_funciona && <p className="text-xs text-purple-700 italic"><strong>Por que funciona:</strong> {et.porque_funciona}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Versão adaptada (se diferenciado) */}
+        {etapasAdapt.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-gray-800 mb-2">📋 Versão adaptada</h3>
+            <div className="space-y-3">
+              {etapasAdapt.map((et, i) => (
+                <div key={i} className="border border-gray-200 rounded-lg p-3 bg-amber-50">
+                  <p className="font-semibold text-sm text-amber-900">Etapa {et.numero} — {et.titulo}</p>
+                  {et.diga && <p className="text-xs text-amber-900 mt-1"><strong>Diga:</strong> "{et.diga}"</p>}
+                  {et.apoio_visual && <p className="text-xs text-amber-800 mt-1"><strong>Apoio visual:</strong> {et.apoio_visual}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Inclusão */}
+        {inc.tem_necessidades && inc.condicoes?.length > 0 && (
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+            <h3 className="font-semibold text-blue-900 mb-2">🧩 Adaptações para necessidades específicas</h3>
+            {inc.condicoes.map((c, i) => (
+              <div key={i} className="mb-2">
+                <p className="font-semibold text-sm text-blue-900">{c.nome}</p>
+                <ul className="text-xs text-blue-800 space-y-0.5 mt-1">
+                  {(c.estrategias || []).map((e, j) => <li key={j}>• {e}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Crescimento profissional */}
+        {prof.por_que_esta_aula_funciona && (
+          <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+            <h3 className="font-semibold text-indigo-900 mb-2">🎓 Para o seu crescimento profissional</h3>
+            <p className="text-sm text-indigo-900">{prof.por_que_esta_aula_funciona}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ============================================================
+  // VIEW — AULA QUE FUNCIONA (read-only)
+  // ============================================================
+  const renderViewAulaQueFunciona = () => {
+    const sd = conteudo;
+    const cab = sd.cabecalho || {};
+    const isDiferenciado = !!(sd.versao_principal && sd.versao_adaptada);
+    const checklist = isDiferenciado ? (sd.versao_principal?.checklist || []) : (sd.checklist || []);
+    const roteiro = isDiferenciado ? (sd.versao_principal?.roteiro || []) : (sd.roteiro || []);
+    const adaptacoes = isDiferenciado ? (sd.versao_principal?.adaptacoes || []) : (sd.adaptacoes || []);
+    const intervencao = isDiferenciado ? (sd.versao_principal?.intervencao || '') : (sd.intervencao || '');
+
+    return (
+      <div className="space-y-4">
+        {/* Cabeçalho */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h3 className="text-xl font-bold text-gray-900">{cab.titulo || titulo}</h3>
+          <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            {cab.disciplina && <div><span className="text-gray-500">Disciplina:</span> <strong>{cab.disciplina}</strong></div>}
+            {cab.ano && <div><span className="text-gray-500">Ano:</span> <strong>{cab.ano}</strong></div>}
+            {cab.duracao && <div><span className="text-gray-500">Duração:</span> <strong>{cab.duracao}</strong></div>}
+            {cab.num_alunos && <div><span className="text-gray-500">Alunos:</span> <strong>{cab.num_alunos}</strong></div>}
+          </div>
+          {cab.objetivo && (
+            <div className="mt-3">
+              <p className="text-xs font-semibold text-gray-700">🎯 Objetivo</p>
+              <p className="text-sm text-gray-700">{cab.objetivo}</p>
+            </div>
+          )}
+          {cab.bncc?.codigo && (
+            <div className="mt-3 bg-blue-50 border border-blue-100 rounded p-2">
+              <p className="text-xs font-mono font-bold text-blue-800">{cab.bncc.codigo}</p>
+              <p className="text-xs text-blue-800 mt-0.5">{cab.bncc.texto}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Checklist */}
+        {checklist.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-gray-800 mb-2">✅ Checklist de materiais</h3>
+            <ul className="space-y-0.5">
+              {checklist.map((item, i) => (
+                <li key={i} className="text-sm text-gray-700">☐ {item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Roteiro */}
+        {roteiro.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-gray-800 mb-2">⏱️ Roteiro cronometrado</h3>
+            <div className="space-y-3">
+              {roteiro.map((b, i) => (
+                <div key={i} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-3 py-2 flex justify-between items-center">
+                    <span className="font-semibold text-sm">{b.titulo}</span>
+                    <div className="flex gap-1.5">
+                      {b.principio_relacionado && (
+                        <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded">🧠 {b.principio_relacionado}</span>
+                      )}
+                      {b.tempo && (
+                        <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded font-mono">{b.tempo}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-3 space-y-1.5 bg-white">
+                    {b.faca && <p className="text-xs text-gray-700"><strong>Faça:</strong> {b.faca}</p>}
+                    {b.fale && <p className="text-xs text-gray-700"><strong>Fale:</strong> "{b.fale}"</p>}
+                    {b.pergunte && <p className="text-xs text-gray-700"><strong>Pergunte:</strong> {b.pergunte}</p>}
+                    {b.alunos && <p className="text-xs text-gray-700"><strong>Alunos:</strong> {b.alunos}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Adaptações */}
+        {adaptacoes.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-gray-800 mb-2">♿ Adaptações inclusivas</h3>
+            <ul className="space-y-0.5">
+              {adaptacoes.map((a, i) => (
+                <li key={i} className="text-sm text-gray-700">• {a}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Intervenção */}
+        {intervencao && (
+          <div className="bg-yellow-50 border border-yellow-100 rounded p-3">
+            <p className="text-sm text-yellow-900"><strong>⚠️ Intervenção:</strong> {intervencao}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ============================================================
+  // VIEW (roteador)
   // ============================================================
   const renderView = () => {
+    if (planType === 'neuroaula') return renderViewNeuroAula();
+    if (planType === 'aula_que_funciona') return renderViewAulaQueFunciona();
+
     const sd = conteudo;
-    if (modoPlano === 'aula') {
+    if (planType === 'aula') {
       return (
         <>
           {sd.checklist?.length > 0 && (
@@ -440,7 +716,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
       );
     }
 
-    // Outros modos: exibição resumida (a edição vai chegar em D11c e D11d)
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-sm text-gray-600">
         Visualização completa deste modo já é suportada na tela principal.
@@ -450,12 +725,11 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
   };
 
   // ============================================================
-  // RENDER EDIT — Modo Planejamento (D11c)
+  // EDIT — Modo Planejamento
   // ============================================================
   const renderEditPlanejamento = () => {
     return (
       <>
-        {/* Objetivos gerais */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">🎯 Objetivos gerais</h3>
           <textarea
@@ -466,7 +740,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           />
         </div>
 
-        {/* Objetivos específicos */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-gray-800">🎯 Objetivos específicos</h3>
@@ -490,7 +763,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           </div>
         </div>
 
-        {/* Justificativa */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">💡 Justificativa</h3>
           <textarea
@@ -501,7 +773,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           />
         </div>
 
-        {/* Sequência didática */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-gray-800">
@@ -562,7 +833,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
                   />
                 </div>
 
-                {/* Atividades dos alunos */}
                 <div className="mt-3">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-semibold text-gray-600">👥 Atividades dos alunos</span>
@@ -586,7 +856,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
                   </div>
                 </div>
 
-                {/* Recursos */}
                 <div className="mt-3">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-semibold text-gray-600">📦 Recursos</span>
@@ -630,7 +899,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           </div>
         </div>
 
-        {/* Avaliação geral */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">📊 Avaliação geral</h3>
           <textarea
@@ -648,7 +916,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           />
         </div>
 
-        {/* Adaptações inclusivas */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-gray-800">🧩 Adaptações inclusivas</h3>
@@ -694,7 +961,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           </div>
         </div>
 
-        {/* Considerações finais */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">📌 Considerações finais</h3>
           <textarea
@@ -709,12 +975,11 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
   };
 
   // ============================================================
-  // RENDER EDIT — Modo Coordenação (D11d)
+  // EDIT — Modo Coordenação
   // ============================================================
   const renderEditCoordenacao = () => {
     return (
       <>
-        {/* Objetivo geral */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">🎯 Objetivo geral</h3>
           <textarea
@@ -728,7 +993,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           />
         </div>
 
-        {/* Objetivos específicos */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-gray-800">🎯 Objetivos específicos</h3>
@@ -752,7 +1016,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           </div>
         </div>
 
-        {/* Contexto */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">🔎 Contexto (diagnóstico)</h3>
           <textarea
@@ -763,7 +1026,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           />
         </div>
 
-        {/* Ações */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-gray-800">
@@ -815,7 +1077,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
                   />
                 </div>
 
-                {/* Recursos da ação */}
                 <div className="mt-2">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-semibold text-gray-600">📦 Recursos</span>
@@ -851,7 +1112,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           </div>
         </div>
 
-        {/* Cronograma */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-gray-800">📅 Cronograma</h3>
@@ -890,7 +1150,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           </div>
         </div>
 
-        {/* Avaliação da ação */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">📊 Avaliação da ação</h3>
           <textarea
@@ -934,7 +1193,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           />
         </div>
 
-        {/* Considerações finais */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">📌 Considerações finais</h3>
           <textarea
@@ -949,13 +1207,16 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
   };
 
   const renderEdit = () => {
-    if (modoPlano === 'planejamento') {
-      return renderEditPlanejamento();
+    if (planType === 'planejamento') return renderEditPlanejamento();
+    if (planType === 'coordenacao') return renderEditCoordenacao();
+    if (planType === 'neuroaula' || planType === 'aula_que_funciona') {
+      return (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center text-sm text-amber-800">
+          🚧 Este motor tem visualização própria. Para editar, regenere o material no motor original.
+        </div>
+      );
     }
-    if (modoPlano === 'coordenacao') {
-      return renderEditCoordenacao();
-    }
-    if (modoPlano !== 'aula') {
+    if (planType !== 'aula') {
       return (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center text-sm text-amber-800">
           🚧 A edição deste modo será habilitada em breve.
@@ -965,7 +1226,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
 
     return (
       <>
-        {/* Checklist */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-gray-800">✅ Checklist</h3>
@@ -989,7 +1249,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           </div>
         </div>
 
-        {/* Roteiro */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-gray-800">⏱️ Roteiro</h3>
@@ -1061,7 +1320,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           </div>
         </div>
 
-        {/* Adaptações */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-gray-800">♿ Adaptações</h3>
@@ -1085,7 +1343,6 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
           </div>
         </div>
 
-        {/* Intervenção */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">⚠️ Intervenção sugerida</h3>
           <textarea
@@ -1099,6 +1356,18 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
     );
   };
 
+  // ============================================================
+  // LABEL DO MODO (header)
+  // ============================================================
+  const labelModo = () => {
+    if (planType === 'aula') return '🎯 Aula';
+    if (planType === 'planejamento') return '📅 Planejamento';
+    if (planType === 'coordenacao') return '🎓 Coordenação';
+    if (planType === 'neuroaula') return '🧠 NeuroAula';
+    if (planType === 'aula_que_funciona') return '🎯 Aula que Funciona';
+    return planType;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full my-8">
@@ -1106,10 +1375,7 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-xl z-10">
           <div className="min-w-0 flex-1">
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-              {modo === 'ver' ? '👁️ Visualizar' : '✏️ Editar'} ·{' '}
-              {modoPlano === 'aula' && '🎯 Aula'}
-              {modoPlano === 'planejamento' && '📅 Planejamento'}
-              {modoPlano === 'coordenacao' && '🎓 Coordenação'}
+              {modo === 'ver' ? '👁️ Visualizar' : '✏️ Editar'} · {labelModo()}
             </p>
             {modo === 'ver' ? (
               <h2 className="text-lg font-bold text-gray-900 truncate">{titulo}</h2>
@@ -1131,14 +1397,14 @@ const ModalPlano = ({ plano, onFechar, onSalvar }) => {
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div id="modal-plano-conteudo" className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           {modo === 'ver' ? renderView() : renderEdit()}
         </div>
 
         {/* Footer */}
         <div className="border-t border-gray-200 px-6 py-3 flex justify-between items-center gap-2 rounded-b-xl flex-wrap">
           <div>
-            {modo === 'ver' && (
+            {modo === 'ver' && !isViewOnly && (
               <button
                 onClick={() => setModo('editar')}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded-lg transition"
