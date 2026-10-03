@@ -8,6 +8,8 @@ import api from '../api/api';
 const ABAS_PRINCIPAIS = [
   { value: 'materiais', label: 'Materiais', icon: '📄' },
   { value: 'questoes', label: 'Minhas Questões', icon: '✨' },
+  { value: 'neuroaula', label: 'NeuroAula', icon: '🧠' },
+  { value: 'aula_funciona', label: 'Aula que Funciona', icon: '🎯' },
   { value: 'aluno', label: 'Meu Aluno', icon: '👤' },
   { value: 'praticas', label: 'Práticas Exitosas', icon: '🏆' },
   { value: 'terapia', label: 'Terapia', icon: '💭' },
@@ -54,6 +56,8 @@ const MeuAcervo = () => {
   // Dados de cada motor
   const [materiais, setMateriais] = useState([]);
   const [questoes, setQuestoes] = useState([]);
+  const [neuroaulas, setNeuroaulas] = useState([]);
+  const [aulasFunciona, setAulasFunciona] = useState([]);
   const [casos, setCasos] = useState([]);
   const [praticas, setPraticas] = useState([]);
   const [reflexoes, setReflexoes] = useState([]);
@@ -65,15 +69,22 @@ const MeuAcervo = () => {
     setLoading(true);
     setErro('');
     try {
-      const [rMateriais, rQuestoes, rCasos, rPraticas, rReflexoes] = await Promise.all([
+      const [
+        rMateriais, rQuestoes, rNeuro, rAulaFunciona,
+        rCasos, rPraticas, rReflexoes,
+      ] = await Promise.all([
         api.get('/materials').catch(() => ({ data: [] })),
         api.get('/question-ia/minhas').catch(() => ({ data: [] })),
+        api.get('/lesson-plans?plan_type=neuroaula').catch(() => ({ data: [] })),
+        api.get('/lesson-plans?plan_type=aula_que_funciona').catch(() => ({ data: [] })),
         api.get('/pedagogical-cases').catch(() => ({ data: [] })),
         api.get('/successful-practices').catch(() => ({ data: [] })),
         api.get('/reflections').catch(() => ({ data: [] })),
       ]);
       setMateriais(rMateriais.data || []);
       setQuestoes(rQuestoes.data || []);
+      setNeuroaulas(rNeuro.data || []);
+      setAulasFunciona(rAulaFunciona.data || []);
       setCasos(rCasos.data || []);
       setPraticas(rPraticas.data || []);
       setReflexoes(rReflexoes.data || []);
@@ -121,6 +132,15 @@ const MeuAcervo = () => {
     } catch { alert('Erro ao excluir.'); }
   };
 
+  const excluirPlano = async (id, tipo) => {
+    if (!window.confirm('Excluir este plano?')) return;
+    try {
+      await api.delete(`/lesson-plans/${id}`);
+      if (tipo === 'neuroaula') setNeuroaulas(prev => prev.filter(p => p.id !== id));
+      if (tipo === 'aula_que_funciona') setAulasFunciona(prev => prev.filter(p => p.id !== id));
+    } catch { alert('Erro ao excluir.'); }
+  };
+
   // ============================================================
   // FILTROS NA MEMÓRIA
   // ============================================================
@@ -148,6 +168,8 @@ const MeuAcervo = () => {
     ['title', 'subject', 'grade']
   );
   const questoesFiltradas = aplicarFiltros(questoes, ['enunciado', 'disciplina', 'serie']);
+  const neuroaulasFiltradas = aplicarFiltros(neuroaulas, ['title', 'subject', 'grade']);
+  const aulasFuncionaFiltradas = aplicarFiltros(aulasFunciona, ['title', 'subject', 'grade']);
   const casosFiltrados = aplicarFiltros(casos, ['title', 'grade', 'subject']);
   const praticasFiltradas = aplicarFiltros(praticas, ['title', 'school', 'subject']);
   const reflexoesFiltradas = aplicarFiltros(reflexoes, ['title', 'theme']);
@@ -155,6 +177,8 @@ const MeuAcervo = () => {
   // Contadores (badges)
   const contMateriais = (tipo) => materiais.filter(m => m.material_type === tipo).length;
   const contQuestoes = questoes.length;
+  const contNeuroaulas = neuroaulas.length;
+  const contAulasFunciona = aulasFunciona.length;
   const contCasos = casos.length;
   const contPraticas = praticas.length;
   const contReflexoes = reflexoes.length;
@@ -300,6 +324,66 @@ const MeuAcervo = () => {
     )
   );
 
+  const renderNeuroAula = () => (
+    neuroaulasFiltradas.length === 0 ? (
+      <EmptyState
+        icone="🧠"
+        titulo={busca ? 'Nenhuma NeuroAula corresponde à busca.' : 'Você ainda não gerou nenhuma NeuroAula.'}
+        ctaTexto="🧠 Criar NeuroAula"
+        ctaRota="/neuroaula"
+      />
+    ) : (
+      <div className="space-y-3">
+        {neuroaulasFiltradas.map(n => (
+          <Card
+            key={n.id}
+            icone="🧠"
+            badge="NeuroAula"
+            titulo={n.title}
+            subtitulo={[n.subject, n.grade].filter(Boolean).join(' · ') || '—'}
+            data={n.created_at}
+            botoes={
+              <>
+                <Btn onClick={() => navigate('/neuroaula')}>👁️ Reabrir</Btn>
+                <Btn onClick={() => excluirPlano(n.id, 'neuroaula')} variacao="danger">🗑️ Excluir</Btn>
+              </>
+            }
+          />
+        ))}
+      </div>
+    )
+  );
+
+  const renderAulaQueFunciona = () => (
+    aulasFuncionaFiltradas.length === 0 ? (
+      <EmptyState
+        icone="🎯"
+        titulo={busca ? 'Nenhuma Aula que Funciona corresponde à busca.' : 'Você ainda não criou Aula que Funciona.'}
+        ctaTexto="🎯 Criar Aula que Funciona"
+        ctaRota="/aula-que-funciona"
+      />
+    ) : (
+      <div className="space-y-3">
+        {aulasFuncionaFiltradas.map(a => (
+          <Card
+            key={a.id}
+            icone="🎯"
+            badge="Aula que Funciona"
+            titulo={a.title}
+            subtitulo={[a.subject, a.grade].filter(Boolean).join(' · ') || '—'}
+            data={a.created_at}
+            botoes={
+              <>
+                <Btn onClick={() => navigate('/aula-que-funciona')}>👁️ Reabrir</Btn>
+                <Btn onClick={() => excluirPlano(a.id, 'aula_que_funciona')} variacao="danger">🗑️ Excluir</Btn>
+              </>
+            }
+          />
+        ))}
+      </div>
+    )
+  );
+
   const renderCasos = () => (
     casosFiltrados.length === 0 ? (
       <EmptyState
@@ -393,6 +477,8 @@ const MeuAcervo = () => {
   const renderConteudoAba = () => {
     if (abaAtiva === 'materiais') return renderMateriais();
     if (abaAtiva === 'questoes') return renderQuestoes();
+    if (abaAtiva === 'neuroaula') return renderNeuroAula();
+    if (abaAtiva === 'aula_funciona') return renderAulaQueFunciona();
     if (abaAtiva === 'aluno') return renderCasos();
     if (abaAtiva === 'praticas') return renderPraticas();
     if (abaAtiva === 'terapia') return renderTerapia();
@@ -433,6 +519,8 @@ const MeuAcervo = () => {
             const contadores = {
               materiais: materiais.length,
               questoes: contQuestoes,
+              neuroaula: contNeuroaulas,
+              aula_funciona: contAulasFunciona,
               aluno: contCasos,
               praticas: contPraticas,
               terapia: contReflexoes,
