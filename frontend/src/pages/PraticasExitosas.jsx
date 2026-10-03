@@ -5,25 +5,37 @@ import { gerarPDF } from '../utils/pdf';
 import FeedbackCard from '../components/FeedbackCard';
 
 // ============================================================
+// PALETA SIMIDNAPE (mesma dos demais motores)
+// ============================================================
+const AZUL          = '#2C5F7C';
+const AZUL_CLARO    = '#E8F0F5';
+const VERDE         = '#5FA68D';
+const VERDE_CLARO   = '#EAF4F0';
+const PESSEGO       = '#E8A87C';
+const PESSEGO_CLARO = '#FDF1E7';
+const CORAL         = '#E07856';
+const OURO          = '#D4A843';
+const OURO_CLARO    = '#FBF3E0';
+const CREME         = '#FDFBF7';
+const BRANCO        = '#FFFFFF';
+const TEXTO         = '#2D2D2D';
+const TEXTO_2       = '#6B6B6B';
+const BORDA         = '#E5E0D8';
+
+// ============================================================
 // DEFINIÇÃO DAS CATEGORIAS POR ETAPA E PERFIL
 // ============================================================
 const CATEGORIAS = {
   EI: {
-    professor: [
-      { v: 'educacao_infantil', l: '🧸 Educação Infantil' },
-    ],
-    coordenador: [
-      { v: 'gestao_escolar', l: '🏫 Gestão Escolar' },
-    ],
+    professor: [{ v: 'educacao_infantil', l: '🧸 Educação Infantil' }],
+    coordenador: [{ v: 'gestao_escolar', l: '🏫 Gestão Escolar' }],
   },
   EF: {
     professor: [
       { v: 'ciclo_alfabetizacao', l: '📖 Ciclo de Alfabetização (1º e 2º anos)' },
       { v: 'ensino_fundamental', l: '📘 Ensino Fundamental (3º ao 9º ano)' },
     ],
-    coordenador: [
-      { v: 'gestao_escolar', l: '🏫 Gestão Escolar' },
-    ],
+    coordenador: [{ v: 'gestao_escolar', l: '🏫 Gestão Escolar' }],
   },
   EM: {
     professor: [
@@ -32,15 +44,10 @@ const CATEGORIAS = {
       { v: 'ciencias_natureza', l: '🔬 Ciências da Natureza e suas Tecnologias' },
       { v: 'ciencias_humanas', l: '🌍 Ciências Humanas e Sociais Aplicadas' },
     ],
-    coordenador: [
-      { v: 'gestao_escolar', l: '🏫 Gestão Escolar' },
-    ],
+    coordenador: [{ v: 'gestao_escolar', l: '🏫 Gestão Escolar' }],
   },
 };
 
-// ============================================================
-// ITINERÁRIOS FORMATIVOS DO ENSINO MÉDIO
-// ============================================================
 const ITINERARIOS_EM = [
   'Projeto de Vida',
   'Aprofundamento em Linguagens',
@@ -59,161 +66,54 @@ const PraticasExitosas = () => {
   const [pdfBaixado, setPdfBaixado] = useState(false);
 
   const [form, setForm] = useState({
-    // Identificação
-    title: '',
-    perfil: '',
-    flow_type: '',
-    sub_flow: '',
-    category: '',
-    education_stage: '',
-
-    // Contexto escolar (professor)
-    school: '',
-    city: '',
-    gre: '',
-    grade: '',
-    subject: '',
-    num_alunos: '',
-    class_profile: '',
-    itinerario: '',  // EM
-
-    // Contexto de gestão (coordenador)
-    eixo_atuacao: '',
-    num_professores: '',
-    series_impactadas: '',
-    perfil_equipe: '',
-
-    // Dados de avaliações (coordenador)
-    avaliacoes_participa: [],
-    avaliacoes_resultados: '',
-    frequencia_analise: '',
-    intervencoes_anteriores: [],
-
-    // Seminário
-    seminar_theme: '',
-
-    // BNCC
-    bncc_codigo: '',
-    bncc_texto: '',
-
-    // Particularidades
-    original_grade: '',
-    target_grade: '',
-    has_special_needs: false,
-    duration: '',
-
-    // Recursos
-    resources: {
-      internet: false,
-      projetor: false,
-      impressora: false,
-      espaco_externo: false,
-      laboratorio: false,
-    },
+    title: '', perfil: '', flow_type: '', sub_flow: '', category: '', education_stage: '',
+    school: '', city: '', gre: '', grade: '', subject: '', num_alunos: '', class_profile: '', itinerario: '',
+    eixo_atuacao: '', num_professores: '', series_impactadas: '', perfil_equipe: '',
+    avaliacoes_participa: [], avaliacoes_resultados: '', frequencia_analise: '', intervencoes_anteriores: [],
+    seminar_theme: '', bncc_codigo: '', bncc_texto: '',
+    original_grade: '', target_grade: '', has_special_needs: false, duration: '',
+    resources: { internet: false, projetor: false, impressora: false, espaco_externo: false, laboratorio: false },
     resources_extra: '',
-
-    // Histórico e evidências
-    already_tried: '',
-    evidences: '',
-    observed_results: '',
-    culminancia: '',
-    replicability: '',
-
-    // Relato guiado — Fluxos A e B
-    what_was_done: '',
-    how_it_went: '',
-    what_was_noticed: '',
-    school_context: '',
-
-    // Relato guiado — Fluxo C
-    goal: '',
-    what_you_imagine: '',
-    what_you_expect: '',
+    already_tried: '', evidences: '', observed_results: '', culminancia: '', replicability: '',
+    what_was_done: '', how_it_went: '', what_was_noticed: '', school_context: '',
+    goal: '', what_you_imagine: '', what_you_expect: '',
   });
 
-  // BNCC
   const [componentes, setComponentes] = useState([]);
   const [habilidades, setHabilidades] = useState([]);
   const [codigoComponente, setCodigoComponente] = useState('');
   const [anoNumero, setAnoNumero] = useState('');
   const [loadingHabilidades, setLoadingHabilidades] = useState(false);
 
-  const update = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-  };
-
-  const updateResource = (key, value) => {
-    setForm(prev => ({
-      ...prev,
-      resources: { ...prev.resources, [key]: value },
-    }));
-  };
+  const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  const updateResource = (key, value) => setForm(prev => ({ ...prev, resources: { ...prev.resources, [key]: value } }));
 
   const toggleArrayItem = (field, item) => {
     setForm(prev => {
       const arr = prev[field] || [];
-      return {
-        ...prev,
-        [field]: arr.includes(item)
-          ? arr.filter(i => i !== item)
-          : [...arr, item],
-      };
+      return { ...prev, [field]: arr.includes(item) ? arr.filter(i => i !== item) : [...arr, item] };
     });
   };
 
-  // Resetar campos dependentes quando a etapa muda
   const mudarEtapa = (novaEtapa) => {
-    setForm(prev => ({
-      ...prev,
-      education_stage: novaEtapa,
-      category: '',
-      subject: '',
-      grade: '',
-      itinerario: '',
-      bncc_codigo: '',
-      bncc_texto: '',
-    }));
-    setCodigoComponente('');
-    setAnoNumero('');
-    setHabilidades([]);
+    setForm(prev => ({ ...prev, education_stage: novaEtapa, category: '', subject: '', grade: '', itinerario: '', bncc_codigo: '', bncc_texto: '' }));
+    setCodigoComponente(''); setAnoNumero(''); setHabilidades([]);
   };
 
-  // Resetar campos dependentes quando a categoria muda
   const mudarCategoria = (novaCat) => {
-    setForm(prev => ({
-      ...prev,
-      category: novaCat,
-      bncc_codigo: '',
-      bncc_texto: '',
-    }));
-    setCodigoComponente('');
-    setAnoNumero('');
-    setHabilidades([]);
+    setForm(prev => ({ ...prev, category: novaCat, bncc_codigo: '', bncc_texto: '' }));
+    setCodigoComponente(''); setAnoNumero(''); setHabilidades([]);
   };
 
-  // ============================================================
-  // CARREGAR COMPONENTES BNCC
-  // ============================================================
   useEffect(() => {
     if (step === 3 && form.education_stage) {
-      api.get(`/bncc/componentes?etapa=${form.education_stage}`)
-        .then(res => setComponentes(res.data))
-        .catch(() => setComponentes([]));
+      api.get(`/bncc/componentes?etapa=${form.education_stage}`).then(res => setComponentes(res.data)).catch(() => setComponentes([]));
     }
   }, [step, form.education_stage]);
 
-  // ============================================================
-  // CARREGAR HABILIDADES
-  // ============================================================
   useEffect(() => {
-    if (!codigoComponente || !form.education_stage) {
-      setHabilidades([]);
-      return;
-    }
-    if (form.education_stage === 'EF' && !anoNumero) {
-      setHabilidades([]);
-      return;
-    }
+    if (!codigoComponente || !form.education_stage) { setHabilidades([]); return; }
+    if (form.education_stage === 'EF' && !anoNumero) { setHabilidades([]); return; }
     setLoadingHabilidades(true);
     const anoParam = form.education_stage === 'EF' ? `&ano=${anoNumero}` : '';
     api.get(`/bncc/habilidades?etapa=${form.education_stage}&componente=${codigoComponente}${anoParam}`)
@@ -225,16 +125,9 @@ const PraticasExitosas = () => {
   const handleSelecionarHabilidade = (e) => {
     const codigo = e.target.value;
     const habilidade = habilidades.find(h => h.codigo === codigo);
-    setForm(prev => ({
-      ...prev,
-      bncc_codigo: codigo,
-      bncc_texto: habilidade ? habilidade.texto : '',
-    }));
+    setForm(prev => ({ ...prev, bncc_codigo: codigo, bncc_texto: habilidade ? habilidade.texto : '' }));
   };
 
-  // ============================================================
-  // NAVEGAÇÃO
-  // ============================================================
   const podeAvancar = () => {
     if (step === 1) return form.perfil !== '';
     if (step === 2) {
@@ -251,17 +144,9 @@ const PraticasExitosas = () => {
     if (step === 5) {
       if (form.title.trim() === '') return false;
       if (form.flow_type === 'criar') {
-        return (
-          form.goal.trim().length >= 30 &&
-          form.what_you_imagine.trim().length >= 30 &&
-          form.what_you_expect.trim().length >= 30
-        );
+        return form.goal.trim().length >= 30 && form.what_you_imagine.trim().length >= 30 && form.what_you_expect.trim().length >= 30;
       }
-      return (
-        form.what_was_done.trim().length >= 30 &&
-        form.how_it_went.trim().length >= 30 &&
-        form.what_was_noticed.trim().length >= 30
-      );
+      return form.what_was_done.trim().length >= 30 && form.how_it_went.trim().length >= 30 && form.what_was_noticed.trim().length >= 30;
     }
     return true;
   };
@@ -277,14 +162,9 @@ const PraticasExitosas = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ============================================================
-  // SUBMIT
-  // ============================================================
   const handleSubmit = async () => {
     if (!podeAvancar()) return;
-    setLoading(true);
-    setError('');
-    setResult(null);
+    setLoading(true); setError(''); setResult(null);
 
     let descriptionConsolidada = '';
     if (form.flow_type === 'criar') {
@@ -326,13 +206,9 @@ const PraticasExitosas = () => {
       setStep(6);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      if (err?.response?.status === 402) {
-        setError('Créditos insuficientes. Faça upgrade do seu plano para continuar.');
-      } else if (err?.response?.status === 400) {
-        setError(err?.response?.data?.detail || 'Verifique os dados e tente novamente.');
-      } else {
-        setError('Erro ao gerar a prática. Tente novamente em alguns instantes.');
-      }
+      if (err?.response?.status === 402) setError('Créditos insuficientes. Faça upgrade do seu plano para continuar.');
+      else if (err?.response?.status === 400) setError(err?.response?.data?.detail || 'Verifique os dados e tente novamente.');
+      else setError('Erro ao gerar a prática. Tente novamente em alguns instantes.');
     } finally {
       setLoading(false);
     }
@@ -341,12 +217,29 @@ const PraticasExitosas = () => {
   const handleBaixarPDF = async () => {
     try {
       const elemento = document.getElementById('pratica-conteudo');
-      if (!elemento) {
-        alert('Conteúdo não encontrado.');
-        return;
-      }
+      if (!elemento) { alert('Conteúdo não encontrado.'); return; }
       const nome = result?.title ? result.title.replace(/\s+/g, '_') : 'pratica_exitosa';
-      await gerarPDF(elemento, nome);
+
+      const sd = result?.structured_data?.output || result?.structured_data || {};
+      const cab = sd.cabecalho || {};
+
+      const dadosCapa = [];
+      if (cab.perfil) dadosCapa.push({ label: 'Perfil', valor: cab.perfil });
+      if (cab.etapa_ensino) dadosCapa.push({ label: 'Etapa', valor: cab.etapa_ensino });
+      if (cab.categoria) dadosCapa.push({ label: 'Categoria', valor: cab.categoria });
+      if (cab.escola) dadosCapa.push({ label: 'Escola', valor: cab.escola });
+      if (cab.municipio) dadosCapa.push({ label: 'Município', valor: cab.municipio });
+      if (cab.serie_ou_etapa) dadosCapa.push({ label: 'Série/Etapa', valor: cab.serie_ou_etapa });
+      if (cab.disciplina_ou_area) dadosCapa.push({ label: 'Componente', valor: cab.disciplina_ou_area });
+      if (cab.bncc?.codigo) dadosCapa.push({ label: 'Habilidade BNCC', valor: cab.bncc.codigo });
+
+      await gerarPDF(elemento, nome, {
+        capa: {
+          badge: 'Práticas Exitosas · Documentação Pedagógica',
+          titulo: cab.titulo || result?.title,
+          dados: dadosCapa,
+        },
+      });
       setPdfBaixado(true);
     } catch (err) {
       console.error(err);
@@ -355,9 +248,7 @@ const PraticasExitosas = () => {
   };
 
   const reiniciar = () => {
-    setStep(1);
-    setResult(null);
-    setError('');
+    setStep(1); setResult(null); setError('');
     setForm({
       title: '', perfil: '', flow_type: '', sub_flow: '', category: '', education_stage: '',
       school: '', city: '', gre: '', grade: '', subject: '', num_alunos: '', class_profile: '', itinerario: '',
@@ -371,34 +262,37 @@ const PraticasExitosas = () => {
       what_was_done: '', how_it_went: '', what_was_noticed: '', school_context: '',
       goal: '', what_you_imagine: '', what_you_expect: '',
     });
-    setComponentes([]);
-    setHabilidades([]);
-    setCodigoComponente('');
-    setAnoNumero('');
+    setComponentes([]); setHabilidades([]); setCodigoComponente(''); setAnoNumero('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const isCoordenador = form.perfil === 'coordenador';
   const isFluxoC = form.flow_type === 'criar';
-  const categoriasDisponiveis = form.education_stage
-    ? CATEGORIAS[form.education_stage][form.perfil] || []
-    : [];
+  const categoriasDisponiveis = form.education_stage ? CATEGORIAS[form.education_stage][form.perfil] || [] : [];
 
-  // ============================================================
-  // RENDER
-  // ============================================================
+  const inputStyle = { borderColor: BORDA, color: TEXTO, backgroundColor: BRANCO };
+  const labelStyle = { color: TEXTO };
+  const hintStyle  = { color: TEXTO_2 };
+
+  const cardSelectStyle = (ativo) => ({
+    borderColor: ativo ? AZUL : BORDA,
+    backgroundColor: ativo ? AZUL_CLARO : BRANCO,
+  });
+
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">
       <div className="print:hidden">
-        <Link to="/modulo/praticas_exitosas" className="text-teal-600 text-sm hover:underline">
+        <Link to="/modulo/praticas_exitosas" className="text-sm hover:underline" style={{ color: AZUL }}>
           ← Voltar
         </Link>
 
         <div className="mt-6 mb-8 flex items-center gap-3">
           <span className="text-4xl">🏆</span>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Práticas Exitosas</h1>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold" style={{ color: AZUL, fontFamily: "'Quicksand', sans-serif" }}>
+              Práticas Exitosas
+            </h1>
+            <p style={hintStyle}>
               Crie, melhore ou documente práticas pedagógicas com foco em resultados.
             </p>
           </div>
@@ -406,15 +300,12 @@ const PraticasExitosas = () => {
 
         {step <= 5 && (
           <div className="mb-8">
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+            <div className="flex items-center justify-between text-xs mb-2" style={hintStyle}>
               <span>Etapa {step} de 5</span>
               <span>{Math.round((step / 5) * 100)}%</span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-2">
-              <div
-                className="bg-gradient-to-r from-teal-500 to-cyan-600 h-2 rounded-full transition-all"
-                style={{ width: `${(step / 5) * 100}%` }}
-              />
+            <div className="w-full rounded-full h-2" style={{ backgroundColor: CREME }}>
+              <div className="h-2 rounded-full transition-all" style={{ width: `${(step / 5) * 100}%`, backgroundColor: AZUL }} />
             </div>
           </div>
         )}
@@ -423,33 +314,29 @@ const PraticasExitosas = () => {
         {/* ETAPA 1 — PERFIL */}
         {/* ============================================================ */}
         {step === 1 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Quem está usando?</h2>
-            <p className="text-gray-600 mb-6">
-              Escolha o perfil para que a IA adapte a prática ao seu papel.
-            </p>
+          <div className="rounded-xl shadow-sm border p-6 md:p-8" style={{ backgroundColor: BRANCO, borderColor: BORDA }}>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: AZUL, fontFamily: "'Quicksand', sans-serif" }}>Quem está usando?</h2>
+            <p className="mb-6" style={hintStyle}>Escolha o perfil para que a IA adapte a prática ao seu papel.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 onClick={() => update('perfil', 'professor')}
-                className={`p-6 rounded-xl border-2 text-left transition ${
-                  form.perfil === 'professor' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className="p-6 rounded-xl border-2 text-left transition"
+                style={cardSelectStyle(form.perfil === 'professor')}
               >
-                <div className="text-3xl mb-2">👩‍🏫</div>
-                <div className="font-semibold text-gray-900 text-lg">Professor(a)</div>
-                <p className="text-sm text-gray-600 mt-1">Prática de sala de aula, com foco nos alunos.</p>
+                <div className="text-3xl mb-2">👩🏫</div>
+                <div className="font-semibold text-lg" style={{ color: TEXTO, fontFamily: "'Quicksand', sans-serif" }}>Professor(a)</div>
+                <p className="text-sm mt-1" style={hintStyle}>Prática de sala de aula, com foco nos alunos.</p>
               </button>
 
               <button
                 onClick={() => update('perfil', 'coordenador')}
-                className={`p-6 rounded-xl border-2 text-left transition ${
-                  form.perfil === 'coordenador' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className="p-6 rounded-xl border-2 text-left transition"
+                style={cardSelectStyle(form.perfil === 'coordenador')}
               >
-                <div className="text-3xl mb-2">🧑‍💼</div>
-                <div className="font-semibold text-gray-900 text-lg">Coordenador(a)</div>
-                <p className="text-sm text-gray-600 mt-1">Gestão escolar, formação de professores, uso de dados.</p>
+                <div className="text-3xl mb-2">🧑💼</div>
+                <div className="font-semibold text-lg" style={{ color: TEXTO, fontFamily: "'Quicksand', sans-serif" }}>Coordenador(a)</div>
+                <p className="text-sm mt-1" style={hintStyle}>Gestão escolar, formação de professores, uso de dados.</p>
               </button>
             </div>
           </div>
@@ -459,56 +346,52 @@ const PraticasExitosas = () => {
         {/* ETAPA 2 — FLUXO */}
         {/* ============================================================ */}
         {step === 2 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Você já tem uma prática?</h2>
-            <p className="text-gray-600 mb-6">Escolha o caminho que faz sentido para você.</p>
+          <div className="rounded-xl shadow-sm border p-6 md:p-8" style={{ backgroundColor: BRANCO, borderColor: BORDA }}>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: AZUL, fontFamily: "'Quicksand', sans-serif" }}>Você já tem uma prática?</h2>
+            <p className="mb-6" style={hintStyle}>Escolha o caminho que faz sentido para você.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <button
                 onClick={() => { update('flow_type', 'ja_tenho'); update('sub_flow', ''); }}
-                className={`p-6 rounded-xl border-2 text-left transition ${
-                  form.flow_type === 'ja_tenho' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className="p-6 rounded-xl border-2 text-left transition"
+                style={cardSelectStyle(form.flow_type === 'ja_tenho')}
               >
                 <div className="text-3xl mb-2">📚</div>
-                <div className="font-semibold text-gray-900 text-lg">Já tenho uma prática</div>
-                <p className="text-sm text-gray-600 mt-1">Quero melhorar ou documentar uma prática que já realizei.</p>
+                <div className="font-semibold text-lg" style={{ color: TEXTO, fontFamily: "'Quicksand', sans-serif" }}>Já tenho uma prática</div>
+                <p className="text-sm mt-1" style={hintStyle}>Quero melhorar ou documentar uma prática que já realizei.</p>
               </button>
 
               <button
                 onClick={() => { update('flow_type', 'criar'); update('sub_flow', ''); }}
-                className={`p-6 rounded-xl border-2 text-left transition ${
-                  form.flow_type === 'criar' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className="p-6 rounded-xl border-2 text-left transition"
+                style={cardSelectStyle(form.flow_type === 'criar')}
               >
                 <div className="text-3xl mb-2">✨</div>
-                <div className="font-semibold text-gray-900 text-lg">Quero criar do zero</div>
-                <p className="text-sm text-gray-600 mt-1">Quero uma prática nova para executar.</p>
+                <div className="font-semibold text-lg" style={{ color: TEXTO, fontFamily: "'Quicksand', sans-serif" }}>Quero criar do zero</div>
+                <p className="text-sm mt-1" style={hintStyle}>Quero uma prática nova para executar.</p>
               </button>
             </div>
 
             {form.flow_type === 'ja_tenho' && (
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="font-semibold text-gray-800 mb-3">O que você quer fazer com essa prática?</h3>
+              <div className="border-t pt-6" style={{ borderColor: BORDA }}>
+                <h3 className="font-semibold mb-3" style={{ color: TEXTO, fontFamily: "'Quicksand', sans-serif" }}>O que você quer fazer com essa prática?</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <button
                     onClick={() => update('sub_flow', 'melhorar')}
-                    className={`p-4 rounded-lg border-2 text-left transition ${
-                      form.sub_flow === 'melhorar' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className="p-4 rounded-lg border-2 text-left transition"
+                    style={cardSelectStyle(form.sub_flow === 'melhorar')}
                   >
-                    <div className="font-semibold text-gray-800">🔧 Modelar e melhorar</div>
-                    <p className="text-xs text-gray-600 mt-1">A IA analisa e propõe melhorias concretas.</p>
+                    <div className="font-semibold" style={{ color: TEXTO }}>🔧 Modelar e melhorar</div>
+                    <p className="text-xs mt-1" style={hintStyle}>A IA analisa e propõe melhorias concretas.</p>
                   </button>
 
                   <button
                     onClick={() => update('sub_flow', 'documento')}
-                    className={`p-4 rounded-lg border-2 text-left transition ${
-                      form.sub_flow === 'documento' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className="p-4 rounded-lg border-2 text-left transition"
+                    style={cardSelectStyle(form.sub_flow === 'documento')}
                   >
-                    <div className="font-semibold text-gray-800">📄 Documento para seminário</div>
-                    <p className="text-xs text-gray-600 mt-1">Organiza em formato para apresentar/premiar.</p>
+                    <div className="font-semibold" style={{ color: TEXTO }}>📄 Documento para seminário</div>
+                    <p className="text-xs mt-1" style={hintStyle}>Organiza em formato para apresentar/premiar.</p>
                   </button>
                 </div>
               </div>
@@ -520,245 +403,122 @@ const PraticasExitosas = () => {
         {/* ETAPA 3 — ETAPA DE ENSINO + CATEGORIA + CONTEXTO */}
         {/* ============================================================ */}
         {step === 3 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Sobre a prática e o contexto</h2>
-            <p className="text-gray-600 mb-6">Essas informações adaptam a prática à sua realidade.</p>
+          <div className="rounded-xl shadow-sm border p-6 md:p-8" style={{ backgroundColor: BRANCO, borderColor: BORDA }}>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: AZUL, fontFamily: "'Quicksand', sans-serif" }}>Sobre a prática e o contexto</h2>
+            <p className="mb-6" style={hintStyle}>Essas informações adaptam a prática à sua realidade.</p>
 
-            {/* 3.1 — ETAPA DE ENSINO (PRIMEIRO) */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Etapa de Ensino *
-              </label>
-              <p className="text-xs text-gray-500 mb-3">
-                Escolha a etapa em que você atua. Isso define as categorias e os campos seguintes.
-              </p>
+              <label className="block text-sm font-medium mb-2" style={labelStyle}>Etapa de Ensino *</label>
+              <p className="text-xs mb-3" style={hintStyle}>Escolha a etapa em que você atua. Isso define as categorias e os campos seguintes.</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {!isCoordenador && (
-                  <button
-                    onClick={() => mudarEtapa('EI')}
-                    className={`p-4 rounded-lg border-2 text-center transition ${
-                      form.education_stage === 'EI' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
+                  <button onClick={() => mudarEtapa('EI')} className="p-4 rounded-lg border-2 text-center transition" style={cardSelectStyle(form.education_stage === 'EI')}>
                     <div className="text-2xl mb-1">🧒</div>
-                    <div className="font-semibold text-gray-800 text-sm">Educação Infantil</div>
+                    <div className="font-semibold text-sm" style={{ color: TEXTO }}>Educação Infantil</div>
                   </button>
                 )}
-                <button
-                  onClick={() => mudarEtapa('EF')}
-                  className={`p-4 rounded-lg border-2 text-center transition ${
-                    form.education_stage === 'EF' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
+                <button onClick={() => mudarEtapa('EF')} className="p-4 rounded-lg border-2 text-center transition" style={cardSelectStyle(form.education_stage === 'EF')}>
                   <div className="text-2xl mb-1">📘</div>
-                  <div className="font-semibold text-gray-800 text-sm">Ensino Fundamental</div>
+                  <div className="font-semibold text-sm" style={{ color: TEXTO }}>Ensino Fundamental</div>
                 </button>
-                <button
-                  onClick={() => mudarEtapa('EM')}
-                  className={`p-4 rounded-lg border-2 text-center transition ${
-                    form.education_stage === 'EM' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
+                <button onClick={() => mudarEtapa('EM')} className="p-4 rounded-lg border-2 text-center transition" style={cardSelectStyle(form.education_stage === 'EM')}>
                   <div className="text-2xl mb-1">🎓</div>
-                  <div className="font-semibold text-gray-800 text-sm">Ensino Médio</div>
+                  <div className="font-semibold text-sm" style={{ color: TEXTO }}>Ensino Médio</div>
                 </button>
               </div>
             </div>
 
-            {/* 3.2 — CATEGORIA (dinâmica por etapa + perfil) */}
             {form.education_stage && categoriasDisponiveis.length > 0 && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Categoria *
-                </label>
-                <p className="text-xs text-gray-500 mb-3">
-                  {form.education_stage === 'EM'
-                    ? 'Escolha a área do conhecimento ou atuação.'
-                    : form.education_stage === 'EI'
-                      ? 'Escolha a categoria da prática.'
-                      : 'Escolha a categoria da prática.'}
+                <label className="block text-sm font-medium mb-2" style={labelStyle}>Categoria *</label>
+                <p className="text-xs mb-3" style={hintStyle}>
+                  {form.education_stage === 'EM' ? 'Escolha a área do conhecimento ou atuação.' : 'Escolha a categoria da prática.'}
                 </p>
                 <div className={`grid grid-cols-1 ${categoriasDisponiveis.length > 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-3`}>
                   {categoriasDisponiveis.map(cat => (
-                    <button
-                      key={cat.v}
-                      onClick={() => mudarCategoria(cat.v)}
-                      className={`p-4 rounded-lg border-2 text-left transition ${
-                        form.category === cat.v ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="font-semibold text-gray-800 text-sm">{cat.l}</div>
+                    <button key={cat.v} onClick={() => mudarCategoria(cat.v)} className="p-4 rounded-lg border-2 text-left transition" style={cardSelectStyle(form.category === cat.v)}>
+                      <div className="font-semibold text-sm" style={{ color: TEXTO }}>{cat.l}</div>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* 3.3 — RESTO DOS CAMPOS (só aparecem depois de escolher etapa + categoria) */}
             {form.education_stage && form.category && (
               <>
-                {/* Tema do Seminário */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tema do Seminário ou Evento <span className="text-xs text-gray-500">(opcional)</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Se você vai apresentar em um seminário, cole o tema para a IA alinhar a narrativa.
-                  </p>
-                  <input
-                    type="text"
-                    value={form.seminar_theme}
-                    onChange={(e) => update('seminar_theme', e.target.value)}
-                    placeholder="Ex: 'Alfabetizar com equidade: boas práticas para ensinar a todos'"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>Tema do Seminário ou Evento <span className="text-xs" style={hintStyle}>(opcional)</span></label>
+                  <p className="text-xs mb-2" style={hintStyle}>Se você vai apresentar em um seminário, cole o tema para a IA alinhar a narrativa.</p>
+                  <input type="text" value={form.seminar_theme} onChange={(e) => update('seminar_theme', e.target.value)} placeholder="Ex: 'Alfabetizar com equidade: boas práticas para ensinar a todos'" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                 </div>
 
-                {/* Escola / Município / GRE */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Escola</label>
-                    <input
-                      type="text"
-                      value={form.school}
-                      onChange={(e) => update('school', e.target.value)}
-                      placeholder="Nome da escola"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>Escola</label>
+                    <input type="text" value={form.school} onChange={(e) => update('school', e.target.value)} placeholder="Nome da escola" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Município</label>
-                    <input
-                      type="text"
-                      value={form.city}
-                      onChange={(e) => update('city', e.target.value)}
-                      placeholder="Cidade"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>Município</label>
+                    <input type="text" value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="Cidade" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">GRE (Gerência Regional)</label>
-                    <input
-                      type="text"
-                      value={form.gre}
-                      onChange={(e) => update('gre', e.target.value)}
-                      placeholder="Ex: 1ª GRE"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>GRE (Gerência Regional)</label>
+                    <input type="text" value={form.gre} onChange={(e) => update('gre', e.target.value)} placeholder="Ex: 1ª GRE" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                   </div>
                 </div>
 
-                {/* ==================== CAMPOS DO PROFESSOR ==================== */}
                 {!isCoordenador && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium mb-1" style={labelStyle}>
                           {form.education_stage === 'EI' ? 'Faixa Etária / Etapa' : 'Série / Ano'}
                         </label>
-                        <p className="text-xs text-gray-500 mb-1">
-                          {form.education_stage === 'EI'
-                            ? 'Ex: Berçário, Maternal, Pré-escola I, Pré-escola II'
-                            : form.education_stage === 'EM'
-                              ? 'Ex: 1ª série, 2ª série, 3ª série'
-                              : 'Ex: 3º ano, 5º ano, 9º ano'}
+                        <p className="text-xs mb-1" style={hintStyle}>
+                          {form.education_stage === 'EI' ? 'Ex: Berçário, Maternal, Pré-escola I, Pré-escola II' : form.education_stage === 'EM' ? 'Ex: 1ª série, 2ª série, 3ª série' : 'Ex: 3º ano, 5º ano, 9º ano'}
                         </p>
-                        <input
-                          type="text"
-                          value={form.grade}
-                          onChange={(e) => update('grade', e.target.value)}
-                          placeholder={
-                            form.education_stage === 'EI'
-                              ? 'Ex: Pré-escola II'
-                              : form.education_stage === 'EM'
-                                ? 'Ex: 2ª série'
-                                : 'Ex: 5º ano'
-                          }
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
+                        <input type="text" value={form.grade} onChange={(e) => update('grade', e.target.value)} placeholder={form.education_stage === 'EI' ? 'Ex: Pré-escola II' : form.education_stage === 'EM' ? 'Ex: 2ª série' : 'Ex: 5º ano'} className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium mb-1" style={labelStyle}>
                           {form.education_stage === 'EM' ? 'Componente / Área específica' : 'Disciplina / Área'}
                         </label>
-                        <p className="text-xs text-gray-500 mb-1">
-                          {form.education_stage === 'EM'
-                            ? 'Ex: Língua Portuguesa, História, Biologia'
-                            : 'Ex: Matemática, História, Linguagens'}
+                        <p className="text-xs mb-1" style={hintStyle}>
+                          {form.education_stage === 'EM' ? 'Ex: Língua Portuguesa, História, Biologia' : 'Ex: Matemática, História, Linguagens'}
                         </p>
-                        <input
-                          type="text"
-                          value={form.subject}
-                          onChange={(e) => update('subject', e.target.value)}
-                          placeholder={form.education_stage === 'EM' ? 'Ex: Biologia' : 'Ex: Matemática'}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
+                        <input type="text" value={form.subject} onChange={(e) => update('subject', e.target.value)} placeholder={form.education_stage === 'EM' ? 'Ex: Biologia' : 'Ex: Matemática'} className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nº de alunos</label>
-                        <input
-                          type="number"
-                          value={form.num_alunos}
-                          onChange={(e) => update('num_alunos', e.target.value)}
-                          placeholder="Ex: 25"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
+                        <label className="block text-sm font-medium mb-1" style={labelStyle}>Nº de alunos</label>
+                        <input type="number" value={form.num_alunos} onChange={(e) => update('num_alunos', e.target.value)} placeholder="Ex: 25" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                       </div>
 
-                      {/* Itinerário formativo (só EM) */}
                       {form.education_stage === 'EM' && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Itinerário Formativo <span className="text-xs text-gray-500">(opcional)</span>
-                          </label>
-                          <select
-                            value={form.itinerario}
-                            onChange={(e) => update('itinerario', e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          >
+                          <label className="block text-sm font-medium mb-1" style={labelStyle}>Itinerário Formativo <span className="text-xs" style={hintStyle}>(opcional)</span></label>
+                          <select value={form.itinerario} onChange={(e) => update('itinerario', e.target.value)} className="w-full rounded-lg px-4 py-2 border" style={inputStyle}>
                             <option value="">Selecione...</option>
-                            {ITINERARIOS_EM.map(it => (
-                              <option key={it} value={it}>{it}</option>
-                            ))}
+                            {ITINERARIOS_EM.map(it => <option key={it} value={it}>{it}</option>)}
                           </select>
                         </div>
                       )}
                     </div>
 
                     <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Perfil da turma</label>
-                      <p className="text-xs text-gray-500 mb-1">
-                        {form.education_stage === 'EI'
-                          ? 'Descreva o desenvolvimento das crianças, rotina, interesses. Ex: "Crianças curiosas, mas com rotina agitada."'
-                          : form.education_stage === 'EM'
-                            ? 'Descreva os interesses dos jovens, aspirações, desafios de engajamento. Ex: "Turma com boa participação oral, mas pouco engajada em tarefas longas."'
-                            : 'Descreva a turma: nível de leitura, participação, dificuldades. Ex: "Turma agitada, mas participativa."'}
+                      <label className="block text-sm font-medium mb-1" style={labelStyle}>Perfil da turma</label>
+                      <p className="text-xs mb-1" style={hintStyle}>
+                        {form.education_stage === 'EI' ? 'Descreva o desenvolvimento das crianças, rotina, interesses. Ex: "Crianças curiosas, mas com rotina agitada."' : form.education_stage === 'EM' ? 'Descreva os interesses dos jovens, aspirações, desafios de engajamento. Ex: "Turma com boa participação oral, mas pouco engajada em tarefas longas."' : 'Descreva a turma: nível de leitura, participação, dificuldades. Ex: "Turma agitada, mas participativa."'}
                       </p>
-                      <textarea
-                        value={form.class_profile}
-                        onChange={(e) => update('class_profile', e.target.value)}
-                        rows="2"
-                        placeholder={
-                          form.education_stage === 'EI'
-                            ? 'Ex: Crianças curiosas e ativas, com boa socialização.'
-                            : form.education_stage === 'EM'
-                              ? 'Ex: Turma participativa, com interesse em projetos práticos.'
-                              : 'Ex: Turma agitada, mas participativa.'
-                        }
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      />
+                      <textarea value={form.class_profile} onChange={(e) => update('class_profile', e.target.value)} rows="2" placeholder={form.education_stage === 'EI' ? 'Ex: Crianças curiosas e ativas, com boa socialização.' : form.education_stage === 'EM' ? 'Ex: Turma participativa, com interesse em projetos práticos.' : 'Ex: Turma agitada, mas participativa.'} className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                     </div>
                   </>
                 )}
 
-                {/* ==================== CAMPOS DO COORDENADOR ==================== */}
                 {isCoordenador && (
                   <>
                     <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Eixo de atuação *</label>
-                      <p className="text-xs text-gray-500 mb-2">
-                        Qual eixo da gestão escolar essa prática vai trabalhar?
-                      </p>
+                      <label className="block text-sm font-medium mb-2" style={labelStyle}>Eixo de atuação *</label>
+                      <p className="text-xs mb-2" style={hintStyle}>Qual eixo da gestão escolar essa prática vai trabalhar?</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         {[
                           { v: 'formacao_continuada', l: '🎓 Formação continuada de professores' },
@@ -768,14 +528,8 @@ const PraticasExitosas = () => {
                           { v: 'relacao_escola_familia', l: '👨‍👩‍👧 Relação escola-família' },
                           { v: 'conselho_classe', l: '📋 Conselho de classe / articulação' },
                         ].map(item => (
-                          <button
-                            key={item.v}
-                            onClick={() => update('eixo_atuacao', item.v)}
-                            className={`p-3 rounded-lg border-2 text-left text-sm transition ${
-                              form.eixo_atuacao === item.v ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            {item.l}
+                          <button key={item.v} onClick={() => update('eixo_atuacao', item.v)} className="p-3 rounded-lg border-2 text-left text-sm transition" style={cardSelectStyle(form.eixo_atuacao === item.v)}>
+                            <span style={{ color: TEXTO }}>{item.l}</span>
                           </button>
                         ))}
                       </div>
@@ -783,76 +537,47 @@ const PraticasExitosas = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nº de professores envolvidos</label>
-                        <input
-                          type="number"
-                          value={form.num_professores}
-                          onChange={(e) => update('num_professores', e.target.value)}
-                          placeholder="Ex: 12"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
+                        <label className="block text-sm font-medium mb-1" style={labelStyle}>Nº de professores envolvidos</label>
+                        <input type="number" value={form.num_professores} onChange={(e) => update('num_professores', e.target.value)} placeholder="Ex: 12" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Séries / Etapas impactadas</label>
-                        <input
-                          type="text"
-                          value={form.series_impactadas}
-                          onChange={(e) => update('series_impactadas', e.target.value)}
-                          placeholder="Ex: Anos iniciais e finais"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
+                        <label className="block text-sm font-medium mb-1" style={labelStyle}>Séries / Etapas impactadas</label>
+                        <input type="text" value={form.series_impactadas} onChange={(e) => update('series_impactadas', e.target.value)} placeholder="Ex: Anos iniciais e finais" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                       </div>
                     </div>
 
                     <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Perfil da equipe docente</label>
-                      <p className="text-xs text-gray-500 mb-1">
-                        Descreva a equipe: experiência, abertura a mudanças, desafios.
-                      </p>
-                      <textarea
-                        value={form.perfil_equipe}
-                        onChange={(e) => update('perfil_equipe', e.target.value)}
-                        rows="2"
-                        placeholder="Ex: Equipe jovem, aberta a inovações, mas com pouca formação."
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      />
+                      <label className="block text-sm font-medium mb-1" style={labelStyle}>Perfil da equipe docente</label>
+                      <p className="text-xs mb-1" style={hintStyle}>Descreva a equipe: experiência, abertura a mudanças, desafios.</p>
+                      <textarea value={form.perfil_equipe} onChange={(e) => update('perfil_equipe', e.target.value)} rows="2" placeholder="Ex: Equipe jovem, aberta a inovações, mas com pouca formação." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                     </div>
                   </>
                 )}
 
-                {/* ==================== BNCC ==================== */}
-                <div className="border-t border-gray-100 pt-6">
-                  <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                <div className="border-t pt-6" style={{ borderColor: BORDA }}>
+                  <h3 className="text-sm font-semibold mb-3" style={{ color: TEXTO, fontFamily: "'Quicksand', sans-serif" }}>
                     📖 {form.education_stage === 'EI' ? 'Campos de Experiência' : form.education_stage === 'EM' ? 'Competências da Área' : 'Habilidade BNCC'}
-                    <span className="text-xs text-gray-500 ml-2">(opcional, mas recomendada)</span>
+                    <span className="text-xs ml-2" style={hintStyle}>(opcional, mas recomendada)</span>
                   </h3>
 
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Código BNCC (digite se souber)</label>
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>Código BNCC (digite se souber)</label>
                     <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={form.bncc_codigo}
-                        onChange={(e) => setForm({ ...form, bncc_codigo: e.target.value.toUpperCase(), bncc_texto: '' })}
-                        placeholder="EF05MA03"
-                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      />
+                      <input type="text" value={form.bncc_codigo} onChange={(e) => setForm({ ...form, bncc_codigo: e.target.value.toUpperCase(), bncc_texto: '' })} placeholder="EF05MA03" className="flex-1 rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                       <button
                         type="button"
                         onClick={async () => {
                           if (!form.bncc_codigo) return;
                           try {
                             const res = await api.get(`/bncc/habilidades/${form.bncc_codigo}`);
-                            if (res.data?.texto) {
-                              setForm(f => ({ ...f, bncc_texto: res.data.texto }));
-                            } else {
-                              setForm(f => ({ ...f, bncc_texto: 'Código não encontrado.' }));
-                            }
+                            if (res.data?.texto) setForm(f => ({ ...f, bncc_texto: res.data.texto }));
+                            else setForm(f => ({ ...f, bncc_texto: 'Código não encontrado.' }));
                           } catch {
                             setForm(f => ({ ...f, bncc_texto: 'Código não encontrado.' }));
                           }
                         }}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium px-4 py-2 rounded-lg border border-gray-300"
+                        className="text-sm font-medium px-4 py-2 rounded-lg border"
+                        style={{ backgroundColor: BRANCO, color: TEXTO, borderColor: BORDA }}
                       >
                         Buscar
                       </button>
@@ -861,55 +586,33 @@ const PraticasExitosas = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium mb-1" style={labelStyle}>
                         {form.education_stage === 'EI' ? 'Campo' : form.education_stage === 'EM' ? 'Área' : 'Componente'}
                       </label>
-                      <select
-                        value={codigoComponente}
-                        onChange={(e) => setCodigoComponente(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                      >
+                      <select value={codigoComponente} onChange={(e) => setCodigoComponente(e.target.value)} className="w-full rounded-lg px-4 py-2 border" style={inputStyle}>
                         <option value="">Selecione...</option>
-                        {componentes.map(c => (
-                          <option key={c.codigo} value={c.codigo}>{c.nome}</option>
-                        ))}
+                        {componentes.map(c => <option key={c.codigo} value={c.codigo}>{c.nome}</option>)}
                       </select>
                     </div>
                     {form.education_stage === 'EF' && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Ano (1 a 9)</label>
-                        <input
-                          type="number" min="1" max="9"
-                          value={anoNumero}
-                          onChange={(e) => setAnoNumero(e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                        />
+                        <label className="block text-sm font-medium mb-1" style={labelStyle}>Ano (1 a 9)</label>
+                        <input type="number" min="1" max="9" value={anoNumero} onChange={(e) => setAnoNumero(e.target.value)} className="w-full rounded-lg px-4 py-2 border" style={inputStyle} />
                       </div>
                     )}
                     <div className={form.education_stage === 'EF' ? '' : 'md:col-span-2'}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium mb-1" style={labelStyle}>
                         {form.education_stage === 'EI' ? 'Objetivo' : form.education_stage === 'EM' ? 'Competência' : 'Habilidade'}
                       </label>
-                      <select
-                        value={form.bncc_codigo}
-                        onChange={handleSelecionarHabilidade}
-                        disabled={!habilidades.length}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 disabled:bg-gray-100"
-                      >
-                        <option value="">
-                          {loadingHabilidades ? 'Carregando...' : habilidades.length === 0 ? 'Selecione componente/área' : 'Selecione...'}
-                        </option>
-                        {habilidades.map(h => (
-                          <option key={h.codigo} value={h.codigo}>
-                            {h.codigo} — {h.texto?.substring(0, 60)}...
-                          </option>
-                        ))}
+                      <select value={form.bncc_codigo} onChange={handleSelecionarHabilidade} disabled={!habilidades.length} className="w-full rounded-lg px-4 py-2 border disabled:opacity-60" style={inputStyle}>
+                        <option value="">{loadingHabilidades ? 'Carregando...' : habilidades.length === 0 ? 'Selecione componente/área' : 'Selecione...'}</option>
+                        {habilidades.map(h => <option key={h.codigo} value={h.codigo}>{h.codigo} — {h.texto?.substring(0, 60)}...</option>)}
                       </select>
                     </div>
                   </div>
 
                   {form.bncc_texto && (
-                    <p className="mt-3 text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded p-2">
+                    <p className="mt-3 text-xs rounded p-2 border" style={{ color: TEXTO_2, backgroundColor: AZUL_CLARO, borderColor: BORDA }}>
                       <strong>{form.bncc_codigo}:</strong> {form.bncc_texto}
                     </p>
                   )}
@@ -923,44 +626,38 @@ const PraticasExitosas = () => {
         {/* ETAPA 4 — PARTICULARIDADES */}
         {/* ============================================================ */}
         {step === 4 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Particularidades</h2>
-            <p className="text-gray-600 mb-6">Detalhes que fazem toda a diferença na qualidade da prática.</p>
+          <div className="rounded-xl shadow-sm border p-6 md:p-8" style={{ backgroundColor: BRANCO, borderColor: BORDA }}>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: AZUL, fontFamily: "'Quicksand', sans-serif" }}>Particularidades</h2>
+            <p className="mb-6" style={hintStyle}>Detalhes que fazem toda a diferença na qualidade da prática.</p>
 
             {form.flow_type === 'ja_tenho' && (
-              <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 mb-6">
+              <div className="rounded-lg p-4 mb-6 border" style={{ backgroundColor: OURO_CLARO, borderColor: BORDA }}>
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.original_grade !== '' || form.target_grade !== ''}
                     onChange={(e) => {
-                      if (!e.target.checked) {
-                        update('original_grade', ''); update('target_grade', '');
-                      } else {
-                        update('original_grade', form.grade || '');
-                      }
+                      if (!e.target.checked) { update('original_grade', ''); update('target_grade', ''); }
+                      else { update('original_grade', form.grade || ''); }
                     }}
-                    className="mt-0.5 w-5 h-5 text-teal-600 rounded focus:ring-teal-500"
+                    className="mt-0.5 w-5 h-5 rounded"
+                    style={{ accentColor: AZUL }}
                   />
                   <div>
-                    <div className="text-sm font-semibold text-amber-900">
-                      Vou aplicar esta prática em uma turma/série diferente
-                    </div>
-                    <p className="text-xs text-amber-700 mt-1">
-                      Ex: a prática foi feita para o 2º ano, mas este ano vou aplicar no 5º ano.
-                    </p>
+                    <div className="text-sm font-semibold" style={{ color: OURO }}>Vou aplicar esta prática em uma turma/série diferente</div>
+                    <p className="text-xs mt-1" style={hintStyle}>Ex: a prática foi feita para o 2º ano, mas este ano vou aplicar no 5º ano.</p>
                   </div>
                 </label>
 
                 {(form.original_grade !== '' || form.target_grade !== '') && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                     <div>
-                      <label className="block text-xs font-medium text-amber-900 mb-1">Original</label>
-                      <input type="text" value={form.original_grade} onChange={(e) => update('original_grade', e.target.value)} placeholder="Ex: 2º ano" className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white" />
+                      <label className="block text-xs font-medium mb-1" style={{ color: OURO }}>Original</label>
+                      <input type="text" value={form.original_grade} onChange={(e) => update('original_grade', e.target.value)} placeholder="Ex: 2º ano" className="w-full rounded-lg px-3 py-2 text-sm border" style={inputStyle} />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-amber-900 mb-1">Novo alvo</label>
-                      <input type="text" value={form.target_grade} onChange={(e) => update('target_grade', e.target.value)} placeholder="Ex: 5º ano" className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white" />
+                      <label className="block text-xs font-medium mb-1" style={{ color: OURO }}>Novo alvo</label>
+                      <input type="text" value={form.target_grade} onChange={(e) => update('target_grade', e.target.value)} placeholder="Ex: 5º ano" className="w-full rounded-lg px-3 py-2 text-sm border" style={inputStyle} />
                     </div>
                   </div>
                 )}
@@ -969,13 +666,9 @@ const PraticasExitosas = () => {
 
             {form.flow_type === 'criar' && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Duração desejada</label>
-                <p className="text-xs text-gray-500 mb-1">Quanto tempo a prática vai durar?</p>
-                <select
-                  value={form.duration}
-                  onChange={(e) => update('duration', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
+                <label className="block text-sm font-medium mb-1" style={labelStyle}>Duração desejada</label>
+                <p className="text-xs mb-1" style={hintStyle}>Quanto tempo a prática vai durar?</p>
+                <select value={form.duration} onChange={(e) => update('duration', e.target.value)} className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle}>
                   <option value="">Selecione...</option>
                   <option value="um dia">Um dia</option>
                   <option value="uma semana">Uma semana</option>
@@ -989,21 +682,15 @@ const PraticasExitosas = () => {
 
             {form.sub_flow === 'melhorar' && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">O que você já tentou e não funcionou?</label>
-                <p className="text-xs text-gray-500 mb-1">Isso evita que a IA sugira o que já falhou.</p>
-                <textarea
-                  value={form.already_tried}
-                  onChange={(e) => update('already_tried', e.target.value)}
-                  rows="3"
-                  placeholder="Ex: 'Tentei dividir em grupos, mas os alunos ficaram dispersos'"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
+                <label className="block text-sm font-medium mb-1" style={labelStyle}>O que você já tentou e não funcionou?</label>
+                <p className="text-xs mb-1" style={hintStyle}>Isso evita que a IA sugira o que já falhou.</p>
+                <textarea value={form.already_tried} onChange={(e) => update('already_tried', e.target.value)} rows="3" placeholder="Ex: 'Tentei dividir em grupos, mas os alunos ficaram dispersos'" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
               </div>
             )}
 
-            <div className="border-t border-gray-100 pt-6 mb-6">
-              <h3 className="text-sm font-semibold text-gray-800 mb-2">🛠️ Recursos disponíveis na escola</h3>
-              <p className="text-xs text-gray-500 mb-3">A IA só vai sugerir atividades que usem o que você tem.</p>
+            <div className="border-t pt-6 mb-6" style={{ borderColor: BORDA }}>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: TEXTO, fontFamily: "'Quicksand', sans-serif" }}>🛠️ Recursos disponíveis na escola</h3>
+              <p className="text-xs mb-3" style={hintStyle}>A IA só vai sugerir atividades que usem o que você tem.</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {[
                   { k: 'internet', l: '🌐 Internet' },
@@ -1012,115 +699,61 @@ const PraticasExitosas = () => {
                   { k: 'espaco_externo', l: '🌳 Espaço externo (pátio, quadra)' },
                   { k: 'laboratorio', l: '🔬 Laboratório (informática, ciências)' },
                 ].map(item => (
-                  <label key={item.k} className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
-                    <input
-                      type="checkbox"
-                      checked={form.resources[item.k]}
-                      onChange={(e) => updateResource(item.k, e.target.checked)}
-                      className="w-5 h-5 text-teal-600 rounded"
-                    />
-                    <span className="text-sm">{item.l}</span>
+                  <label key={item.k} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg" style={{ backgroundColor: CREME }}>
+                    <input type="checkbox" checked={form.resources[item.k]} onChange={(e) => updateResource(item.k, e.target.checked)} className="w-5 h-5 rounded" style={{ accentColor: AZUL }} />
+                    <span className="text-sm" style={{ color: TEXTO }}>{item.l}</span>
                   </label>
                 ))}
               </div>
               <div className="mt-3">
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Outros materiais de consumo <span className="text-gray-400">(opcional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.resources_extra}
-                  onChange={(e) => update('resources_extra', e.target.value)}
-                  placeholder="Ex: papel, cartolina, cola, tintas, sucata..."
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
+                <label className="block text-xs font-medium mb-1" style={labelStyle}>Outros materiais de consumo <span style={hintStyle}>(opcional)</span></label>
+                <input type="text" value={form.resources_extra} onChange={(e) => update('resources_extra', e.target.value)} placeholder="Ex: papel, cartolina, cola, tintas, sucata..." className="w-full rounded-lg px-4 py-2 text-sm border focus:outline-none focus:ring-2 transition" style={inputStyle} />
               </div>
             </div>
 
             {form.flow_type === 'ja_tenho' && (
-              <div className="border-t border-gray-100 pt-6 mb-6">
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">📋 Evidências e resultados</h3>
+              <div className="border-t pt-6 mb-6" style={{ borderColor: BORDA }}>
+                <h3 className="text-sm font-semibold mb-3" style={{ color: TEXTO, fontFamily: "'Quicksand', sans-serif" }}>📋 Evidências e resultados</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Resultados já observados <span className="text-xs text-gray-500">(opcional)</span>
-                    </label>
-                    <p className="text-xs text-gray-500 mb-1">
-                      O que mudou nos alunos? Se tiver dados do SAEPI ou avaliações, mencione.
-                    </p>
-                    <textarea
-                      value={form.observed_results}
-                      onChange={(e) => update('observed_results', e.target.value)}
-                      rows="2"
-                      placeholder="Ex: 'Os alunos melhoraram a participação oral', 'Ainda não medi formalmente'..."
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>Resultados já observados <span className="text-xs" style={hintStyle}>(opcional)</span></label>
+                    <p className="text-xs mb-1" style={hintStyle}>O que mudou nos alunos? Se tiver dados do SAEPI ou avaliações, mencione.</p>
+                    <textarea value={form.observed_results} onChange={(e) => update('observed_results', e.target.value)} rows="2" placeholder="Ex: 'Os alunos melhoraram a participação oral', 'Ainda não medi formalmente'..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Evidências disponíveis <span className="text-xs text-gray-500">(opcional)</span>
-                    </label>
-                    <p className="text-xs text-gray-500 mb-1">
-                      Fotos, produções dos alunos, depoimentos, gráficos de desempenho...
-                    </p>
-                    <textarea
-                      value={form.evidences}
-                      onChange={(e) => update('evidences', e.target.value)}
-                      rows="2"
-                      placeholder="Ex: 'Tenho fotos', 'Tenho produções dos alunos'..."
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>Evidências disponíveis <span className="text-xs" style={hintStyle}>(opcional)</span></label>
+                    <p className="text-xs mb-1" style={hintStyle}>Fotos, produções dos alunos, depoimentos, gráficos de desempenho...</p>
+                    <textarea value={form.evidences} onChange={(e) => update('evidences', e.target.value)} rows="2" placeholder="Ex: 'Tenho fotos', 'Tenho produções dos alunos'..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                   </div>
                 </div>
               </div>
             )}
 
             {form.sub_flow === 'documento' && (
-              <div className="border-t border-gray-100 pt-6 mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Culminância realizada ou desejada <span className="text-xs text-gray-500">(opcional)</span>
-                </label>
-                <p className="text-xs text-gray-500 mb-1">
-                  Como a prática foi (ou será) socializada? Mostra, apresentação, exposição...
-                </p>
-                <textarea
-                  value={form.culminancia}
-                  onChange={(e) => update('culminancia', e.target.value)}
-                  rows="2"
-                  placeholder="Ex: 'Mostra cultural para as famílias', 'Exposição dos trabalhos'..."
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
+              <div className="border-t pt-6 mb-6" style={{ borderColor: BORDA }}>
+                <label className="block text-sm font-medium mb-1" style={labelStyle}>Culminância realizada ou desejada <span className="text-xs" style={hintStyle}>(opcional)</span></label>
+                <p className="text-xs mb-1" style={hintStyle}>Como a prática foi (ou será) socializada? Mostra, apresentação, exposição...</p>
+                <textarea value={form.culminancia} onChange={(e) => update('culminancia', e.target.value)} rows="2" placeholder="Ex: 'Mostra cultural para as famílias', 'Exposição dos trabalhos'..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
               </div>
             )}
 
             {(form.sub_flow === 'documento' || form.flow_type === 'criar') && (
-              <div className="border-t border-gray-100 pt-6 mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Potencial de Replicabilidade <span className="text-xs text-gray-500">(opcional)</span>
-                </label>
-                <p className="text-xs text-gray-500 mb-1">
-                  Como essa prática pode ser adaptada para outras escolas/realidades? Critério valorizado pelo PPAIC.
-                </p>
-                <textarea
-                  value={form.replicability}
-                  onChange={(e) => update('replicability', e.target.value)}
-                  rows="2"
-                  placeholder="Ex: 'Pode ser adaptada para outras escolas', 'Funciona com qualquer realidade'..."
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
+              <div className="border-t pt-6 mb-6" style={{ borderColor: BORDA }}>
+                <label className="block text-sm font-medium mb-1" style={labelStyle}>Potencial de Replicabilidade <span className="text-xs" style={hintStyle}>(opcional)</span></label>
+                <p className="text-xs mb-1" style={hintStyle}>Como essa prática pode ser adaptada para outras escolas/realidades? Critério valorizado pelo PPAIC.</p>
+                <textarea value={form.replicability} onChange={(e) => update('replicability', e.target.value)} rows="2" placeholder="Ex: 'Pode ser adaptada para outras escolas', 'Funciona com qualquer realidade'..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
               </div>
             )}
 
             {isCoordenador && (
-              <div className="border-t border-gray-100 pt-6 mb-6 bg-blue-50 rounded-lg p-4 -mx-4 md:mx-0">
-                <h3 className="text-sm font-semibold text-blue-900 mb-2">📊 Dados de avaliações externas</h3>
-                <p className="text-xs text-blue-700 mb-4">
-                  Se você tem dados do SAEPI, IDEB, avaliações internas ou de empresa contratada,
-                  informe aqui. A IA vai direcionar a prática para atacar os descritores com baixo desempenho.
+              <div className="border-t pt-6 mb-6 rounded-lg p-4" style={{ borderColor: BORDA, backgroundColor: AZUL_CLARO }}>
+                <h3 className="text-sm font-semibold mb-2" style={{ color: AZUL, fontFamily: "'Quicksand', sans-serif" }}>📊 Dados de avaliações externas</h3>
+                <p className="text-xs mb-4" style={hintStyle}>
+                  Se você tem dados do SAEPI, IDEB, avaliações internas ou de empresa contratada, informe aqui. A IA vai direcionar a prática para atacar os descritores com baixo desempenho.
                 </p>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">A escola participa de quais avaliações?</label>
+                  <label className="block text-sm font-medium mb-2" style={labelStyle}>A escola participa de quais avaliações?</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {[
                       { v: 'saepi', l: '📘 SAEPI' },
@@ -1129,40 +762,23 @@ const PraticasExitosas = () => {
                       { v: 'empresa', l: '📕 Empresa contratada' },
                       { v: 'olimpiadas', l: '🏅 Olimpíadas (OBMEP, OBL, OBA...)' },
                     ].map(item => (
-                      <label key={item.v} className="flex items-center gap-3 cursor-pointer p-2 bg-white rounded-lg">
-                        <input
-                          type="checkbox"
-                          checked={form.avaliacoes_participa.includes(item.v)}
-                          onChange={() => toggleArrayItem('avaliacoes_participa', item.v)}
-                          className="w-4 h-4 text-blue-600 rounded"
-                        />
-                        <span className="text-sm">{item.l}</span>
+                      <label key={item.v} className="flex items-center gap-3 cursor-pointer p-2 rounded-lg" style={{ backgroundColor: BRANCO }}>
+                        <input type="checkbox" checked={form.avaliacoes_participa.includes(item.v)} onChange={() => toggleArrayItem('avaliacoes_participa', item.v)} className="w-4 h-4 rounded" style={{ accentColor: AZUL }} />
+                        <span className="text-sm" style={{ color: TEXTO }}>{item.l}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Resultados e descritores com baixo desempenho</label>
-                  <p className="text-xs text-gray-500 mb-1">
-                    Ex: "SAEPI 5º ano LP — proficiência média 210, descritores D01 e D03 com baixo desempenho. IDEB anos iniciais 4,5."
-                  </p>
-                  <textarea
-                    value={form.avaliacoes_resultados}
-                    onChange={(e) => update('avaliacoes_resultados', e.target.value)}
-                    rows="3"
-                    placeholder="Descreva os resultados e descritores frágeis..."
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  />
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>Resultados e descritores com baixo desempenho</label>
+                  <p className="text-xs mb-1" style={hintStyle}>Ex: "SAEPI 5º ano LP — proficiência média 210, descritores D01 e D03 com baixo desempenho. IDEB anos iniciais 4,5."</p>
+                  <textarea value={form.avaliacoes_resultados} onChange={(e) => update('avaliacoes_resultados', e.target.value)} rows="3" placeholder="Descreva os resultados e descritores frágeis..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Frequência de análise dos dados com a equipe</label>
-                  <select
-                    value={form.frequencia_analise}
-                    onChange={(e) => update('frequencia_analise', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white"
-                  >
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>Frequência de análise dos dados com a equipe</label>
+                  <select value={form.frequencia_analise} onChange={(e) => update('frequencia_analise', e.target.value)} className="w-full rounded-lg px-4 py-2 border" style={inputStyle}>
                     <option value="">Selecione...</option>
                     <option value="nunca">Nunca</option>
                     <option value="anual">Anual</option>
@@ -1173,7 +789,7 @@ const PraticasExitosas = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Intervenções anteriores com base nos dados</label>
+                  <label className="block text-sm font-medium mb-2" style={labelStyle}>Intervenções anteriores com base nos dados</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {[
                       { v: 'formacao', l: '🎓 Formação de professores' },
@@ -1181,14 +797,9 @@ const PraticasExitosas = () => {
                       { v: 'material', l: '📚 Material didático específico' },
                       { v: 'auloes', l: '📝 Aulões de reforço' },
                     ].map(item => (
-                      <label key={item.v} className="flex items-center gap-3 cursor-pointer p-2 bg-white rounded-lg">
-                        <input
-                          type="checkbox"
-                          checked={form.intervencoes_anteriores.includes(item.v)}
-                          onChange={() => toggleArrayItem('intervencoes_anteriores', item.v)}
-                          className="w-4 h-4 text-blue-600 rounded"
-                        />
-                        <span className="text-sm">{item.l}</span>
+                      <label key={item.v} className="flex items-center gap-3 cursor-pointer p-2 rounded-lg" style={{ backgroundColor: BRANCO }}>
+                        <input type="checkbox" checked={form.intervencoes_anteriores.includes(item.v)} onChange={() => toggleArrayItem('intervencoes_anteriores', item.v)} className="w-4 h-4 rounded" style={{ accentColor: AZUL }} />
+                        <span className="text-sm" style={{ color: TEXTO }}>{item.l}</span>
                       </label>
                     ))}
                   </div>
@@ -1197,21 +808,13 @@ const PraticasExitosas = () => {
             )}
 
             {!isCoordenador && (
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+              <div className="rounded-lg p-4 border" style={{ backgroundColor: AZUL_CLARO, borderColor: BORDA }}>
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.has_special_needs}
-                    onChange={(e) => update('has_special_needs', e.target.checked)}
-                    className="mt-0.5 w-5 h-5 text-teal-600 rounded focus:ring-teal-500"
-                  />
+                  <input type="checkbox" checked={form.has_special_needs} onChange={(e) => update('has_special_needs', e.target.checked)} className="mt-0.5 w-5 h-5 rounded" style={{ accentColor: AZUL }} />
                   <div>
-                    <div className="text-sm font-semibold text-blue-900">
-                      Há alunos com laudo ou que precisam de atenção especial?
-                    </div>
-                    <p className="text-xs text-blue-700 mt-1">
-                      Ex: autismo, TDAH, dislexia, altas habilidades, dificuldades de leitura.
-                      A IA integrará adaptações concretas. <strong>Não fazemos diagnóstico.</strong>
+                    <div className="text-sm font-semibold" style={{ color: AZUL }}>Há alunos com laudo ou que precisam de atenção especial?</div>
+                    <p className="text-xs mt-1" style={hintStyle}>
+                      Ex: autismo, TDAH, dislexia, altas habilidades, dificuldades de leitura. A IA integrará adaptações concretas. <strong>Não fazemos diagnóstico.</strong>
                     </p>
                   </div>
                 </label>
@@ -1224,69 +827,39 @@ const PraticasExitosas = () => {
         {/* ETAPA 5 — RELATO GUIADO */}
         {/* ============================================================ */}
         {step === 5 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="rounded-xl shadow-sm border p-6 md:p-8" style={{ backgroundColor: BRANCO, borderColor: BORDA }}>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: AZUL, fontFamily: "'Quicksand', sans-serif" }}>
               {isFluxoC ? 'Descreva sua ideia' : 'Conte a sua prática'}
             </h2>
-            <p className="text-gray-600 mb-6">Responda as perguntas abaixo com o máximo de detalhes.</p>
+            <p className="mb-6" style={hintStyle}>Responda as perguntas abaixo com o máximo de detalhes.</p>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Título provisório *</label>
-              <p className="text-xs text-gray-500 mb-1">Dê um nome provisório para a sua prática. A IA vai sugerir um título final melhor.</p>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) => update('title', e.target.value)}
-                placeholder="Ex: Viajante da Leitura"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>Título provisório *</label>
+              <p className="text-xs mb-1" style={hintStyle}>Dê um nome provisório para a sua prática. A IA vai sugerir um título final melhor.</p>
+              <input type="text" value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="Ex: Viajante da Leitura" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
             </div>
 
             {isFluxoC && (
               <>
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    1. Qual é o objetivo principal? * <span className="text-xs text-gray-500">(mín. 30 caracteres)</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mb-1">O que você quer alcançar? Seja específico.</p>
-                  <textarea
-                    value={form.goal}
-                    onChange={(e) => update('goal', e.target.value)}
-                    rows="3"
-                    placeholder="Ex: Quero melhorar a compreensão leitora dos alunos do 5º ano..."
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{form.goal.length} caracteres</p>
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>1. Qual é o objetivo principal? * <span className="text-xs" style={hintStyle}>(mín. 30 caracteres)</span></label>
+                  <p className="text-xs mb-1" style={hintStyle}>O que você quer alcançar? Seja específico.</p>
+                  <textarea value={form.goal} onChange={(e) => update('goal', e.target.value)} rows="3" placeholder="Ex: Quero melhorar a compreensão leitora dos alunos do 5º ano..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
+                  <p className="text-xs mt-1" style={hintStyle}>{form.goal.length} caracteres</p>
                 </div>
 
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    2. O que você imagina fazer? * <span className="text-xs text-gray-500">(mín. 30 caracteres)</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mb-1">Suas ideias iniciais, abordagens que gostaria de usar.</p>
-                  <textarea
-                    value={form.what_you_imagine}
-                    onChange={(e) => update('what_you_imagine', e.target.value)}
-                    rows="4"
-                    placeholder="Ex: Pensei em usar leitura compartilhada, produção de cartazes, dramatizações..."
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{form.what_you_imagine.length} caracteres</p>
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>2. O que você imagina fazer? * <span className="text-xs" style={hintStyle}>(mín. 30 caracteres)</span></label>
+                  <p className="text-xs mb-1" style={hintStyle}>Suas ideias iniciais, abordagens que gostaria de usar.</p>
+                  <textarea value={form.what_you_imagine} onChange={(e) => update('what_you_imagine', e.target.value)} rows="4" placeholder="Ex: Pensei em usar leitura compartilhada, produção de cartazes, dramatizações..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
+                  <p className="text-xs mt-1" style={hintStyle}>{form.what_you_imagine.length} caracteres</p>
                 </div>
 
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    3. O que você espera alcançar? * <span className="text-xs text-gray-500">(mín. 30 caracteres)</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mb-1">Resultados desejados.</p>
-                  <textarea
-                    value={form.what_you_expect}
-                    onChange={(e) => update('what_you_expect', e.target.value)}
-                    rows="3"
-                    placeholder="Ex: Espero que os alunos melhorem a compreensão leitora..."
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{form.what_you_expect.length} caracteres</p>
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>3. O que você espera alcançar? * <span className="text-xs" style={hintStyle}>(mín. 30 caracteres)</span></label>
+                  <p className="text-xs mb-1" style={hintStyle}>Resultados desejados.</p>
+                  <textarea value={form.what_you_expect} onChange={(e) => update('what_you_expect', e.target.value)} rows="3" placeholder="Ex: Espero que os alunos melhorem a compreensão leitora..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
+                  <p className="text-xs mt-1" style={hintStyle}>{form.what_you_expect.length} caracteres</p>
                 </div>
               </>
             )}
@@ -1294,70 +867,38 @@ const PraticasExitosas = () => {
             {!isFluxoC && (
               <>
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    1. O que você fez? * <span className="text-xs text-gray-500">(mín. 30 caracteres)</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mb-1">Descreva a prática: o que fez, como fez, quais atividades realizou.</p>
-                  <textarea
-                    value={form.what_was_done}
-                    onChange={(e) => update('what_was_done', e.target.value)}
-                    rows="4"
-                    placeholder="Descreva detalhadamente o que foi feito..."
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{form.what_was_done.length} caracteres</p>
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>1. O que você fez? * <span className="text-xs" style={hintStyle}>(mín. 30 caracteres)</span></label>
+                  <p className="text-xs mb-1" style={hintStyle}>Descreva a prática: o que fez, como fez, quais atividades realizou.</p>
+                  <textarea value={form.what_was_done} onChange={(e) => update('what_was_done', e.target.value)} rows="4" placeholder="Descreva detalhadamente o que foi feito..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
+                  <p className="text-xs mt-1" style={hintStyle}>{form.what_was_done.length} caracteres</p>
                 </div>
 
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    2. Como foi? * <span className="text-xs text-gray-500">(mín. 30 caracteres)</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mb-1">Como os alunos reagiram? O que funcionou? O que não funcionou?</p>
-                  <textarea
-                    value={form.how_it_went}
-                    onChange={(e) => update('how_it_went', e.target.value)}
-                    rows="4"
-                    placeholder="Descreva como foi a execução, reações, desafios..."
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{form.how_it_went.length} caracteres</p>
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>2. Como foi? * <span className="text-xs" style={hintStyle}>(mín. 30 caracteres)</span></label>
+                  <p className="text-xs mb-1" style={hintStyle}>Como os alunos reagiram? O que funcionou? O que não funcionou?</p>
+                  <textarea value={form.how_it_went} onChange={(e) => update('how_it_went', e.target.value)} rows="4" placeholder="Descreva como foi a execução, reações, desafios..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
+                  <p className="text-xs mt-1" style={hintStyle}>{form.how_it_went.length} caracteres</p>
                 </div>
 
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    3. O que você percebeu? * <span className="text-xs text-gray-500">(mín. 30 caracteres)</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mb-1">Quais resultados você já observou? O que mudou na aprendizagem?</p>
-                  <textarea
-                    value={form.what_was_noticed}
-                    onChange={(e) => update('what_was_noticed', e.target.value)}
-                    rows="4"
-                    placeholder="Descreva os resultados, mudanças, aprendizados..."
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{form.what_was_noticed.length} caracteres</p>
+                  <label className="block text-sm font-medium mb-1" style={labelStyle}>3. O que você percebeu? * <span className="text-xs" style={hintStyle}>(mín. 30 caracteres)</span></label>
+                  <p className="text-xs mb-1" style={hintStyle}>Quais resultados você já observou? O que mudou na aprendizagem?</p>
+                  <textarea value={form.what_was_noticed} onChange={(e) => update('what_was_noticed', e.target.value)} rows="4" placeholder="Descreva os resultados, mudanças, aprendizados..." className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
+                  <p className="text-xs mt-1" style={hintStyle}>{form.what_was_noticed.length} caracteres</p>
                 </div>
 
                 {form.sub_flow === 'documento' && (
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      4. Contexto da escola <span className="text-xs text-gray-500">(opcional)</span>
-                    </label>
-                    <p className="text-xs text-gray-500 mb-1">Conte sobre a escola e a comunidade.</p>
-                    <textarea
-                      value={form.school_context}
-                      onChange={(e) => update('school_context', e.target.value)}
-                      rows="3"
-                      placeholder="Ex: 'A escola fica numa comunidade ribeirinha...'"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
+                    <label className="block text-sm font-medium mb-1" style={labelStyle}>4. Contexto da escola <span className="text-xs" style={hintStyle}>(opcional)</span></label>
+                    <p className="text-xs mb-1" style={hintStyle}>Conte sobre a escola e a comunidade.</p>
+                    <textarea value={form.school_context} onChange={(e) => update('school_context', e.target.value)} rows="3" placeholder="Ex: 'A escola fica numa comunidade ribeirinha...'" className="w-full rounded-lg px-4 py-2 border focus:outline-none focus:ring-2 transition" style={inputStyle} />
                   </div>
                 )}
               </>
             )}
 
             {error && (
-              <div className="mt-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+              <div className="mt-4 text-sm rounded-lg px-4 py-3 border" style={{ backgroundColor: PESSEGO_CLARO, borderColor: CORAL, color: CORAL }}>
                 {error}
               </div>
             )}
@@ -1365,7 +906,8 @@ const PraticasExitosas = () => {
             <button
               onClick={handleSubmit}
               disabled={loading || !podeAvancar()}
-              className="mt-6 w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 disabled:from-teal-300 disabled:to-cyan-300 text-white font-semibold py-3 rounded-lg transition shadow-md hover:shadow-lg"
+              className="mt-6 w-full font-semibold py-3 rounded-lg transition shadow-md hover:shadow-lg text-white disabled:opacity-60"
+              style={{ backgroundColor: AZUL }}
             >
               {loading ? 'Gerando prática (pode levar 1-2 minutos)...' : 'Gerar minha prática'}
             </button>
@@ -1378,43 +920,43 @@ const PraticasExitosas = () => {
         {step === 6 && result && (
           <div>
             <div className="print:hidden flex flex-wrap gap-3 justify-between items-center mb-4">
-              <button onClick={reiniciar} className="text-teal-600 hover:text-teal-700 text-sm font-medium">
+              <button onClick={reiniciar} className="text-sm font-medium hover:underline" style={{ color: AZUL }}>
                 ← Criar outra prática
               </button>
               <button
                 onClick={handleBaixarPDF}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2.5 rounded-lg transition flex items-center gap-2"
+                disabled={pdfBaixado && false}
+                className="font-semibold px-6 py-2.5 rounded-lg transition flex items-center gap-2 text-white disabled:opacity-60"
+                style={{ backgroundColor: AZUL }}
               >
                 📥 Baixar PDF
               </button>
             </div>
-            <div id="pratica-conteudo">
+            <div id="pratica-conteudo" style={{ backgroundColor: CREME, padding: '24px', borderRadius: '12px' }}>
               <PraticaResultado data={result} />
             </div>
-      {/* Feedback (fora do PDF) */}
-    <FeedbackCard
-      content_type="pratica_exitosa"
-      content_id={result.id}
-      initialFeedback={result.structured_data?.feedback || null}
-    />
+            <div className="mt-6">
+              <FeedbackCard
+                content_type="pratica_exitosa"
+                content_id={result.id}
+                initialFeedback={result.structured_data?.feedback || null}
+              />
+            </div>
           </div>
         )}
       </div>
 
       {step >= 1 && step <= 5 && (
         <div className="print:hidden mt-6 flex justify-between">
-          <button
-            onClick={voltar}
-            disabled={step === 1}
-            className="text-gray-600 hover:text-gray-800 disabled:opacity-40 text-sm font-medium"
-          >
+          <button onClick={voltar} disabled={step === 1} className="text-sm font-medium disabled:opacity-40" style={{ color: TEXTO_2 }}>
             ← Voltar
           </button>
           {step < 5 && (
             <button
               onClick={avancar}
               disabled={!podeAvancar()}
-              className="bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-semibold px-6 py-2.5 rounded-lg transition"
+              className="font-semibold px-6 py-2.5 rounded-lg transition text-white disabled:opacity-60"
+              style={{ backgroundColor: AZUL }}
             >
               Continuar →
             </button>
@@ -1423,7 +965,7 @@ const PraticasExitosas = () => {
       )}
 
       {error && step < 5 && (
-        <p className="mt-4 text-red-500 text-sm">{error}</p>
+        <p className="mt-4 text-sm" style={{ color: CORAL }}>{error}</p>
       )}
     </div>
   );
@@ -1436,15 +978,20 @@ const PraticaResultado = ({ data }) => {
   const sd = data.structured_data?.output || data.structured_data || {};
   const cab = sd.cabecalho || {};
 
+  const cardStyle = { backgroundColor: BRANCO, borderColor: BORDA };
+  const metaStyle = { color: TEXTO_2 };
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-      <div className="border-b border-gray-100 pb-6 mb-6">
-        <div className="inline-block bg-teal-100 text-teal-800 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+    <div className="rounded-xl shadow-sm border p-6 md:p-8" style={cardStyle}>
+      <div className="border-b pb-6 mb-6" style={{ borderColor: BORDA }}>
+        <div className="inline-block text-xs font-semibold px-3 py-1 rounded-full mb-3" style={{ backgroundColor: OURO_CLARO, color: OURO }}>
           🏆 Prática Exitosa
         </div>
-        <h2 className="text-3xl font-bold text-gray-900">{cab.titulo || data.title}</h2>
-        {cab.subtitulo && <p className="text-lg text-gray-600 mt-2 italic">{cab.subtitulo}</p>}
-        <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600">
+        <h2 className="text-3xl font-bold" style={{ color: AZUL, fontFamily: "'Lora', serif" }}>
+          {cab.titulo || data.title}
+        </h2>
+        {cab.subtitulo && <p className="text-lg mt-2 italic" style={metaStyle}>{cab.subtitulo}</p>}
+        <div className="mt-4 flex flex-wrap gap-4 text-sm" style={metaStyle}>
           {cab.perfil && <span>👤 {cab.perfil}</span>}
           {cab.etapa_ensino && <span>🎓 {cab.etapa_ensino}</span>}
           {cab.categoria && <span>📂 {cab.categoria}</span>}
@@ -1458,13 +1005,13 @@ const PraticaResultado = ({ data }) => {
           {cab.num_professores ? <span>👥 {cab.num_professores} professores</span> : null}
         </div>
         {cab.bncc?.codigo && (
-          <div className="mt-3 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm">
-            <strong className="text-blue-900">📖 BNCC {cab.bncc.codigo}:</strong>{' '}
-            <span className="text-blue-800">{cab.bncc.texto}</span>
+          <div className="mt-3 rounded-lg p-3 text-sm border" style={{ backgroundColor: AZUL_CLARO, borderColor: BORDA }}>
+            <strong style={{ color: AZUL }}>📖 BNCC {cab.bncc.codigo}:</strong>{' '}
+            <span style={{ color: TEXTO }}>{cab.bncc.texto}</span>
           </div>
         )}
         {cab.tema_seminario && (
-          <div className="mt-3 text-sm text-gray-700">
+          <div className="mt-3 text-sm" style={{ color: TEXTO }}>
             <strong>Tema do seminário:</strong> {cab.tema_seminario}
           </div>
         )}
@@ -1472,43 +1019,43 @@ const PraticaResultado = ({ data }) => {
 
       {sd.resumo_executivo && (
         <Section title="📌 Resumo Executivo">
-          <p className="text-gray-700 leading-relaxed whitespace-pre-line">{sd.resumo_executivo}</p>
+          <p className="leading-relaxed whitespace-pre-line" style={{ color: TEXTO }}>{sd.resumo_executivo}</p>
         </Section>
       )}
       {sd.justificativa && (
         <Section title="💡 Justificativa">
-          <p className="text-gray-700 leading-relaxed whitespace-pre-line">{sd.justificativa}</p>
+          <p className="leading-relaxed whitespace-pre-line" style={{ color: TEXTO }}>{sd.justificativa}</p>
         </Section>
       )}
 
       {sd.conexao_avaliacoes && sd.conexao_avaliacoes.tipo_conexao && sd.conexao_avaliacoes.tipo_conexao !== 'nenhuma' && (
         <Section title="🎯 Conexão com Avaliações Externas">
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-3">
-            <p className="text-sm font-semibold text-blue-900 mb-2">
+          <div className="rounded-lg p-4 mb-3 border" style={{ backgroundColor: AZUL_CLARO, borderColor: BORDA }}>
+            <p className="text-sm font-semibold mb-2" style={{ color: AZUL }}>
               Tipo de conexão: <span className="uppercase">{sd.conexao_avaliacoes.tipo_conexao}</span>
             </p>
             {sd.conexao_avaliacoes.como_contribui && (
-              <p className="text-sm text-blue-800 mb-3">{sd.conexao_avaliacoes.como_contribui}</p>
+              <p className="text-sm mb-3" style={{ color: TEXTO }}>{sd.conexao_avaliacoes.como_contribui}</p>
             )}
             {sd.conexao_avaliacoes.avaliacoes_relacionadas?.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs font-semibold text-blue-900 mb-1">Avaliações relacionadas:</p>
-                <p className="text-sm text-blue-800">{sd.conexao_avaliacoes.avaliacoes_relacionadas.join(', ')}</p>
+                <p className="text-xs font-semibold mb-1" style={{ color: AZUL }}>Avaliações relacionadas:</p>
+                <p className="text-sm" style={{ color: TEXTO }}>{sd.conexao_avaliacoes.avaliacoes_relacionadas.join(', ')}</p>
               </div>
             )}
             {sd.conexao_avaliacoes.descritores_ou_habilidades?.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs font-semibold text-blue-900 mb-1">Descritores / Habilidades:</p>
+                <p className="text-xs font-semibold mb-1" style={{ color: AZUL }}>Descritores / Habilidades:</p>
                 <ul className="space-y-1 ml-2">
                   {sd.conexao_avaliacoes.descritores_ou_habilidades.map((d, i) => (
-                    <li key={i} className="text-sm text-blue-800">• {d}</li>
+                    <li key={i} className="text-sm" style={{ color: TEXTO }}>• {d}</li>
                   ))}
                 </ul>
               </div>
             )}
             {sd.conexao_avaliacoes.meta_sugerida && (
-              <div className="bg-white rounded p-2 text-sm">
-                <strong className="text-blue-900">Meta sugerida:</strong> {sd.conexao_avaliacoes.meta_sugerida}
+              <div className="rounded p-2 text-sm" style={{ backgroundColor: BRANCO }}>
+                <strong style={{ color: AZUL }}>Meta sugerida:</strong> <span style={{ color: TEXTO }}>{sd.conexao_avaliacoes.meta_sugerida}</span>
               </div>
             )}
           </div>
@@ -1518,15 +1065,15 @@ const PraticaResultado = ({ data }) => {
       {sd.objetivos && (
         <Section title="🎯 Objetivos">
           {sd.objetivos.geral && (
-            <p className="text-gray-700 mb-3"><strong>Geral:</strong> {sd.objetivos.geral}</p>
+            <p className="mb-3" style={{ color: TEXTO }}><strong>Geral:</strong> {sd.objetivos.geral}</p>
           )}
           {sd.objetivos.especificos?.length > 0 && (
             <>
-              <p className="font-medium text-gray-800 mb-2">Específicos:</p>
+              <p className="font-medium mb-2" style={{ color: TEXTO }}>Específicos:</p>
               <ul className="space-y-1.5 ml-4">
                 {sd.objetivos.especificos.map((o, i) => (
-                  <li key={i} className="text-gray-700 flex gap-2">
-                    <span className="text-teal-600">•</span><span>{o}</span>
+                  <li key={i} className="flex gap-2" style={{ color: TEXTO }}>
+                    <span style={{ color: AZUL }}>•</span><span>{o}</span>
                   </li>
                 ))}
               </ul>
@@ -1538,32 +1085,32 @@ const PraticaResultado = ({ data }) => {
       {sd.metodologia?.etapas?.length > 0 && (
         <Section title="⚙️ Metodologia">
           {sd.metodologia.descricao_geral && (
-            <p className="text-gray-700 mb-4 whitespace-pre-line">{sd.metodologia.descricao_geral}</p>
+            <p className="mb-4 whitespace-pre-line" style={{ color: TEXTO }}>{sd.metodologia.descricao_geral}</p>
           )}
           <div className="space-y-4">
             {sd.metodologia.etapas.map((etapa, i) => (
-              <div key={i} className="border-l-4 border-teal-400 pl-4 py-2">
+              <div key={i} className="pl-4 py-2" style={{ borderLeft: `4px solid ${PESSEGO}` }}>
                 <div className="flex justify-between items-baseline mb-2">
-                  <h4 className="font-semibold text-gray-800">{etapa.numero}. {etapa.titulo}</h4>
+                  <h4 className="font-semibold" style={{ color: TEXTO }}>{etapa.numero}. {etapa.titulo}</h4>
                   {etapa.duracao && (
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{etapa.duracao}</span>
+                    <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: CREME, color: TEXTO_2 }}>{etapa.duracao}</span>
                   )}
                 </div>
-                {etapa.descricao && <p className="text-sm text-gray-700 mb-2 whitespace-pre-line">{etapa.descricao}</p>}
+                {etapa.descricao && <p className="text-sm mb-2 whitespace-pre-line" style={{ color: TEXTO }}>{etapa.descricao}</p>}
                 {etapa.acao_do_educador && (
-                  <p className="text-sm text-gray-700 mb-1"><strong className="text-teal-700">Educador:</strong> {etapa.acao_do_educador}</p>
+                  <p className="text-sm mb-1" style={{ color: TEXTO }}><strong style={{ color: AZUL }}>Educador:</strong> {etapa.acao_do_educador}</p>
                 )}
                 {etapa.acao_dos_estudantes && (
-                  <p className="text-sm text-gray-700 mb-1"><strong className="text-teal-700">Estudantes:</strong> {etapa.acao_dos_estudantes}</p>
+                  <p className="text-sm mb-1" style={{ color: TEXTO }}><strong style={{ color: AZUL }}>Estudantes:</strong> {etapa.acao_dos_estudantes}</p>
                 )}
                 {etapa.recursos_necessarios?.length > 0 && (
-                  <p className="text-xs text-gray-600 mt-2"><strong>Recursos:</strong> {etapa.recursos_necessarios.join(', ')}</p>
+                  <p className="text-xs mt-2" style={metaStyle}><strong>Recursos:</strong> {etapa.recursos_necessarios.join(', ')}</p>
                 )}
                 {etapa.como_avaliar && (
-                  <p className="text-xs text-gray-600 mt-1"><strong>Avaliação:</strong> {etapa.como_avaliar}</p>
+                  <p className="text-xs mt-1" style={metaStyle}><strong>Avaliação:</strong> {etapa.como_avaliar}</p>
                 )}
                 {etapa.adequacoes_inclusivas && (
-                  <p className="text-xs text-blue-700 bg-blue-50 rounded p-2 mt-2">
+                  <p className="text-xs rounded p-2 mt-2" style={{ color: AZUL, backgroundColor: AZUL_CLARO }}>
                     <strong>🧩 Inclusão:</strong> {etapa.adequacoes_inclusivas}
                   </p>
                 )}
@@ -1577,16 +1124,16 @@ const PraticaResultado = ({ data }) => {
         <Section title="📅 Cronograma">
           <div className="space-y-3">
             {sd.cronograma.map((c, i) => (
-              <div key={i} className="bg-gray-50 rounded-lg p-4">
+              <div key={i} className="rounded-lg p-4" style={{ backgroundColor: CREME }}>
                 <div className="flex justify-between items-baseline mb-1">
-                  <strong className="text-gray-800">{c.periodo}</strong>
-                  <span className="text-xs text-gray-600">{c.foco}</span>
+                  <strong style={{ color: TEXTO }}>{c.periodo}</strong>
+                  <span className="text-xs" style={metaStyle}>{c.foco}</span>
                 </div>
                 {c.atividades_principais?.length > 0 && (
                   <ul className="mt-2 space-y-1 ml-4">
                     {c.atividades_principais.map((a, j) => (
-                      <li key={j} className="text-sm text-gray-700 flex gap-2">
-                        <span className="text-teal-600">•</span><span>{a}</span>
+                      <li key={j} className="text-sm flex gap-2" style={{ color: TEXTO }}>
+                        <span style={{ color: AZUL }}>•</span><span>{a}</span>
                       </li>
                     ))}
                   </ul>
@@ -1600,7 +1147,7 @@ const PraticaResultado = ({ data }) => {
       {sd.plano_intervencao?.aplicavel && (
         <Section title="📋 Plano de Intervenção (Gestão Escolar)">
           {sd.plano_intervencao.foco && (
-            <p className="text-gray-700 mb-3"><strong>Foco:</strong> {sd.plano_intervencao.foco}</p>
+            <p className="mb-3" style={{ color: TEXTO }}><strong>Foco:</strong> {sd.plano_intervencao.foco}</p>
           )}
           {[
             ['acoes_com_professores', 'Ações com professores'],
@@ -1611,11 +1158,11 @@ const PraticaResultado = ({ data }) => {
           ].map(([key, label]) => (
             sd.plano_intervencao[key]?.length > 0 && (
               <div key={key} className="mb-3">
-                <p className="font-medium text-gray-800 mb-1">{label}:</p>
+                <p className="font-medium mb-1" style={{ color: TEXTO }}>{label}:</p>
                 <ul className="space-y-1 ml-4">
                   {sd.plano_intervencao[key].map((it, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex gap-2">
-                      <span className="text-teal-600">•</span><span>{it}</span>
+                    <li key={i} className="text-sm flex gap-2" style={{ color: TEXTO }}>
+                      <span style={{ color: AZUL }}>•</span><span>{it}</span>
                     </li>
                   ))}
                 </ul>
@@ -1629,14 +1176,14 @@ const PraticaResultado = ({ data }) => {
         <Section title="🧩 Adaptações Inclusivas">
           <div className="space-y-3">
             {sd.adaptacoes_inclusivas.map((ad, i) => (
-              <div key={i} className="border border-blue-100 rounded-lg overflow-hidden">
-                <div className="bg-blue-50 px-4 py-2">
-                  <h4 className="font-semibold text-blue-900 text-sm">{ad.necessidade}</h4>
+              <div key={i} className="rounded-lg overflow-hidden border" style={{ borderColor: BORDA }}>
+                <div className="px-4 py-2" style={{ backgroundColor: AZUL_CLARO }}>
+                  <h4 className="font-semibold text-sm" style={{ color: AZUL }}>{ad.necessidade}</h4>
                 </div>
                 <ul className="p-4 space-y-1.5">
                   {ad.estrategias?.map((e, j) => (
-                    <li key={j} className="flex items-start gap-2 text-sm text-gray-700">
-                      <span className="text-blue-500 mt-0.5">✓</span><span>{e}</span>
+                    <li key={j} className="flex items-start gap-2 text-sm" style={{ color: TEXTO }}>
+                      <span className="mt-0.5" style={{ color: AZUL }}>✓</span><span>{e}</span>
                     </li>
                   ))}
                 </ul>
@@ -1655,11 +1202,11 @@ const PraticaResultado = ({ data }) => {
           ].map(([key, label]) => (
             sd.avaliacao[key]?.length > 0 && (
               <div key={key} className="mb-3">
-                <p className="font-medium text-gray-800 mb-1">{label}:</p>
+                <p className="font-medium mb-1" style={{ color: TEXTO }}>{label}:</p>
                 <ul className="space-y-1 ml-4">
                   {sd.avaliacao[key].map((it, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex gap-2">
-                      <span className="text-teal-600">•</span><span>{it}</span>
+                    <li key={i} className="text-sm flex gap-2" style={{ color: TEXTO }}>
+                      <span style={{ color: AZUL }}>•</span><span>{it}</span>
                     </li>
                   ))}
                 </ul>
@@ -1671,18 +1218,18 @@ const PraticaResultado = ({ data }) => {
 
       {sd.culminancia && (sd.culminancia.descricao || sd.culminancia.sugestoes?.length > 0) && (
         <Section title="🎉 Culminância">
-          {sd.culminancia.descricao && <p className="text-gray-700 mb-3 whitespace-pre-line">{sd.culminancia.descricao}</p>}
+          {sd.culminancia.descricao && <p className="mb-3 whitespace-pre-line" style={{ color: TEXTO }}>{sd.culminancia.descricao}</p>}
           {sd.culminancia.sugestoes?.length > 0 && (
             <ul className="space-y-1.5 ml-4 mb-3">
               {sd.culminancia.sugestoes.map((s, i) => (
-                <li key={i} className="text-sm text-gray-700 flex gap-2">
-                  <span className="text-teal-600">•</span><span>{s}</span>
+                <li key={i} className="text-sm flex gap-2" style={{ color: TEXTO }}>
+                  <span style={{ color: AZUL }}>•</span><span>{s}</span>
                 </li>
               ))}
             </ul>
           )}
           {sd.culminancia.publico_esperado && (
-            <p className="text-sm text-gray-600"><strong>Público esperado:</strong> {sd.culminancia.publico_esperado}</p>
+            <p className="text-sm" style={metaStyle}><strong>Público esperado:</strong> {sd.culminancia.publico_esperado}</p>
           )}
         </Section>
       )}
@@ -1691,8 +1238,8 @@ const PraticaResultado = ({ data }) => {
         <Section title="🌟 Resultados Esperados">
           <ul className="space-y-1.5 ml-4">
             {sd.resultados_esperados.map((r, i) => (
-              <li key={i} className="text-gray-700 flex gap-2">
-                <span className="text-teal-600">•</span><span>{r}</span>
+              <li key={i} className="flex gap-2" style={{ color: TEXTO }}>
+                <span style={{ color: AZUL }}>•</span><span>{r}</span>
               </li>
             ))}
           </ul>
@@ -1701,14 +1248,14 @@ const PraticaResultado = ({ data }) => {
 
       {sd.replicabilidade && (sd.replicabilidade.descricao || sd.replicabilidade.adaptacoes_para_outras_escolas?.length > 0) && (
         <Section title="🔄 Replicabilidade">
-          {sd.replicabilidade.descricao && <p className="text-gray-700 mb-3 whitespace-pre-line">{sd.replicabilidade.descricao}</p>}
+          {sd.replicabilidade.descricao && <p className="mb-3 whitespace-pre-line" style={{ color: TEXTO }}>{sd.replicabilidade.descricao}</p>}
           {sd.replicabilidade.adaptacoes_para_outras_escolas?.length > 0 && (
             <div className="mb-3">
-              <p className="font-medium text-gray-800 mb-1">Adaptações para outras escolas:</p>
+              <p className="font-medium mb-1" style={{ color: TEXTO }}>Adaptações para outras escolas:</p>
               <ul className="space-y-1 ml-4">
                 {sd.replicabilidade.adaptacoes_para_outras_escolas.map((a, i) => (
-                  <li key={i} className="text-sm text-gray-700 flex gap-2">
-                    <span className="text-teal-600">•</span><span>{a}</span>
+                  <li key={i} className="text-sm flex gap-2" style={{ color: TEXTO }}>
+                    <span style={{ color: AZUL }}>•</span><span>{a}</span>
                   </li>
                 ))}
               </ul>
@@ -1716,11 +1263,11 @@ const PraticaResultado = ({ data }) => {
           )}
           {sd.replicabilidade.condicoes_minimas?.length > 0 && (
             <div>
-              <p className="font-medium text-gray-800 mb-1">Condições mínimas:</p>
+              <p className="font-medium mb-1" style={{ color: TEXTO }}>Condições mínimas:</p>
               <ul className="space-y-1 ml-4">
                 {sd.replicabilidade.condicoes_minimas.map((c, i) => (
-                  <li key={i} className="text-sm text-gray-700 flex gap-2">
-                    <span className="text-teal-600">•</span><span>{c}</span>
+                  <li key={i} className="text-sm flex gap-2" style={{ color: TEXTO }}>
+                    <span style={{ color: AZUL }}>•</span><span>{c}</span>
                   </li>
                 ))}
               </ul>
@@ -1733,12 +1280,12 @@ const PraticaResultado = ({ data }) => {
         <Section title="📸 Evidências Sugeridas">
           <div className="space-y-3">
             {sd.evidencias_sugeridas.map((ev, i) => (
-              <div key={i} className="border border-amber-100 rounded-lg p-4 bg-amber-50">
+              <div key={i} className="rounded-lg p-4 border" style={{ borderColor: BORDA, backgroundColor: OURO_CLARO }}>
                 <div className="flex justify-between items-baseline mb-1">
-                  <strong className="text-amber-900 text-sm">{ev.tipo}</strong>
-                  {ev.quando_registrar && <span className="text-xs text-amber-700">{ev.quando_registrar}</span>}
+                  <strong className="text-sm" style={{ color: OURO }}>{ev.tipo}</strong>
+                  {ev.quando_registrar && <span className="text-xs" style={{ color: OURO }}>{ev.quando_registrar}</span>}
                 </div>
-                {ev.descricao && <p className="text-sm text-amber-900">{ev.descricao}</p>}
+                {ev.descricao && <p className="text-sm" style={{ color: TEXTO }}>{ev.descricao}</p>}
               </div>
             ))}
           </div>
@@ -1747,11 +1294,11 @@ const PraticaResultado = ({ data }) => {
 
       {sd.dicas_de_aprimoramento?.length > 0 && (
         <Section title="💬 Dicas de Aprimoramento">
-          <div className="bg-amber-50 border border-amber-100 rounded-lg p-4">
+          <div className="rounded-lg p-4 border" style={{ backgroundColor: OURO_CLARO, borderColor: BORDA }}>
             <ul className="space-y-1.5">
               {sd.dicas_de_aprimoramento.map((d, i) => (
-                <li key={i} className="text-sm text-amber-900 flex gap-2">
-                  <span className="text-amber-600">→</span><span>{d}</span>
+                <li key={i} className="text-sm flex gap-2" style={{ color: TEXTO }}>
+                  <span style={{ color: OURO }}>→</span><span>{d}</span>
                 </li>
               ))}
             </ul>
@@ -1763,8 +1310,8 @@ const PraticaResultado = ({ data }) => {
         <Section title="🗺️ Referências Regionais">
           <ul className="space-y-1.5 ml-4">
             {sd.referencias_regionais.map((r, i) => (
-              <li key={i} className="text-sm text-gray-700 flex gap-2">
-                <span className="text-teal-600">•</span><span>{r}</span>
+              <li key={i} className="text-sm flex gap-2" style={{ color: TEXTO }}>
+                <span style={{ color: AZUL }}>•</span><span>{r}</span>
               </li>
             ))}
           </ul>
@@ -1776,8 +1323,8 @@ const PraticaResultado = ({ data }) => {
 
 const Section = ({ title, content, children }) => (
   <div className="mb-8">
-    <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
-    {content && <p className="text-gray-700 leading-relaxed whitespace-pre-line">{content}</p>}
+    <h3 className="text-xl font-semibold mb-3" style={{ color: AZUL, fontFamily: "'Quicksand', sans-serif" }}>{title}</h3>
+    {content && <p className="leading-relaxed whitespace-pre-line" style={{ color: TEXTO }}>{content}</p>}
     {children}
   </div>
 );
