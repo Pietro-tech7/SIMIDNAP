@@ -6,8 +6,8 @@ import { Link } from 'react-router-dom';
  *
  * Apresenta os 3 modos do módulo:
  *   - 🎯 Modo Aula — disponível (vai para /aula-que-funciona)
- *   - 📅 Modo Planejamento — "Em breve" (será habilitado no Bloco D9)
- *   - 🎓 Modo Coordenação — "Em breve" (será habilitado no Bloco D10)
+ *   - 📅 Modo Planejamento — disponível
+ *   - 🎓 Modo Coordenação — disponível
  */
 const PlanejadorSimidnape = () => {
   const modos = [
@@ -49,30 +49,51 @@ const PlanejadorSimidnape = () => {
     },
   ];
 
+  const textPrimary = { color: 'var(--theme-text-primary)' };
+  const textSecondary = { color: 'var(--theme-text-secondary)' };
+  const borderSubtle = { borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' };
+
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto">
-      <Link to="/dashboard" className="text-blue-600 text-sm hover:underline">
+      <Link
+        to="/dashboard"
+        className="text-sm hover:underline"
+        style={{ color: 'var(--theme-accent)' }}
+      >
         ← Voltar ao início
       </Link>
 
+      {/* Cabeçalho */}
       <div className="mt-6 mb-10">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white text-3xl mb-4">
+        <div
+          className="inline-flex items-center justify-center w-16 h-16 rounded-xl text-white text-3xl mb-4"
+          style={{ backgroundColor: 'var(--theme-accent)' }}
+        >
           🧠
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+        <h1
+          className="text-3xl md:text-4xl font-bold font-heading"
+          style={textPrimary}
+        >
           PLANEJADOR SIMIDNAPE
         </h1>
-        <p className="text-lg text-gray-600 mt-2 max-w-3xl">
+        <p className="text-lg mt-2 max-w-3xl" style={textSecondary}>
           O Professor Inesquecível. Três modos em um só lugar, com base em neuroeducação, ciência da aprendizagem e BNCC.
         </p>
       </div>
 
       {/* Faixa explicativa — base científica */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 mb-8">
-        <p className="text-sm font-semibold text-blue-900 mb-2">
+      <div
+        className="rounded-2xl p-6 mb-8 border"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--theme-accent) 6%, white)',
+          borderColor: 'color-mix(in srgb, var(--theme-accent) 18%, transparent)',
+        }}
+      >
+        <p className="text-sm font-semibold mb-2 font-heading" style={{ color: 'var(--theme-accent)' }}>
           💡 Cada plano que você gera aqui é desenhado por princípios cognitivos reais
         </p>
-        <p className="text-sm text-blue-800 leading-relaxed">
+        <p className="text-sm leading-relaxed" style={textSecondary}>
           Atenção, carga cognitiva, recuperação ativa, dupla codificação, transferência, metacognição e clima emocional.
           Nada de plano genérico — cada bloco existe por uma razão pedagógica.
         </p>
@@ -83,11 +104,23 @@ const PlanejadorSimidnape = () => {
         {modos.map((modo) => (
           <div
             key={modo.id}
-            className={`relative bg-white rounded-2xl border-2 shadow-sm overflow-hidden transition ${
+            className={`relative rounded-2xl border-2 shadow-sm overflow-hidden transition ${
               modo.disponivel
-                ? 'border-gray-200 hover:border-blue-300 hover:shadow-md'
-                : 'border-gray-200 opacity-90'
+                ? 'hover:shadow-md'
+                : 'opacity-90'
             }`}
+            style={{
+              backgroundColor: 'var(--theme-bg-light)',
+              ...borderSubtle,
+            }}
+            onMouseEnter={(e) => {
+              if (modo.disponivel) {
+                e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--theme-accent) 40%, transparent)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--theme-accent) 15%, transparent)';
+            }}
           >
             {/* Faixa superior colorida */}
             <div className={`h-2 bg-gradient-to-r ${modo.cor}`} />
@@ -99,13 +132,19 @@ const PlanejadorSimidnape = () => {
                 {modo.icone}
               </div>
 
-              <h2 className="text-xl font-bold text-gray-900 leading-tight">
+              <h2
+                className="text-xl font-bold leading-tight font-heading"
+                style={textPrimary}
+              >
                 {modo.nome}
               </h2>
-              <p className="text-sm font-semibold text-blue-700 mt-1">
+              <p
+                className="text-sm font-semibold mt-1"
+                style={{ color: 'var(--theme-accent)' }}
+              >
                 {modo.subtitulo}
               </p>
-              <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+              <p className="text-sm mt-3 leading-relaxed" style={textSecondary}>
                 {modo.descricao}
               </p>
 
@@ -139,8 +178,14 @@ const PlanejadorSimidnape = () => {
       </div>
 
       {/* Rodapé informativo */}
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-        <p className="text-xs text-gray-600 leading-relaxed">
+      <div
+        className="rounded-xl p-5 border"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--theme-accent) 4%, white)',
+          borderColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)',
+        }}
+      >
+        <p className="text-xs leading-relaxed" style={textSecondary}>
           🔒 Sua chave de API e seus dados pessoais nunca vão para o banco público. Apenas o conteúdo
           pedagógico e as informações que você autorizar. Tudo que você cria fica salvo na sua conta.
         </p>
