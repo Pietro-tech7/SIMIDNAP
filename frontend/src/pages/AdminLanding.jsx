@@ -1041,13 +1041,66 @@ const EditorFooter = ({ data, onChange }) => {
     arr[i] = { ...arr[i], [key]: value };
     onChange('links', arr);
   };
+  const setProductLink = (i, key, value) => {
+    const arr = [...(data.product_links || [])];
+    arr[i] = { ...arr[i], [key]: value };
+    onChange('product_links', arr);
+  };
   return (
     <>
       <Toggle label="Rodapé ativado" value={data.enabled !== false} onChange={(v) => onChange('enabled', v)} />
-      <Input label="Copyright" value={data.copyright_text} onChange={(v) => onChange('copyright_text', v)} />
+
+      <div className="mt-2 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">Textos principais</p>
+      </div>
+
+      <Textarea label="Frase de apresentação (tagline)"
+        value={data.tagline}
+        onChange={(v) => onChange('tagline', v)}
+        rows={2}
+        placeholder="Assistente pedagógico com IA para professores brasileiros..."
+        help="Frase curta que aparece logo abaixo do logo." />
+
+      <Input label="Badge (selo no rodapé)"
+        value={data.badge_text}
+        onChange={(v) => onChange('badge_text', v)}
+        placeholder="🇧🇷 Feito no Brasil · Alinhado à BNCC" />
+
       <Textarea label="Explicação do significado SIMIDNAPE"
         value={data.brand_explanation} onChange={(v) => onChange('brand_explanation', v)} rows={3} />
-      <ListHeader label="Links do rodapé"
+
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">Coluna "Produto"</p>
+      </div>
+
+      <Input label="Título da coluna"
+        value={data.product_column_title}
+        onChange={(v) => onChange('product_column_title', v)}
+        placeholder="Produto" />
+
+      <ListHeader label="Links da coluna Produto"
+        onAdd={() => onChange('product_links', [...(data.product_links || []), { label: '', href: '' }])} />
+      {(data.product_links || []).map((l, i) => (
+        <ItemBox key={i} index={i} label="Link"
+          onRemove={() => onChange('product_links', (data.product_links || []).filter((_, j) => j !== i))}>
+          <div className="grid grid-cols-2 gap-2">
+            <Input label="Rótulo" value={l.label} onChange={(v) => setProductLink(i, 'label', v)} />
+            <Input label="URL" value={l.href} onChange={(v) => setProductLink(i, 'href', v)}
+              help="Aceita âncoras como #plans ou URLs completas." />
+          </div>
+        </ItemBox>
+      ))}
+
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">Coluna "Institucional"</p>
+      </div>
+
+      <Input label="Título da coluna"
+        value={data.institutional_column_title}
+        onChange={(v) => onChange('institutional_column_title', v)}
+        placeholder="Institucional" />
+
+      <ListHeader label="Links da coluna Institucional"
         onAdd={() => onChange('links', [...(data.links || []), { label: '', href: '' }])} />
       {(data.links || []).map((l, i) => (
         <ItemBox key={i} index={i} label="Link" onRemove={() => onChange('links', (data.links || []).filter((_, j) => j !== i))}>
@@ -1057,6 +1110,14 @@ const EditorFooter = ({ data, onChange }) => {
           </div>
         </ItemBox>
       ))}
+
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">Rodapé inferior</p>
+      </div>
+
+      <Input label="Copyright"
+        value={data.copyright_text}
+        onChange={(v) => onChange('copyright_text', v)} />
     </>
   );
 };
