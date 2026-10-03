@@ -231,6 +231,16 @@ const AdminLanding = () => {
               <span>🔐</span><span>Login e Cadastro</span>
             </button>
 
+            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1 mt-3">Usuário</p>
+            <button onClick={() => setSecaoAtiva('_dashboard')}
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
+                secaoAtiva === '_dashboard'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}>
+              <span>🏠</span><span>Painel e Modo Turbo</span>
+            </button>
+
             <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1 mt-3">Página</p>
             <button onClick={() => setSecaoAtiva('_header')}
               className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
@@ -284,12 +294,13 @@ const AdminLanding = () => {
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           {secaoAtiva === '_theme' && <EditorTheme />}
           {secaoAtiva === '_login' && <EditorLogin config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
+          {secaoAtiva === '_dashboard' && <EditorDashboard config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_header' && <EditorHeader config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_error_page' && <EditorErrorPage config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_global' && <EditorGlobal config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_popup' && <EditorPopup config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_sistema' && <EditorSistema />}
-          {secaoAtiva !== '_theme' && secaoAtiva !== '_login' && secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
+          {secaoAtiva !== '_theme' && secaoAtiva !== '_login' && secaoAtiva !== '_dashboard' && secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
             <EditorSecao secao={secaoAtiva} data={config[secaoAtiva] || {}}
               onChange={updateField} onSave={salvarSecao} salvando={salvando} />
           )}
@@ -1454,6 +1465,159 @@ const EditorErrorPage = ({ config, setConfig, salvando, setMsg }) => {
     </div>
   );
 };
+
+// ============================================================
+// EDITOR PAINEL — textos do Dashboard + banner Modo Turbo
+// ============================================================
+const EditorDashboard = ({ config, setConfig, salvando, setMsg }) => {
+  const dashCfg = config.dashboard || {};
+  const apiCfg = config.api_banner || {};
+
+  const updateDash = (field, value) =>
+    setConfig(prev => ({ ...prev, dashboard: { ...prev.dashboard, [field]: value } }));
+  const updateApi = (field, value) =>
+    setConfig(prev => ({ ...prev, api_banner: { ...prev.api_banner, [field]: value } }));
+
+  const updateBullet = (i, value) => {
+    const arr = [...(apiCfg.card_bullets || [])];
+    arr[i] = value;
+    updateApi('card_bullets', arr);
+  };
+
+  const salvar = async () => {
+    if (setMsg) setMsg(null);
+    try {
+      const res = await api.put('/landing/admin/config', {
+        dashboard: config.dashboard,
+        api_banner: config.api_banner,
+      });
+      setConfig(res.data.config);
+      if (setMsg) {
+        setMsg({ tipo: 'sucesso', texto: 'Painel e Modo Turbo salvos com sucesso!' });
+        setTimeout(() => setMsg(null), 3000);
+      }
+    } catch {
+      if (setMsg) setMsg({ tipo: 'erro', texto: 'Erro ao salvar.' });
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+        <span className="text-3xl">🏠</span>
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Painel do Usuário e Modo Turbo</h2>
+          <p className="text-xs text-slate-500">
+            Textos que aparecem no Dashboard após o login + banner do Modo Turbo.
+          </p>
+        </div>
+      </div>
+
+      {/* ======================== DASHBOARD ======================== */}
+      <div className="mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">
+          Cabeçalho do Dashboard
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Prefix do greeting"
+          value={dashCfg.greeting_prefix}
+          onChange={(v) => updateDash('greeting_prefix', v)}
+          placeholder="Olá,"
+          help="Aparece antes do nome do professor." />
+        <Input label="Sufixo do greeting"
+          value={dashCfg.greeting_suffix}
+          onChange={(v) => updateDash('greeting_suffix', v)}
+          placeholder="— O PROFESSOR INESQUECÍVEL"
+          help="Aparece depois do nome." />
+      </div>
+
+      <Input label="Subtítulo"
+        value={dashCfg.subtitle}
+        onChange={(v) => updateDash('subtitle', v)}
+        placeholder="O que você precisa resolver hoje?" />
+
+      <Input label="Título da dica"
+        value={dashCfg.tip_title}
+        onChange={(v) => updateDash('tip_title', v)}
+        placeholder="💡 Dica do SIMIDNAPE" />
+
+      <Textarea label="Texto da dica"
+        value={dashCfg.tip_text}
+        onChange={(v) => updateDash('tip_text', v)}
+        rows={2} />
+
+      {/* ======================== MODO TURBO ======================== */}
+      <div className="mt-10 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">
+          Banner do Modo Turbo — versão compacta (badge no topo)
+        </p>
+      </div>
+
+      <Input label="Texto do pill"
+        value={apiCfg.badge_pill_text}
+        onChange={(v) => updateApi('badge_pill_text', v)}
+        placeholder="Cadastre sua API" />
+
+      <Input label="Tooltip (ao passar o mouse)"
+        value={apiCfg.badge_pill_tooltip}
+        onChange={(v) => updateApi('badge_pill_tooltip', v)}
+        placeholder="Ative o Modo Turbo e libere centenas de créditos por mês" />
+
+      <div className="mt-6 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">
+          Banner do Modo Turbo — versão grande (Dashboard)
+        </p>
+      </div>
+
+      <Input label="Badge (topo do banner)"
+        value={apiCfg.card_badge}
+        onChange={(v) => updateApi('card_badge', v)}
+        placeholder="⚡ Recomendado" />
+
+      <Textarea label="Título"
+        value={apiCfg.card_title}
+        onChange={(v) => updateApi('card_title', v)}
+        rows={2}
+        placeholder="🔑 Ative o Modo Turbo e multiplique seus créditos" />
+
+      <Textarea label="Subtítulo"
+        value={apiCfg.card_subtitle}
+        onChange={(v) => updateApi('card_subtitle', v)}
+        rows={2} />
+
+      <ListHeader label="Itens da lista (com ✅)"
+        onAdd={() => updateApi('card_bullets', [...(apiCfg.card_bullets || []), ''])} />
+      {(apiCfg.card_bullets || []).map((b, i) => (
+        <ItemBox key={i} index={i} label="Item"
+          onRemove={() => updateApi('card_bullets', (apiCfg.card_bullets || []).filter((_, j) => j !== i))}>
+          <Textarea label={`Item ${i + 1}`} value={b} onChange={(v) => updateBullet(i, v)} rows={2} />
+        </ItemBox>
+      ))}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Texto do botão principal"
+          value={apiCfg.cta_primary_text}
+          onChange={(v) => updateApi('cta_primary_text', v)}
+          placeholder="🚀 Ativar Modo Turbo agora" />
+        <Input label="Texto do botão secundário"
+          value={apiCfg.cta_secondary_text}
+          onChange={(v) => updateApi('cta_secondary_text', v)}
+          placeholder="📖 Ver tutorial" />
+      </div>
+
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
+        <button onClick={salvar} disabled={salvando}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
+          {salvando ? 'Salvando...' : '💾 Salvar Painel'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
 
 // ============================================================
 // EDITOR LOGIN — foto e textos das telas de Login/Cadastro
