@@ -157,13 +157,37 @@ const Layout = () => {
     sucesso: '✅',
   };
 
+  // ---- ESTILOS DO TEMA (reaproveitados em vários lugares) ----
+  const bgLight = { backgroundColor: 'var(--theme-bg-light)' };
+  const borderSubtle = { borderColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' };
+  const textPrimary = { color: 'var(--theme-text-primary)' };
+  const textSecondary = { color: 'var(--theme-text-secondary)' };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={bgLight}>
       {/* HEADER FIXO NO TOPO */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center justify-between px-4 md:px-6">
+      <header
+        className="fixed top-0 left-0 right-0 h-16 border-b z-30 flex items-center justify-between px-4 md:px-6"
+        style={{ backgroundColor: 'var(--theme-bg-light)', ...borderSubtle }}
+      >
         <div className="md:hidden">
-          <Link to="/dashboard" className="text-lg font-bold text-blue-600">
-            SIMIDNAPE
+          <Link to="/dashboard" className="flex items-end">
+            {'SIMIDNAPE'.split('').map((letra, i) => (
+              <span
+                key={i}
+                className="relative font-display text-lg font-bold tracking-tight"
+                style={{ color: 'var(--theme-accent)' }}
+              >
+                {letra === 'I' && (
+                  <span
+                    className={`absolute -top-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${
+                      i === 1 ? 'bg-coral' : 'bg-gold'
+                    }`}
+                  />
+                )}
+                {letra}
+              </span>
+            ))}
           </Link>
         </div>
 
@@ -172,7 +196,8 @@ const Layout = () => {
         <div className="flex items-center gap-3">
           <Link
             to="/minha-assinatura"
-            className="md:hidden bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md"
+            className="md:hidden text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md hover:opacity-90 transition"
+            style={{ backgroundColor: 'var(--theme-primary)' }}
           >
             🚀 {getCTAMobile()}
           </Link>
@@ -181,7 +206,7 @@ const Layout = () => {
           <div className="relative" ref={sinoRef}>
             <button
               onClick={() => setSinoAberto(!sinoAberto)}
-              className="relative w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition"
+              className="relative w-10 h-10 rounded-full hover:bg-black/5 flex items-center justify-center transition"
               title="Recados"
             >
               <span className="text-xl">🔔</span>
@@ -193,9 +218,9 @@ const Layout = () => {
             </button>
 
             {sinoAberto && (
-              <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-800 text-sm">Recados</h3>
+              <div className="absolute right-0 mt-2 w-80 md:w-96 rounded-xl shadow-xl border overflow-hidden z-50" style={{ backgroundColor: 'var(--theme-bg-light)', ...borderSubtle }}>
+                <div className="px-4 py-3 border-b flex items-center justify-between" style={borderSubtle}>
+                  <h3 className="font-semibold text-sm font-heading" style={textPrimary}>Recados</h3>
                   {recadosNaoLidos.length > 0 && (
                     <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">
                       {recadosNaoLidos.length} novo{recadosNaoLidos.length > 1 ? 's' : ''}
@@ -205,16 +230,17 @@ const Layout = () => {
 
                 <div className="max-h-96 overflow-y-auto">
                   {recados.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-gray-500">
+                    <div className="p-6 text-center text-sm" style={textSecondary}>
                       Nenhum recado por aqui.
                     </div>
                   ) : (
                     recados.map(r => (
                       <div
                         key={r.id}
-                        className={`px-4 py-3 border-b border-gray-100 border-l-4 ${
+                        className={`px-4 py-3 border-b border-l-4 ${
                           corTipoRecado[r.tipo] || 'border-l-blue-500'
-                        } ${!r.read ? 'bg-blue-50 bg-opacity-40' : ''} hover:bg-gray-50 transition cursor-pointer`}
+                        } ${!r.read ? 'bg-blue-50/40' : ''} hover:bg-black/5 transition cursor-pointer`}
+                        style={{ borderBottomColor: 'color-mix(in srgb, var(--theme-accent) 10%, transparent)' }}
                         onClick={() => {
                           if (!r.read) marcarLido(r.id);
                         }}
@@ -222,11 +248,11 @@ const Layout = () => {
                         <div className="flex items-start gap-2">
                           <span className="text-lg">{iconeTipoRecado[r.tipo] || 'ℹ️'}</span>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm ${!r.read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                            <p className={`text-sm ${!r.read ? 'font-semibold' : 'font-medium'}`} style={textPrimary}>
                               {r.title}
                             </p>
-                            <p className="text-xs text-gray-600 mt-1 leading-relaxed">{r.message}</p>
-                            <p className="text-xs text-gray-400 mt-2">
+                            <p className="text-xs mt-1 leading-relaxed" style={textSecondary}>{r.message}</p>
+                            <p className="text-xs mt-2" style={{ color: 'color-mix(in srgb, var(--theme-text-secondary) 60%, transparent)' }}>
                               {new Date(r.created_at).toLocaleDateString('pt-BR', {
                                 day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                               })}
@@ -251,29 +277,44 @@ const Layout = () => {
           <div className="relative" ref={avatarRef}>
             <button
               onClick={() => setAvatarAberto(!avatarAberto)}
-              className="flex items-center gap-2 hover:bg-gray-100 rounded-full p-1 transition"
+              className="flex items-center gap-2 hover:bg-black/5 rounded-full p-1 transition"
               title={user?.full_name}
             >
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
                   alt={user?.full_name}
-                  className="w-9 h-9 rounded-full object-cover border-2 border-blue-100"
+                  className="w-9 h-9 rounded-full object-cover border-2"
+                  style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 25%, transparent)' }}
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm border-2 border-blue-200">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm border-2"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)',
+                    color: 'var(--theme-accent)',
+                    borderColor: 'color-mix(in srgb, var(--theme-accent) 30%, transparent)',
+                  }}
+                >
                   {user?.full_name?.[0]?.toUpperCase() || 'P'}
                 </div>
               )}
             </button>
 
             {avatarAberto && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{user?.full_name}</p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <div className="absolute right-0 mt-2 w-56 rounded-xl shadow-xl border overflow-hidden z-50" style={{ backgroundColor: 'var(--theme-bg-light)', ...borderSubtle }}>
+                <div className="px-4 py-3 border-b" style={borderSubtle}>
+                  <p className="text-sm font-semibold truncate" style={textPrimary}>{user?.full_name}</p>
+                  <p className="text-xs truncate" style={textSecondary}>{user?.email}</p>
                   {creditos && (
-                    <div className="mt-2 inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200">
+                    <div
+                      className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)',
+                        color: 'var(--theme-accent)',
+                        borderColor: 'color-mix(in srgb, var(--theme-accent) 25%, transparent)',
+                      }}
+                    >
                       <span>{creditos.plano_icone || '📋'}</span>
                       <span className="uppercase tracking-wide">
                         Plano {creditos.plano_nome}
@@ -281,30 +322,33 @@ const Layout = () => {
                     </div>
                   )}
                 </div>
-                  <div className="py-1">
+                <div className="py-1">
                   <Link
                     to="/perfil"
                     onClick={() => setAvatarAberto(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                    className="block px-4 py-2 text-sm hover:bg-black/5 transition"
+                    style={textPrimary}
                   >
                     👤 Meu Perfil
                   </Link>
                   <Link
                     to="/minha-assinatura"
                     onClick={() => setAvatarAberto(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                    className="block px-4 py-2 text-sm hover:bg-black/5 transition"
+                    style={textPrimary}
                   >
                     💳 Minha Assinatura
                   </Link>
                   <Link
                     to="/minha-assinatura"
                     onClick={() => setAvatarAberto(false)}
-                    className="block px-4 py-2 text-sm font-semibold text-orange-600 hover:bg-orange-50 transition"
+                    className="block px-4 py-2 text-sm font-semibold hover:bg-black/5 transition"
+                    style={{ color: 'var(--theme-primary)' }}
                   >
                     🚀 {getCTAName()}
                   </Link>
                 </div>
-                <div className="border-t border-gray-100 py-1">
+                <div className="border-t py-1" style={borderSubtle}>
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
@@ -318,7 +362,8 @@ const Layout = () => {
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-gray-700 text-2xl"
+            className="md:hidden text-2xl"
+            style={textPrimary}
           >
             ☰
           </button>
@@ -326,40 +371,79 @@ const Layout = () => {
       </header>
 
       {/* Sidebar Desktop (menu esquerdo) */}
-      <aside className="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200 fixed h-full pt-16">
-        <div className="px-6 py-5 border-b border-gray-100">
-          <h1 className="text-2xl font-bold text-blue-600">SIMIDNAPE</h1>
-          <p className="text-xs text-gray-500 mt-1 leading-snug">
-            Sistema Municipal Integral de Desenvolvimento da Neuroaprendizagem e Performance Educacional
-          </p>
+      <aside
+        className="hidden md:flex md:flex-col w-64 border-r fixed h-full pt-16"
+        style={{ backgroundColor: 'var(--theme-bg-light)', ...borderSubtle }}
+      >
+        <div className="px-6 py-5 border-b" style={borderSubtle}>
+          <div className="flex flex-col items-start">
+            <div className="inline-flex items-end pt-3">
+              {'SIMIDNAPE'.split('').map((letra, i) => (
+                <span
+                  key={i}
+                  className="relative font-display text-xl font-bold tracking-tight"
+                  style={{ color: 'var(--theme-accent)' }}
+                >
+                  {letra === 'I' && (
+                    <span
+                      className={`absolute -top-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${
+                        i === 1 ? 'bg-coral' : 'bg-gold'
+                      }`}
+                    />
+                  )}
+                  {letra}
+                </span>
+              ))}
+            </div>
+            <span
+              className="font-serif italic text-[10px] mt-0.5 tracking-wide"
+              style={textSecondary}
+            >
+              O Professor Inesquecível
+            </span>
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {menuItems.map(item => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
-                isActive(item.path)
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <span className="text-lg">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          {menuItems.map(item => {
+            const ativo = isActive(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                style={
+                  ativo
+                    ? {
+                        backgroundColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)',
+                        color: 'var(--theme-accent)',
+                        fontWeight: 600,
+                      }
+                    : { color: 'var(--theme-text-secondary)' }
+                }
+                onMouseEnter={(e) => { if (!ativo) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)'; }}
+                onMouseLeave={(e) => { if (!ativo) e.currentTarget.style.backgroundColor = 'transparent'; }}
+              >
+                <span className="text-lg">{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         {creditos && (
           <div className="px-4 pb-4 space-y-2">
             <Link
               to="/minha-assinatura"
-              className={`block rounded-lg p-3 transition border ${
-                mostrarAlertaBaixo
-                  ? 'bg-gradient-to-br from-orange-50 to-red-50 border-orange-200'
-                  : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'
-              }`}
+              className="block rounded-lg p-3 transition border"
+              style={{
+                backgroundColor: mostrarAlertaBaixo
+                  ? 'color-mix(in srgb, var(--theme-warning) 8%, white)'
+                  : 'color-mix(in srgb, var(--theme-accent) 6%, white)',
+                borderColor: mostrarAlertaBaixo
+                  ? 'color-mix(in srgb, var(--theme-warning) 25%, transparent)'
+                  : 'color-mix(in srgb, var(--theme-accent) 15%, transparent)',
+              }}
             >
               {/* Badge de identificação do plano */}
               <div className="flex items-center gap-2 mb-2.5">
@@ -367,10 +451,13 @@ const Layout = () => {
                   {creditos.plano_icone || '📋'}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-[9px] uppercase tracking-widest font-bold ${mostrarAlertaBaixo ? 'text-orange-600' : 'text-blue-600'}`}>
+                  <p
+                    className="text-[9px] uppercase tracking-widest font-bold"
+                    style={{ color: mostrarAlertaBaixo ? 'var(--theme-warning)' : 'var(--theme-accent)' }}
+                  >
                     Seu plano
                   </p>
-                  <p className={`text-sm font-bold truncate ${mostrarAlertaBaixo ? 'text-orange-900' : 'text-blue-900'}`}>
+                  <p className="text-sm font-bold truncate font-heading" style={textPrimary}>
                     {creditos.plano_nome}
                   </p>
                 </div>
@@ -378,11 +465,11 @@ const Layout = () => {
 
               {/* Créditos */}
               <div className="flex justify-between items-center mb-1">
-                <span className={`text-[11px] font-medium ${mostrarAlertaBaixo ? 'text-orange-800' : 'text-blue-800'}`}>
+                <span className="text-[11px] font-medium" style={textSecondary}>
                   {creditosDisponiveis.toFixed(1)} créditos
                 </span>
               </div>
-              <div className="w-full bg-white rounded-full h-1.5 overflow-hidden">
+              <div className="w-full rounded-full h-1.5 overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
                 <div
                   className={`h-full ${
                     pctUsado > 80 ? 'bg-red-500' : pctUsado > 50 ? 'bg-yellow-500' : 'bg-green-500'
@@ -394,7 +481,8 @@ const Layout = () => {
 
             <Link
               to="/minha-assinatura"
-              className="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-sm py-2.5 rounded-lg transition shadow-md"
+              className="block w-full text-center text-white font-bold text-sm py-2.5 rounded-lg transition shadow-md hover:opacity-90"
+              style={{ backgroundColor: 'var(--theme-primary)' }}
             >
               🚀 {getCTAName()}
             </Link>
@@ -405,30 +493,58 @@ const Layout = () => {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div
-          className="md:hidden fixed inset-0 z-40 bg-black bg-opacity-50"
+          className="md:hidden fixed inset-0 z-40 bg-black/50"
           onClick={() => setMobileMenuOpen(false)}
         >
           <div
-            className="bg-white w-64 h-full p-4 overflow-y-auto"
+            className="w-64 h-full p-4 overflow-y-auto"
+            style={bgLight}
             onClick={(e) => e.stopPropagation()}
           >
-            <h1 className="text-xl font-bold text-blue-600 mb-2">SIMIDNAPE</h1>
+            <div className="mb-2">
+              <div className="inline-flex items-end pt-2">
+                {'SIMIDNAPE'.split('').map((letra, i) => (
+                  <span
+                    key={i}
+                    className="relative font-display text-lg font-bold tracking-tight"
+                    style={{ color: 'var(--theme-accent)' }}
+                  >
+                    {letra === 'I' && (
+                      <span
+                        className={`absolute -top-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${
+                          i === 1 ? 'bg-coral' : 'bg-gold'
+                        }`}
+                      />
+                    )}
+                    {letra}
+                  </span>
+                ))}
+              </div>
+            </div>
             <nav className="space-y-1 mt-4">
-              {menuItems.map(item => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
-                    isActive(item.path)
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              ))}
+              {menuItems.map(item => {
+                const ativo = isActive(item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                    style={
+                      ativo
+                        ? {
+                            backgroundColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)',
+                            color: 'var(--theme-accent)',
+                            fontWeight: 600,
+                          }
+                        : { color: 'var(--theme-text-secondary)' }
+                    }
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
             </nav>
 
             <button
