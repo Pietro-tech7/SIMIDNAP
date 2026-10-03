@@ -221,6 +221,16 @@ const AdminLanding = () => {
               <span>🎨</span><span>Tema (Cores e Fontes)</span>
             </button>
 
+            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1 mt-3">Acesso</p>
+            <button onClick={() => setSecaoAtiva('_login')}
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
+                secaoAtiva === '_login'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}>
+              <span>🔐</span><span>Login e Cadastro</span>
+            </button>
+
             <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold px-3 py-1 mt-3">Página</p>
             <button onClick={() => setSecaoAtiva('_header')}
               className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left ${
@@ -273,12 +283,13 @@ const AdminLanding = () => {
         {/* ============= EDITOR ============= */}
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           {secaoAtiva === '_theme' && <EditorTheme />}
+          {secaoAtiva === '_login' && <EditorLogin config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_header' && <EditorHeader config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_error_page' && <EditorErrorPage config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_global' && <EditorGlobal config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_popup' && <EditorPopup config={config} setConfig={setConfig} salvando={salvando} setMsg={setMsg} />}
           {secaoAtiva === '_sistema' && <EditorSistema />}
-          {secaoAtiva !== '_theme' && secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
+          {secaoAtiva !== '_theme' && secaoAtiva !== '_login' && secaoAtiva !== '_header' && secaoAtiva !== '_error_page' && secaoAtiva !== '_global' && secaoAtiva !== '_popup' && secaoAtiva !== '_sistema' && (
             <EditorSecao secao={secaoAtiva} data={config[secaoAtiva] || {}}
               onChange={updateField} onSave={salvarSecao} salvando={salvando} />
           )}
@@ -1382,6 +1393,129 @@ const EditorErrorPage = ({ config, setConfig, salvando, setMsg }) => {
     </div>
   );
 };
+
+// ============================================================
+// EDITOR LOGIN — foto e textos das telas de Login/Cadastro
+// ============================================================
+const EditorLogin = ({ config, setConfig, salvando, setMsg }) => {
+  const loginCfg = config.login || {};
+  const registerCfg = config.register || {};
+
+  const updateLogin = (field, value) =>
+    setConfig(prev => ({ ...prev, login: { ...prev.login, [field]: value } }));
+  const updateRegister = (field, value) =>
+    setConfig(prev => ({ ...prev, register: { ...prev.register, [field]: value } }));
+
+  const updateBenefit = (i, value) => {
+    const arr = [...(loginCfg.benefits || [])];
+    arr[i] = value;
+    updateLogin('benefits', arr);
+  };
+
+  const salvar = async () => {
+    if (setMsg) setMsg(null);
+    try {
+      const res = await api.put('/landing/admin/config', {
+        login: config.login,
+        register: config.register,
+      });
+      setConfig(res.data.config);
+      if (setMsg) {
+        setMsg({ tipo: 'sucesso', texto: 'Login e Cadastro salvos com sucesso!' });
+        setTimeout(() => setMsg(null), 3000);
+      }
+    } catch {
+      if (setMsg) setMsg({ tipo: 'erro', texto: 'Erro ao salvar.' });
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+        <span className="text-3xl">🔐</span>
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Login e Cadastro</h2>
+          <p className="text-xs text-slate-500">
+            Foto e textos das telas de entrar e criar conta.
+          </p>
+        </div>
+      </div>
+
+      {/* ======================== TELA DE LOGIN ======================== */}
+      <div className="mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">
+          Tela de Login
+        </p>
+      </div>
+
+      <UploadImage
+        slot="login_photo"
+        label="Foto da professora (Login)"
+        value={loginCfg.photo}
+        onChange={(v) => updateLogin('photo', v)}
+        help="Imagem retrato, fundo transparente ou claro. Ela vai aparecer saindo do quadro na lateral da tela."
+      />
+
+      <Input label="Título de boas-vindas"
+        value={loginCfg.welcome_title}
+        onChange={(v) => updateLogin('welcome_title', v)}
+        placeholder="Bem-vindo de volta."
+      />
+
+      <Input label="Subtítulo"
+        value={loginCfg.welcome_subtitle}
+        onChange={(v) => updateLogin('welcome_subtitle', v)}
+        placeholder="Sua próxima aula inesquecível começa aqui."
+      />
+
+      <ListHeader
+        label="Itens do checklist"
+        onAdd={() => updateLogin('benefits', [...(loginCfg.benefits || []), ''])}
+      />
+      {(loginCfg.benefits || []).map((b, i) => (
+        <ItemBox key={i} index={i} label="Item"
+          onRemove={() => updateLogin('benefits', (loginCfg.benefits || []).filter((_, j) => j !== i))}>
+          <Input label={`Item ${i + 1}`} value={b} onChange={(v) => updateBenefit(i, v)} />
+        </ItemBox>
+      ))}
+
+      {/* ======================== TELA DE CADASTRO ======================== */}
+      <div className="mt-10 mb-2 pb-2 border-b border-slate-200">
+        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-3">
+          Tela de Cadastro
+        </p>
+      </div>
+
+      <UploadImage
+        slot="register_photo"
+        label="Foto da professora (Cadastro)"
+        value={registerCfg.photo}
+        onChange={(v) => updateRegister('photo', v)}
+        help="Pode ser a mesma foto ou uma diferente."
+      />
+
+      <Input label="Título de boas-vindas"
+        value={registerCfg.welcome_title}
+        onChange={(v) => updateRegister('welcome_title', v)}
+        placeholder="Crie sua conta."
+      />
+
+      <Input label="Subtítulo"
+        value={registerCfg.welcome_subtitle}
+        onChange={(v) => updateRegister('welcome_subtitle', v)}
+        placeholder="7 créditos grátis para testar. Sem cartão de crédito."
+      />
+
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
+        <button onClick={salvar} disabled={salvando}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 shadow-sm">
+          {salvando ? 'Salvando...' : '💾 Salvar Login e Cadastro'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 
 // ============================================================
 // EDITOR TEMA — cores e fontes de toda a plataforma
