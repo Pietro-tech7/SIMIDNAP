@@ -146,13 +146,13 @@ export default function PagamentoCartao({
   // Render
   // ============================================================
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 relative">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-4 relative">
         <button
           type="button"
           onClick={onClose}
           disabled={estado === 'processando'}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 disabled:opacity-40 text-3xl leading-none w-8 h-8 flex items-center justify-center"
+          className="absolute top-3 right-3 z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-40 text-2xl leading-none shadow-sm border border-gray-200"
           aria-label="Fechar"
         >
           ×
