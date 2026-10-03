@@ -386,6 +386,33 @@ Cada aula deve ter a `metodologia` estruturada em 3 objetos:
 A soma dos `duracao_minutos` dos 3 momentos DEVE ser igual a `duracao_minutos` da aula.
 
 ═══════════════════════════════════════════════════════════════
+REGRA CRÍTICA: HABILIDADE BNCC COM TEXTO LITERAL
+═══════════════════════════════════════════════════════════════
+
+O campo `habilidade_foco` de CADA aula DEVE ser um objeto com `codigo` e `texto`.
+
+O `texto` deve ser COPIADO LITERALMENTE do payload recebido em `habilidades[i].texto`. NUNCA resuma, NUNCA omita, NUNCA invente. Se o payload trouxer "Esboçar roteiros a ser seguidos ou plantas de ambientes familiares, assinalando entradas, saídas e alguns pontos de referência.", você deve copiar EXATAMENTE essa frase, com todos os sinais de pontuação.
+
+O mesmo vale para o nível PLANO: em `habilidades[i]`, o campo `texto` deve ser cópia literal do que foi recebido no payload.
+
+═══════════════════════════════════════════════════════════════
+REGRA CRÍTICA: DIVERSIDADE NAS GERAÇÕES
+═══════════════════════════════════════════════════════════════
+
+Você NÃO deve repetir literalmente os exemplos fornecidos neste prompt. Eles servem APENAS como calibre de qualidade.
+
+Se o professor gerar 2 planejamentos com as mesmas escolhas, os GANCHOS DE CURIOSIDADE, ESTRATÉGIAS, MATERIAIS e ATIVIDADES devem ser DIFERENTES entre as duas gerações.
+
+Varie sempre:
+   - O gancho de abertura (charada, objeto, imagem, história, situação-problema)
+   - A estratégia concreta (material manipulável, jogo, experimento, dramatização)
+   - As atividades dos alunos
+   - Os recursos didáticos (com uso específico)
+   - A aplicação no cotidiano
+
+NUNCA entregue 2 planejamentos idênticos. Um arquiteto pedagogo experiente enxerga o mesmo tema por ângulos diferentes.
+
+═══════════════════════════════════════════════════════════════
 REGRA CRÍTICA: ESTRATÉGIA CONCRETA (PROIBIDO GENÉRICO)
 ═══════════════════════════════════════════════════════════════
 
@@ -2199,7 +2226,10 @@ SCHEMAS = {
       "semana": 1,
       "titulo": "string (título curto e memorável da aula)",
       "tema": "string (tema central da aula, separado do título. Deve nomear o CONTEÚDO específico trabalhado. Ex: 'Comparação de frações com mesmo denominador', 'Identificação do tema de uma notícia', 'Estados físicos da água')",
-      "habilidade_foco": "string (ex: 'D01 — Usos dos números naturais' ou 'EF05MA03 — Comparar frações')",
+      "habilidade_foco": {
+        "codigo": "string (código da habilidade BNCC. Ex: 'EF02MA13')",
+        "texto": "string (TEXTO COMPLETO E LITERAL da habilidade BNCC, copiado EXATAMENTE do payload recebido em 'habilidades[i].texto'. NUNCA resuma, NUNCA omita, NUNCA invente. Ex: 'Esboçar roteiros a ser seguidos ou plantas de ambientes familiares, assinalando entradas, saídas e alguns pontos de referência.')"
+      },
       "foco": "string (ex: 'Números, sequências e operações')",
       "descritores": ["string (descritores trabalhados nesta aula específica)"],
       "pergunta_problematizadora": "string (pergunta que abre a aula e conecta o conteúdo à vida do aluno — inspirado em Paulo Freire. Deve ser uma pergunta que provoca curiosidade e que o aluno não responde de imediato. Ex: 'Por que a água da poça desaparece no sol?', 'Se eu dobrar a receita, o que acontece com cada ingrediente?')",
@@ -2226,7 +2256,12 @@ SCHEMAS = {
         }
       },
       "atividades": ["string (ações dos alunos)"],
-      "recursos": ["string (apenas recursos simples e comuns)"],
+      "recursos": [
+        {
+          "nome": "string (nome do recurso. Ex: 'Lousa e giz')",
+          "uso": "string (para que serve ESTE recurso NESTA aula específica. Ex: 'Registrar a charada inicial e os pontos de referência citados pela turma')"
+        }
+      ],
       "diferenciacao": "string (o que fazer com quem NÃO acompanha e com quem AVANÇA mais rápido. Ex: 'Se o aluno travar, oferecer tiras de papel já divididas; se avançar, propor comparação com denominadores diferentes')",
       "avaliacao_da_aula": "string (como verificar se a aula funcionou)",
       "duracao_minutos": 0,
@@ -3588,7 +3623,7 @@ class GeminiService:
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         system_instruction=system_prompt,
-                        temperature=0.5,
+                        temperature=(0.75 if task_type in ("planejamento", "coordenacao") else 0.5),
                         max_output_tokens=max_tokens,
                         response_mime_type="application/json",
                         thinking_config=_thinking_config(),
@@ -3732,7 +3767,7 @@ class GeminiService:
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         system_instruction=system_prompt,
-                        temperature=0.5,
+                        temperature=0.75,
                         max_output_tokens=16384,
                         response_mime_type="application/json",
                         thinking_config=_thinking_config(),
