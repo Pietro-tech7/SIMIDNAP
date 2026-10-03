@@ -1,10 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import api from '../api/api';
 import AlertaApiKey from '../components/AlertaApiKey';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => {
+    api.get('/landing/config')
+      .then(res => setConfig(res.data?.config || null))
+      .catch(() => setConfig(null));
+  }, []);
+
+  const dashboardCfg = config?.dashboard || {};
+  const greetingPrefix = dashboardCfg.greeting_prefix || 'Olá,';
+  const greetingSuffix = dashboardCfg.greeting_suffix || '— O PROFESSOR INESQUECÍVEL';
+  const subtitle = dashboardCfg.subtitle || 'O que você precisa resolver hoje?';
+  const tipTitle = dashboardCfg.tip_title || '💡 Dica do SIMIDNAPE';
+  const tipText = dashboardCfg.tip_text || 'Comece pelo NeuroAula para planejar sua próxima aula ou use o IA para Professor para tirar dúvidas rápidas.';
 
   const modules = [
     { path: '/modulo/neuroaula', name: 'NeuroAula', icon: '🧠', desc: 'Transforme conteúdo em experiência de aprendizagem.', gradient: 'from-purple-500 to-indigo-500' },
@@ -25,7 +40,6 @@ const Dashboard = () => {
     year: 'numeric',
   });
 
-  // ---- Tokens do tema ----
   const textPrimary = { color: 'var(--theme-text-primary)' };
   const textSecondary = { color: 'var(--theme-text-secondary)' };
   const cardStyle = {
@@ -42,14 +56,14 @@ const Dashboard = () => {
           className="text-3xl font-bold mt-1 font-heading"
           style={textPrimary}
         >
-          Olá, {user?.full_name || 'professor'} — O PROFESSOR INESQUECÍVEL
+          {greetingPrefix} {user?.full_name || 'professor'} {greetingSuffix}
         </h1>
         <p className="text-lg mt-1" style={textSecondary}>
-          O que você precisa resolver hoje?
+          {subtitle}
         </p>
       </div>
 
-      {/* ALERTA API KEY — card de destaque no topo (tratado no U1) */}
+      {/* ALERTA MODO TURBO — card de destaque no topo */}
       <AlertaApiKey variant="card" />
 
       {/* Grid das ferramentas */}
@@ -95,11 +109,10 @@ const Dashboard = () => {
         }}
       >
         <h3 className="font-semibold font-heading" style={{ color: 'var(--theme-accent)' }}>
-          💡 Dica do SIMIDNAPE
+          {tipTitle}
         </h3>
         <p className="text-sm mt-1" style={textSecondary}>
-          Comece pelo <strong style={textPrimary}>NeuroAula</strong> para planejar sua próxima aula ou use o{' '}
-          <strong style={textPrimary}>IA para Professor</strong> para tirar dúvidas rápidas.
+          {tipText}
         </p>
       </div>
     </div>
