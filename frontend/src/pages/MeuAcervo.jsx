@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../api/api';
+import ModalPlano from '../components/ModalPlano';
+import ModalItemAcervo from '../components/ModalItemAcervo';
 
 // ============================================================
 // DEFINIÇÃO DAS ABAS
@@ -45,7 +47,6 @@ const ORDENS = [
 // COMPONENTE PRINCIPAL
 // ============================================================
 const MeuAcervo = () => {
-  const navigate = useNavigate();
   const [abaAtiva, setAbaAtiva] = useState('materiais');
   const [subAbaMateriais, setSubAbaMateriais] = useState('atividade_imprimivel');
   const [busca, setBusca] = useState('');
@@ -62,8 +63,11 @@ const MeuAcervo = () => {
   const [praticas, setPraticas] = useState([]);
   const [reflexoes, setReflexoes] = useState([]);
 
+  // Modal aberto (plano OU item genérico)
+  const [itemAberto, setItemAberto] = useState(null); // { tipo, item }
+
   // ============================================================
-  // CARREGAMENTO EM PARALELO
+  // CARREGAMENTO
   // ============================================================
   const carregarTudo = async () => {
     setLoading(true);
@@ -98,7 +102,15 @@ const MeuAcervo = () => {
   useEffect(() => { carregarTudo(); }, []);
 
   // ============================================================
-  // AÇÕES
+  // ABRIR MODAL
+  // ============================================================
+  const abrirPlano = (item) => setItemAberto({ tipo: 'plano', item });
+  const abrirMeuAluno = (item) => setItemAberto({ tipo: 'meu_aluno', item });
+  const abrirPratica = (item) => setItemAberto({ tipo: 'pratica_exitosa', item });
+  const abrirTerapia = (item) => setItemAberto({ tipo: 'terapia', item });
+
+  // ============================================================
+  // EXCLUIR
   // ============================================================
   const excluirMaterial = async (id) => {
     if (!window.confirm('Excluir este material?')) return;
@@ -142,7 +154,7 @@ const MeuAcervo = () => {
   };
 
   // ============================================================
-  // FILTROS NA MEMÓRIA
+  // FILTROS
   // ============================================================
   const aplicarFiltros = (lista, campos) => {
     const termo = busca.toLowerCase().trim();
@@ -174,7 +186,6 @@ const MeuAcervo = () => {
   const praticasFiltradas = aplicarFiltros(praticas, ['title', 'school', 'subject']);
   const reflexoesFiltradas = aplicarFiltros(reflexoes, ['title', 'theme']);
 
-  // Contadores (badges)
   const contMateriais = (tipo) => materiais.filter(m => m.material_type === tipo).length;
   const contQuestoes = questoes.length;
   const contNeuroaulas = neuroaulas.length;
@@ -184,7 +195,7 @@ const MeuAcervo = () => {
   const contReflexoes = reflexoes.length;
 
   // ============================================================
-  // COMPONENTE — CARD GENÉRICO
+  // COMPONENTES AUXILIARES
   // ============================================================
   const Card = ({ icone, badge, titulo, subtitulo, data, botoes }) => (
     <div className="bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition p-4">
@@ -226,9 +237,6 @@ const MeuAcervo = () => {
     );
   };
 
-  // ============================================================
-  // EMPTY STATE
-  // ============================================================
   const EmptyState = ({ icone, titulo, ctaTexto, ctaRota }) => (
     <div className="bg-white border-2 border-dashed border-gray-200 rounded-xl p-12 text-center">
       <p className="text-5xl mb-3">{icone}</p>
@@ -245,7 +253,7 @@ const MeuAcervo = () => {
   );
 
   // ============================================================
-  // RENDER — CONTEÚDO DE CADA ABA
+  // RENDER — CADA ABA
   // ============================================================
   const renderMateriais = () => (
     <>
@@ -286,7 +294,7 @@ const MeuAcervo = () => {
               data={m.created_at}
               botoes={
                 <>
-                  <Btn onClick={() => navigate('/gerador-materiais')}>👁️ Reabrir</Btn>
+                  <Btn onClick={() => abrirMeuAluno({ title: m.title, structured_data: m.structured_data || m })}>👁️ Reabrir</Btn>
                   <Btn onClick={() => excluirMaterial(m.id)} variacao="danger">🗑️ Excluir</Btn>
                 </>
               }
@@ -316,7 +324,7 @@ const MeuAcervo = () => {
             subtitulo={[q.disciplina, q.serie, q.dificuldade].filter(Boolean).join(' · ') || '—'}
             data={q.created_at}
             botoes={
-              <Btn onClick={() => navigate('/banco-questoes-ia')}>👁️ Reabrir</Btn>
+              <Btn onClick={() => abrirTerapia(q)}>👁️ Reabrir</Btn>
             }
           />
         ))}
@@ -344,7 +352,7 @@ const MeuAcervo = () => {
             data={n.created_at}
             botoes={
               <>
-                <Btn onClick={() => navigate('/neuroaula')}>👁️ Reabrir</Btn>
+                <Btn onClick={() => abrirPlano(n)}>👁️ Reabrir</Btn>
                 <Btn onClick={() => excluirPlano(n.id, 'neuroaula')} variacao="danger">🗑️ Excluir</Btn>
               </>
             }
@@ -374,7 +382,7 @@ const MeuAcervo = () => {
             data={a.created_at}
             botoes={
               <>
-                <Btn onClick={() => navigate('/aula-que-funciona')}>👁️ Reabrir</Btn>
+                <Btn onClick={() => abrirPlano(a)}>👁️ Reabrir</Btn>
                 <Btn onClick={() => excluirPlano(a.id, 'aula_que_funciona')} variacao="danger">🗑️ Excluir</Btn>
               </>
             }
@@ -404,7 +412,7 @@ const MeuAcervo = () => {
             data={c.created_at}
             botoes={
               <>
-                <Btn onClick={() => navigate('/meu-aluno')}>👁️ Reabrir</Btn>
+                <Btn onClick={() => abrirMeuAluno(c)}>👁️ Reabrir</Btn>
                 <Btn onClick={() => excluirCaso(c.id)} variacao="danger">🗑️ Excluir</Btn>
               </>
             }
@@ -434,7 +442,7 @@ const MeuAcervo = () => {
             data={p.created_at}
             botoes={
               <>
-                <Btn onClick={() => navigate('/praticas-exitosas')}>👁️ Reabrir</Btn>
+                <Btn onClick={() => abrirPratica(p)}>👁️ Reabrir</Btn>
                 <Btn onClick={() => excluirPratica(p.id)} variacao="danger">🗑️ Excluir</Btn>
               </>
             }
@@ -464,7 +472,7 @@ const MeuAcervo = () => {
             data={r.updated_at || r.created_at}
             botoes={
               <>
-                <Btn onClick={() => navigate('/terapia-pedagogica')}>💬 Continuar</Btn>
+                <Btn onClick={() => abrirTerapia(r)}>👁️ Reabrir</Btn>
                 <Btn onClick={() => excluirReflexao(r.id)} variacao="danger">🗑️ Excluir</Btn>
               </>
             }
@@ -577,6 +585,25 @@ const MeuAcervo = () => {
         <div className="text-center text-gray-500 py-12">Carregando seu acervo...</div>
       ) : (
         renderConteudoAba()
+      )}
+
+      {/* MODAL — Planos (NeuroAula, Aula que Funciona) */}
+      {itemAberto?.tipo === 'plano' && (
+        <ModalPlano
+          plano={itemAberto.item}
+          modoInicial="ver"
+          onFechar={() => setItemAberto(null)}
+          onSalvar={() => {}}
+        />
+      )}
+
+      {/* MODAL — Itens genéricos (Meu Aluno, Práticas, Terapia) */}
+      {itemAberto && itemAberto.tipo !== 'plano' && (
+        <ModalItemAcervo
+          tipo={itemAberto.tipo}
+          item={itemAberto.item}
+          onFechar={() => setItemAberto(null)}
+        />
       )}
     </div>
   );
