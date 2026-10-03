@@ -35,20 +35,20 @@ const TEXTO_2       = '#6B6B6B';
 const BORDA         = '#E5E0D8';
 
 // ============================================================
-// TAMANHOS DE FONTE — Finais (2x maiores, legíveis sem zoom)
+// TAMANHOS DE FONTE
 // ============================================================
-const F_BODY       = 26;   // corpo do texto principal
-const F_BODY_SM    = 22;   // textos secundários
-const F_LABEL      = 16;   // labels uppercase dos cartões
-const F_LABEL_SM   = 14;   // labels muito pequenos
-const F_CHIP       = 18;   // chips de código (D02, EF05MA03)
-const F_TITULO_AULA = 36;  // título de cada aula (Lora)
-const F_TITULO_SEC = 44;   // títulos de seção (Lora)
-const F_LOGO       = 96;   // SIMIDNAPE
-const F_SLOGAN     = 26;   // O Professor Inesquecível
-const F_COVER_TIT  = 62;   // título do plano na capa
-const F_COVER_BADGE = 16;  // badge "PLANEJAMENTO PEDAGÓGICO"
-const F_COVER_CARD = 22;   // dados do card na capa
+const F_BODY       = 26;
+const F_BODY_SM    = 22;
+const F_LABEL      = 16;
+const F_LABEL_SM   = 14;
+const F_CHIP       = 18;
+const F_TITULO_AULA = 36;
+const F_TITULO_SEC = 44;
+const F_LOGO       = 96;
+const F_SLOGAN     = 26;
+const F_COVER_TIT  = 62;
+const F_COVER_BADGE = 16;
+const F_COVER_CARD = 22;
 
 // ============================================================
 // HELPERS
@@ -73,7 +73,6 @@ function slug(texto) {
     .substring(0, 60) || 'planejamento';
 }
 
-// Normaliza código de descritor: "SAEB:D02" → "D02"; " d02 " → "D02"
 function normalizarCodigo(codigo) {
   if (!codigo) return '';
   let s = String(codigo).trim();
@@ -81,7 +80,6 @@ function normalizarCodigo(codigo) {
   return s.trim().toUpperCase();
 }
 
-// Pré-carrega uma imagem e aguarda estar pronta
 function preloadImage(src) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -123,7 +121,7 @@ async function renderizarBloco(html, opcoes = {}) {
 }
 
 // ============================================================
-// LOGO SIMIDNAPE (Quicksand + bolinhas coloridas)
+// LOGO SIMIDNAPE (inalterado)
 // ============================================================
 function htmlLogo(opcoes = {}) {
   const {
@@ -178,7 +176,7 @@ function htmlLogo(opcoes = {}) {
 }
 
 // ============================================================
-// CAPA
+// CAPA (inalterada)
 // ============================================================
 function htmlCapa(cab) {
   const nome   = cab.nome_professor || '—';
@@ -284,7 +282,7 @@ function htmlCapa(cab) {
 }
 
 // ============================================================
-// CABEÇALHO DO PLANO
+// CABEÇALHO DO PLANO (inalterado)
 // ============================================================
 function htmlMicroCabecalho(sd) {
   const cab = sd.cabecalho || {};
@@ -327,126 +325,172 @@ function htmlMicroCabecalho(sd) {
 }
 
 // ============================================================
-// MACRO
+// MACRO — nova ordem:
+//   1. Estruturação Curricular (habilidades BNCC + descritores)
+//   2. Objetivos (absorve justificativa)
+//   3. Progressão Cognitiva (era logica_pedagogica)
 // ============================================================
 function htmlMicroMacro(sd) {
   const blocos = [];
 
-  const cartaoLabel = (titulo, conteudoHtml, corBarra, corFundo) => `
-    <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-      <div style="background: ${corFundo}; border-left: 6px solid ${corBarra}; border-radius: 12px; padding: 24px 30px;">
-        <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${corBarra}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 16px;">${titulo}</div>
-        ${conteudoHtml}
-      </div>
-    </div>
-  `;
+  // -------- 1. ESTRUTURAÇÃO CURRICULAR --------
+  const habilidades = sd.habilidades || [];
+  const descritores = sd.descritores_detalhados || [];
+  const temEstrutura = habilidades.length > 0 || descritores.length > 0;
 
-  if (sd.logica_pedagogica) {
-    blocos.push(cartaoLabel(
-      'Lógica pedagógica do período',
-      `<div style="font-family: 'Lora', serif; font-style: italic; font-size: ${F_BODY}px; color: ${AZUL}; line-height: 1.55;">${escapeHtml(sd.logica_pedagogica)}</div>`,
-      AZUL, AZUL_CLARO
-    ));
-  }
-
-  if ((sd.eixos_predominantes || []).length > 0) {
-    const linhas = sd.eixos_predominantes.map(e => `
-      <div style="display: flex; gap: 16px; align-items: baseline; margin-bottom: 10px; font-size: ${F_BODY}px;">
-        <span style="background: ${BRANCO}; color: ${AZUL}; padding: 6px 16px; border-radius: 6px; font-weight: 700; font-size: ${F_CHIP}px; font-family: 'JetBrains Mono', monospace; flex-shrink: 0;">${escapeHtml(e.periodo || '')}</span>
-        <span style="color: ${TEXTO};">${escapeHtml(e.eixo || '')}</span>
+  if (temEstrutura) {
+    const htmlHabilidades = habilidades.length > 0 ? `
+      <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${AZUL}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 14px;">
+        🎯 Habilidades BNCC
       </div>
-    `).join('');
+      ${habilidades.map(h => `
+        <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px;">
+          <span style="background: ${AZUL_CLARO}; color: ${AZUL}; padding: 6px 16px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px; border: 1px solid ${AZUL};">${escapeHtml(h.codigo)}</span>
+          <span style="color: ${TEXTO}; line-height: 1.55; font-size: ${F_BODY}px;">${escapeHtml(h.texto || '')}</span>
+        </div>
+      `).join('')}
+    ` : '';
+
+    const htmlDescritores = descritores.length > 0 ? `
+      <div style="margin-top: 22px; padding-top: 20px; border-top: 1px dashed ${BORDA};">
+        <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${CORAL}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 14px;">
+          📊 Descritores SAEB / SAEPI
+        </div>
+        ${descritores.map(d => `
+          <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px;">
+            <span style="background: ${PESSEGO_CLARO}; color: ${CORAL}; padding: 6px 16px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px;">${escapeHtml(d.codigo)}</span>
+            ${d.fonte ? `<span style="background: ${OURO_CLARO}; color: ${OURO}; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: ${F_LABEL_SM}px; text-transform: uppercase; flex-shrink: 0; letter-spacing: 0.5px;">${escapeHtml(d.fonte)}</span>` : ''}
+            <span style="color: ${TEXTO}; line-height: 1.55; font-size: ${F_BODY}px;">${escapeHtml(d.texto)}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 12px; padding: 24px 30px;">
-          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 16px;">Eixos predominantes</div>
-          ${linhas}
+        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-left: 7px solid ${AZUL}; border-radius: 14px; padding: 30px 36px;">
+          <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_SEC}px; color: ${AZUL}; margin-bottom: 22px; line-height: 1.2;">
+            📚 Estruturação Curricular
+          </div>
+          ${htmlHabilidades}
+          ${htmlDescritores}
         </div>
       </div>
     `);
   }
 
-  const descs = sd.descritores_detalhados || [];
-  if (descs.length > 0) {
-    const linhas = descs.map(d => `
-      <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; font-size: ${F_BODY}px;">
-        <span style="background: ${PESSEGO_CLARO}; color: ${CORAL}; padding: 6px 16px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px;">${escapeHtml(d.codigo)}</span>
-        ${d.fonte ? `<span style="background: ${OURO_CLARO}; color: ${OURO}; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: ${F_LABEL_SM}px; text-transform: uppercase; flex-shrink: 0; letter-spacing: 0.5px;">${escapeHtml(d.fonte)}</span>` : ''}
-        <span style="color: ${TEXTO}; line-height: 1.55;">${escapeHtml(d.texto)}</span>
-      </div>
-    `).join('');
+  // -------- 2. OBJETIVOS (absorve justificativa) --------
+  if (sd.objetivos_gerais || sd.justificativa) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 12px; padding: 24px 30px;">
-          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 18px;">Descritores trabalhados no período</div>
-          ${linhas}
+        <div style="background: ${VERDE_CLARO}; border-left: 6px solid ${VERDE}; border-radius: 12px; padding: 26px 30px;">
+          <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${VERDE}; margin-bottom: 16px;">
+            🎯 Objetivos do Período
+          </div>
+          ${sd.justificativa ? `
+            <div style="background: ${BRANCO}; border-radius: 8px; padding: 14px 18px; margin-bottom: 18px; font-size: ${F_BODY_SM}px; color: ${TEXTO_2}; line-height: 1.55; font-style: italic;">
+              ${escapeHtml(sd.justificativa)}
+            </div>
+          ` : ''}
+          ${sd.objetivos_gerais ? `
+            <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; margin-bottom: 14px; font-weight: 600;">${escapeHtml(sd.objetivos_gerais)}</div>
+          ` : ''}
+          ${(sd.objetivos_especificos || []).map(o => `
+            <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.7; padding-left: 26px; position: relative;">
+              <span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">✓</span>${escapeHtml(o)}
+            </div>
+          `).join('')}
         </div>
       </div>
     `);
   }
 
-  if (sd.objetivos_gerais) {
-    blocos.push(cartaoLabel(
-      'Objetivos gerais',
-      `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; margin-bottom: 12px;">${escapeHtml(sd.objetivos_gerais)}</div>
-       ${(sd.objetivos_especificos || []).map(o => `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.7; padding-left: 26px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">✓</span>${escapeHtml(o)}</div>`).join('')}`,
-      VERDE, VERDE_CLARO
-    ));
-  }
+  // -------- 3. PROGRESSÃO COGNITIVA (era logica_pedagogica) --------
+  const eixos = sd.eixos_predominantes || [];
+  if (sd.logica_pedagogica || eixos.length > 0) {
+    const htmlEixos = eixos.length > 0 ? `
+      <div style="margin-top: 18px; padding-top: 16px; border-top: 1px dashed ${BORDA};">
+        <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${AZUL}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 12px;">Eixos predominantes</div>
+        ${eixos.map(e => `
+          <div style="display: flex; gap: 16px; align-items: baseline; margin-bottom: 10px; font-size: ${F_BODY}px;">
+            <span style="background: ${BRANCO}; color: ${AZUL}; padding: 6px 16px; border-radius: 6px; font-weight: 700; font-size: ${F_CHIP}px; font-family: 'JetBrains Mono', monospace; flex-shrink: 0;">${escapeHtml(e.periodo || '')}</span>
+            <span style="color: ${TEXTO};">${escapeHtml(e.eixo || '')}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
 
-  if (sd.justificativa) {
-    blocos.push(cartaoLabel(
-      'Justificativa',
-      `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6;">${escapeHtml(sd.justificativa)}</div>`,
-      OURO, OURO_CLARO
-    ));
+    blocos.push(`
+      <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
+        <div style="background: ${AZUL_CLARO}; border-left: 6px solid ${AZUL}; border-radius: 12px; padding: 26px 30px;">
+          <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${AZUL}; margin-bottom: 16px;">
+            🧭 Progressão Cognitiva do Período
+          </div>
+          ${sd.logica_pedagogica ? `
+            <div style="font-family: 'Lora', serif; font-style: italic; font-size: ${F_BODY}px; color: ${AZUL}; line-height: 1.55;">${escapeHtml(sd.logica_pedagogica)}</div>
+          ` : ''}
+          ${htmlEixos}
+        </div>
+      </div>
+    `);
   }
 
   return blocos;
 }
 
 // ============================================================
-// UMA AULA
+// NORMALIZA METODOLOGIA (fallback p/ planos antigos)
+// ============================================================
+function normalizarMetodologia(metodologia, duracaoTotal) {
+  // Novo formato (objeto)
+  if (metodologia && typeof metodologia === 'object' && !Array.isArray(metodologia)) {
+    return {
+      introducao: metodologia.introducao || null,
+      desenvolvimento: metodologia.desenvolvimento || null,
+      fechamento: metodologia.fechamento || null,
+    };
+  }
+  // Formato antigo (string)
+  if (typeof metodologia === 'string' && metodologia.trim()) {
+    return {
+      introducao: null,
+      desenvolvimento: {
+        duracao_minutos: duracaoTotal || 0,
+        estrategia: '',
+        passos: [metodologia],
+      },
+      fechamento: null,
+    };
+  }
+  return { introducao: null, desenvolvimento: null, fechamento: null };
+}
+
+// ============================================================
+// UMA AULA — nova estrutura (8 seções)
 // ============================================================
 function htmlMicroAula(aula, index, sd) {
   const blocos = [];
 
-  // Constrói mapa de descritores por código normalizado
+  // Mapa de descritores por código normalizado
   const mapaDescritores = {};
   (sd.descritores_detalhados || []).forEach(d => {
     const chave = normalizarCodigo(d.codigo);
     if (chave) mapaDescritores[chave] = d;
   });
 
-  // Resolve descritores completos desta aula
   const descritoresDaAula = (aula.descritores || []).map(codigoOriginal => {
     const chave = normalizarCodigo(codigoOriginal);
     const detalhe = mapaDescritores[chave];
     return detalhe || { codigo: chave || String(codigoOriginal), texto: '', fonte: '' };
   });
 
+  // ==========================
+  // SEÇÃO 1 — CABEÇALHO DA AULA
+  // ==========================
   const headerBadges = [
     aula.principio_cognitivo ? `<span style="background: ${BRANCO}; color: ${AZUL}; padding: 8px 18px; border-radius: 999px; font-size: ${F_LABEL}px; font-weight: 700; border: 1px solid ${BORDA};">🧠 ${escapeHtml(aula.principio_cognitivo)}</span>` : '',
     aula.duracao_minutos ? `<span style="background: ${BRANCO}; color: ${TEXTO_2}; padding: 8px 18px; border-radius: 999px; font-size: ${F_LABEL}px; font-weight: 700; border: 1px solid ${BORDA}; font-family: 'JetBrains Mono', monospace;">${aula.duracao_minutos} min</span>` : '',
   ].filter(Boolean).join('');
-
-  const badgesRow = [
-    aula.habilidade_foco ? `<span style="background: ${VERDE_CLARO}; color: ${VERDE}; padding: 8px 18px; border-radius: 8px; font-size: ${F_LABEL}px; font-weight: 700;">🎯 ${escapeHtml(aula.habilidade_foco)}</span>` : '',
-    aula.foco ? `<span style="background: ${AZUL_CLARO}; color: ${AZUL}; padding: 8px 18px; border-radius: 8px; font-size: ${F_LABEL}px; font-weight: 600;">📌 ${escapeHtml(aula.foco)}</span>` : '',
-  ].filter(Boolean).join('');
-
-  const descritoresBloco = descritoresDaAula.length > 0 ? `
-    <div style="margin-top: 18px; padding: 20px 24px; background: ${PESSEGO_CLARO}; border-radius: 12px; border-left: 5px solid ${CORAL};">
-      <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${CORAL}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 14px;">📊 Descritores desta aula</div>
-      ${descritoresDaAula.map(d => `
-        <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; font-size: ${F_BODY}px;">
-          <span style="background: ${BRANCO}; color: ${CORAL}; padding: 5px 14px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px;">${escapeHtml(d.codigo)}</span>
-          ${d.fonte ? `<span style="background: ${OURO_CLARO}; color: ${OURO}; padding: 5px 12px; border-radius: 6px; font-weight: 700; font-size: ${F_LABEL_SM}px; text-transform: uppercase; flex-shrink: 0;">${escapeHtml(d.fonte)}</span>` : ''}
-          <span style="color: ${TEXTO}; line-height: 1.55;">${escapeHtml(d.texto || '—')}</span>
-        </div>
-      `).join('')}
-    </div>
-  ` : '';
 
   blocos.push(`
     <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 18px 40px 6px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
@@ -459,24 +503,58 @@ function htmlMicroAula(aula, index, sd) {
             <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${AZUL}; margin-top: 10px; line-height: 1.25;">
               ${escapeHtml(aula.titulo || '')}
             </div>
+            ${aula.tema ? `
+              <div style="font-family: 'Inter', sans-serif; font-size: ${F_BODY_SM}px; color: ${TEXTO_2}; margin-top: 8px; font-style: italic;">
+                Tema: ${escapeHtml(aula.tema)}
+              </div>
+            ` : ''}
           </div>
           <div style="display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;">${headerBadges}</div>
         </div>
-
-        ${aula.pergunta_problematizadora ? `
-          <div style="margin-top: 20px; padding: 22px 26px; background: ${OURO_CLARO}; border-radius: 12px; border-left: 5px solid ${OURO};">
-            <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${OURO}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 10px;">❓ Pergunta problematizadora</div>
-            <div style="font-family: 'Lora', serif; font-style: italic; font-size: ${F_BODY}px; color: #7A5E20; line-height: 1.55;">"${escapeHtml(aula.pergunta_problematizadora)}"</div>
-          </div>
-        ` : ''}
-
-        ${badgesRow ? `<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px;">${badgesRow}</div>` : ''}
-
-        ${descritoresBloco}
       </div>
     </div>
   `);
 
+  // ==========================
+  // SEÇÃO 2 — HABILIDADES E DESCRITORES DESTA AULA
+  // ==========================
+  const habilidade = aula.habilidade_foco || '';
+  const foco = aula.foco || '';
+  const temHabilidades = habilidade || descritoresDaAula.length > 0;
+
+  if (temHabilidades) {
+    blocos.push(`
+      <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
+        <div style="background: ${AZUL_CLARO}; border-radius: 12px; padding: 24px 30px; border-left: 6px solid ${AZUL};">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${AZUL}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 16px;">
+            🎯 Habilidades e descritores desta aula
+          </div>
+          ${habilidade ? `
+            <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap;">
+              <span style="background: ${BRANCO}; color: ${AZUL}; padding: 8px 18px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px; border: 1px solid ${AZUL};">${escapeHtml(habilidade)}</span>
+              ${foco ? `<span style="background: ${BRANCO}; color: ${TEXTO_2}; padding: 8px 16px; border-radius: 6px; font-size: ${F_LABEL}px; font-weight: 600; border: 1px solid ${BORDA};">${escapeHtml(foco)}</span>` : ''}
+            </div>
+          ` : ''}
+          ${descritoresDaAula.length > 0 ? `
+            <div style="margin-top: 12px; padding-top: 14px; border-top: 1px dashed ${BORDA};">
+              <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL_SM}px; font-weight: 700; color: ${CORAL}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 12px;">Descritores</div>
+              ${descritoresDaAula.map(d => `
+                <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; font-size: ${F_BODY_SM}px;">
+                  <span style="background: ${PESSEGO_CLARO}; color: ${CORAL}; padding: 5px 14px; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; font-size: ${F_CHIP}px;">${escapeHtml(d.codigo)}</span>
+                  ${d.fonte ? `<span style="background: ${OURO_CLARO}; color: ${OURO}; padding: 5px 12px; border-radius: 6px; font-weight: 700; font-size: ${F_LABEL_SM}px; text-transform: uppercase; flex-shrink: 0;">${escapeHtml(d.fonte)}</span>` : ''}
+                  <span style="color: ${TEXTO}; line-height: 1.55;">${escapeHtml(d.texto || '—')}</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `);
+  }
+
+  // ==========================
+  // SEÇÃO 3 — OBJETIVO E EVIDÊNCIA
+  // ==========================
   const cartao = (titulo, conteudo, cor, corFundo) => conteudo ? `
     <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
       <div style="background: ${corFundo || BRANCO}; border-left: 5px solid ${cor}; border-radius: 10px; padding: 20px 26px;">
@@ -486,42 +564,227 @@ function htmlMicroAula(aula, index, sd) {
     </div>
   ` : '';
 
-  blocos.push(cartao('🎯 Objetivo', aula.objetivo_da_aula, VERDE, VERDE_CLARO));
-  blocos.push(cartao('📖 Conteúdo', aula.conteudo, AZUL, AZUL_CLARO));
-  blocos.push(cartao('🎨 Estratégia concreta', aula.estrategia, CORAL, PESSEGO_CLARO));
-  blocos.push(cartao('👨‍🏫 Metodologia', aula.metodologia, AZUL, BRANCO));
-
-  if ((aula.atividades || []).length > 0) {
+  if (aula.objetivo_da_aula || aula.conteudo || aula.evidencia_de_aprendizagem) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 10px; padding: 20px 26px;">
-          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${AZUL}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">👥 Atividades dos alunos</div>
-          ${aula.atividades.map(a => `<div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65; padding-left: 26px; position: relative;"><span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">•</span>${escapeHtml(a)}</div>`).join('')}
+        <div style="background: ${VERDE_CLARO}; border-left: 6px solid ${VERDE}; border-radius: 12px; padding: 22px 28px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${VERDE}; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 16px;">
+            🎯 Objetivo e evidência
+          </div>
+          ${aula.objetivo_da_aula ? `
+            <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; margin-bottom: 12px;">
+              <strong style="color: ${VERDE};">Objetivo:</strong> ${escapeHtml(aula.objetivo_da_aula)}
+            </div>
+          ` : ''}
+          ${aula.conteudo ? `
+            <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; margin-bottom: 12px;">
+              <strong style="color: ${AZUL};">Conteúdo:</strong> ${escapeHtml(aula.conteudo)}
+            </div>
+          ` : ''}
+          ${aula.evidencia_de_aprendizagem ? `
+            <div style="background: ${BRANCO}; border-radius: 8px; padding: 14px 18px; margin-top: 14px; border: 1px solid ${VERDE};">
+              <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL_SM}px; font-weight: 700; color: ${VERDE}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">O que observar</div>
+              <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6;">${escapeHtml(aula.evidencia_de_aprendizagem)}</div>
+            </div>
+          ` : ''}
         </div>
       </div>
     `);
   }
 
-  blocos.push(cartao('📦 Recursos', (aula.recursos || []).join(' · '), TEXTO_2, BRANCO));
-  blocos.push(cartao('✅ Avaliação da aula', aula.avaliacao_da_aula, VERDE, VERDE_CLARO));
-  blocos.push(cartao('🎯 Evidência de aprendizagem', aula.evidencia_de_aprendizagem, VERDE, VERDE_CLARO));
-  blocos.push(cartao('⚠️ Onde pode travar', aula.onde_pode_travar, OURO, OURO_CLARO));
-  blocos.push(cartao('🎚️ Diferenciação', aula.diferenciacao, CORAL, PESSEGO_CLARO));
-  blocos.push(cartao('✨ Momento de encantamento', aula.momento_de_encantamento, CORAL, PESSEGO_CLARO));
-  blocos.push(cartao('💭 Leitura relacional', aula.leitura_relacional, AZUL, AZUL_CLARO));
-  blocos.push(cartao('🎯 Resultado visível', aula.resultado_visivel, VERDE, VERDE_CLARO));
-  blocos.push(cartao('🌍 Conexão com a vida', aula.conexao_com_a_vida, CORAL, PESSEGO_CLARO));
+  // ==========================
+  // SEÇÃO 4 — METODOLOGIA EM 3 MOMENTOS
+  // ==========================
+  const metodo = normalizarMetodologia(aula.metodologia, aula.duracao_minutos);
+  const temMetodologia = metodo.introducao || metodo.desenvolvimento || metodo.fechamento;
+
+  if (temMetodologia) {
+    // 4.1 — INTRODUÇÃO
+    const htmlIntro = metodo.introducao ? `
+      <div style="background: ${OURO_CLARO}; border-radius: 12px; padding: 22px 26px; border-left: 5px solid ${OURO}; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${OURO}; text-transform: uppercase; letter-spacing: 2.5px;">
+            1 · Introdução / Problematização
+          </div>
+          ${metodo.introducao.duracao_minutos ? `<span style="background: ${BRANCO}; color: ${OURO}; padding: 5px 14px; border-radius: 999px; font-size: ${F_LABEL}px; font-weight: 700; font-family: 'JetBrains Mono', monospace;">${metodo.introducao.duracao_minutos} min</span>` : ''}
+        </div>
+        ${metodo.introducao.gancho_de_curiosidade ? `
+          <div style="background: ${BRANCO}; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+            <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL_SM}px; font-weight: 700; color: ${CORAL}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">✨ Gancho de curiosidade</div>
+            <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; font-style: italic;">${escapeHtml(metodo.introducao.gancho_de_curiosidade)}</div>
+          </div>
+        ` : ''}
+        ${(metodo.introducao.passos || []).map((p, i) => `
+          <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65; padding-left: 30px; position: relative; margin-bottom: 4px;">
+            <span style="position: absolute; left: 0; color: ${OURO}; font-weight: 700;">${i + 1}.</span>${escapeHtml(p)}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    // 4.2 — DESENVOLVIMENTO
+    const htmlDesenv = metodo.desenvolvimento ? `
+      <div style="background: ${BRANCO}; border-radius: 12px; padding: 22px 26px; border-left: 5px solid ${AZUL}; margin-bottom: 14px; border: 1px solid ${BORDA}; border-left: 5px solid ${AZUL};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${AZUL}; text-transform: uppercase; letter-spacing: 2.5px;">
+            2 · Desenvolvimento
+          </div>
+          ${metodo.desenvolvimento.duracao_minutos ? `<span style="background: ${AZUL_CLARO}; color: ${AZUL}; padding: 5px 14px; border-radius: 999px; font-size: ${F_LABEL}px; font-weight: 700; font-family: 'JetBrains Mono', monospace;">${metodo.desenvolvimento.duracao_minutos} min</span>` : ''}
+        </div>
+        ${metodo.desenvolvimento.estrategia ? `
+          <div style="background: ${PESSEGO_CLARO}; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+            <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL_SM}px; font-weight: 700; color: ${CORAL}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">🎨 Estratégia concreta</div>
+            <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6;">${escapeHtml(metodo.desenvolvimento.estrategia)}</div>
+          </div>
+        ` : ''}
+        ${(metodo.desenvolvimento.passos || []).map((p, i) => `
+          <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65; padding-left: 30px; position: relative; margin-bottom: 4px;">
+            <span style="position: absolute; left: 0; color: ${AZUL}; font-weight: 700;">${i + 1}.</span>${escapeHtml(p)}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    // 4.3 — FECHAMENTO
+    const htmlFech = metodo.fechamento ? `
+      <div style="background: ${VERDE_CLARO}; border-radius: 12px; padding: 22px 26px; border-left: 5px solid ${VERDE};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${VERDE}; text-transform: uppercase; letter-spacing: 2.5px;">
+            3 · Fechamento / Síntese
+          </div>
+          ${metodo.fechamento.duracao_minutos ? `<span style="background: ${BRANCO}; color: ${VERDE}; padding: 5px 14px; border-radius: 999px; font-size: ${F_LABEL}px; font-weight: 700; font-family: 'JetBrains Mono', monospace;">${metodo.fechamento.duracao_minutos} min</span>` : ''}
+        </div>
+        ${metodo.fechamento.sistematizacao ? `
+          <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; margin-bottom: 12px;">
+            <strong style="color: ${VERDE};">Sistematização:</strong> ${escapeHtml(metodo.fechamento.sistematizacao)}
+          </div>
+        ` : ''}
+        ${metodo.fechamento.aplicacao_no_cotidiano ? `
+          <div style="background: ${BRANCO}; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px; border: 1px solid ${VERDE};">
+            <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL_SM}px; font-weight: 700; color: ${VERDE}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">🌍 Aplicação no cotidiano</div>
+            <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6; font-style: italic;">${escapeHtml(metodo.fechamento.aplicacao_no_cotidiano)}</div>
+          </div>
+        ` : ''}
+        ${(metodo.fechamento.passos || []).map((p, i) => `
+          <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65; padding-left: 30px; position: relative; margin-bottom: 4px;">
+            <span style="position: absolute; left: 0; color: ${VERDE}; font-weight: 700;">${i + 1}.</span>${escapeHtml(p)}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    blocos.push(`
+      <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
+        <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${AZUL}; margin-bottom: 16px; padding: 0 4px;">
+          👨‍🏫 Metodologia
+        </div>
+        ${htmlIntro}
+        ${htmlDesenv}
+        ${htmlFech}
+      </div>
+    `);
+  }
+
+  // ==========================
+  // SEÇÃO 5 — RECURSOS
+  // ==========================
+  if ((aula.recursos || []).length > 0) {
+    blocos.push(`
+      <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
+        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-radius: 10px; padding: 20px 26px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">📦 Recursos didáticos</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            ${aula.recursos.map(r => `<span style="background: ${CREME}; color: ${TEXTO}; padding: 8px 16px; border-radius: 999px; font-size: ${F_BODY_SM}px; border: 1px solid ${BORDA};">${escapeHtml(r)}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    `);
+  }
+
+  // ==========================
+  // SEÇÃO 6 — AVALIAÇÃO E INTERVENÇÕES
+  // ==========================
+  const temAvaliacao = aula.avaliacao_da_aula || aula.onde_pode_travar || aula.diferenciacao;
+  if (temAvaliacao) {
+    blocos.push(`
+      <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
+        <div style="background: ${BRANCO}; border: 1px solid ${BORDA}; border-left: 6px solid ${VERDE}; border-radius: 12px; padding: 22px 28px;">
+          <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${VERDE}; margin-bottom: 16px;">
+            ✅ Avaliação e intervenções
+          </div>
+          ${aula.avaliacao_da_aula ? `
+            <div style="margin-bottom: 14px;">
+              <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL_SM}px; font-weight: 700; color: ${VERDE}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">Como avaliar</div>
+              <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6;">${escapeHtml(aula.avaliacao_da_aula)}</div>
+            </div>
+          ` : ''}
+          ${aula.onde_pode_travar ? `
+            <div style="background: ${OURO_CLARO}; border-radius: 8px; padding: 14px 18px; margin-bottom: 12px;">
+              <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL_SM}px; font-weight: 700; color: ${OURO}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">⚠️ Se o aluno travar</div>
+              <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6;">${escapeHtml(aula.onde_pode_travar)}</div>
+            </div>
+          ` : ''}
+          ${aula.diferenciacao ? `
+            <div style="background: ${PESSEGO_CLARO}; border-radius: 8px; padding: 14px 18px;">
+              <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL_SM}px; font-weight: 700; color: ${CORAL}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">🎚️ Diferenciação</div>
+              <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6;">${escapeHtml(aula.diferenciacao)}</div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `);
+  }
+
+  // ==========================
+  // SEÇÃO 7 — NOTA PEDAGÓGICA (leitura relacional discreta)
+  // ==========================
+  if (aula.leitura_relacional) {
+    blocos.push(`
+      <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
+        <div style="padding: 12px 26px; border-left: 3px solid ${BORDA}; background: ${BRANCO}; border-radius: 6px;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL_SM}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">💭 Nota pedagógica</div>
+          <div style="font-size: ${F_BODY_SM}px; color: ${TEXTO_2}; line-height: 1.6; font-style: italic;">${escapeHtml(aula.leitura_relacional)}</div>
+        </div>
+      </div>
+    `);
+  }
+
+  // ==========================
+  // SEÇÃO 8 — REFLEXÃO PÓS-AULA (espaço em branco)
+  // ==========================
+  blocos.push(`
+    <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 6px 40px 14px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
+      <div style="background: ${BRANCO}; border: 1.5px dashed ${BORDA}; border-radius: 12px; padding: 22px 28px;">
+        <div style="font-family: 'Quicksand', sans-serif; font-size: ${F_LABEL}px; font-weight: 700; color: ${TEXTO_2}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">📝 Reflexão pós-aula</div>
+        <div style="font-size: ${F_BODY_SM}px; color: ${TEXTO_2}; line-height: 1.5; margin-bottom: 18px; font-style: italic;">
+          Espaço reservado para o professor registrar, após a aula, o que funcionou bem e o que precisa ser ajustado.
+        </div>
+        ${aula.reflexao_pos_aula ? `
+          <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6;">${escapeHtml(aula.reflexao_pos_aula)}</div>
+        ` : `
+          <div style="height: 60px;"></div>
+          <div style="height: 60px;"></div>
+          <div style="height: 60px; border-bottom: 1px solid ${BORDA};"></div>
+        `}
+      </div>
+    </div>
+  `);
 
   return blocos.filter(Boolean);
 }
 
 // ============================================================
-// FINAL
+// FINAL — nova ordem:
+//   1. Avaliação geral
+//   2. Adaptações inclusivas
+//   3. Reflexão pós-período (novo)
+// (considerações finais saíram do PDF — ficam só no painel)
 // ============================================================
 function htmlMicroFinal(sd) {
   const blocos = [];
   const aval = sd.avaliacao_geral || {};
 
+  // 1. AVALIAÇÃO GERAL
   if (aval.instrumentos?.length || aval.indicadores_de_sucesso?.length || aval.como_acompanhar) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
@@ -544,6 +807,7 @@ function htmlMicroFinal(sd) {
     `);
   }
 
+  // 2. ADAPTAÇÕES INCLUSIVAS
   if ((sd.adaptacoes_inclusivas || []).length > 0) {
     blocos.push(`
       <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
@@ -560,22 +824,30 @@ function htmlMicroFinal(sd) {
     `);
   }
 
-  if (sd.consideracoes_finais) {
-    blocos.push(`
-      <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
-        <div style="background: ${PESSEGO_CLARO}; border-radius: 14px; padding: 30px 36px; border-left: 7px solid ${CORAL};">
-          <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${CORAL}; margin-bottom: 14px;">📌 Considerações finais</div>
-          <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.65;">${escapeHtml(sd.consideracoes_finais)}</div>
+  // 3. REFLEXÃO PÓS-PERÍODO (novo — sempre presente, vazio ou preenchido)
+  blocos.push(`
+    <div style="width: ${CANVAS_W_PX}px; box-sizing: border-box; padding: 8px 40px 14px; background: ${CREME}; font-family: 'Inter', Arial, sans-serif;">
+      <div style="background: ${BRANCO}; border: 1.5px dashed ${BORDA}; border-radius: 14px; padding: 30px 36px;">
+        <div style="font-family: 'Lora', serif; font-size: ${F_TITULO_AULA}px; color: ${AZUL}; margin-bottom: 6px;">📝 Reflexão pós-período</div>
+        <div style="font-size: ${F_BODY_SM}px; color: ${TEXTO_2}; line-height: 1.55; margin-bottom: 22px; font-style: italic;">
+          Espaço reservado para o professor registrar, após o período, o que funcionou bem, o que precisa ser ajustado e o que levará para o próximo planejamento.
         </div>
+        ${sd.reflexao_pos_periodo ? `
+          <div style="font-size: ${F_BODY}px; color: ${TEXTO}; line-height: 1.6;">${escapeHtml(sd.reflexao_pos_periodo)}</div>
+        ` : `
+          <div style="height: 70px;"></div>
+          <div style="height: 70px;"></div>
+          <div style="height: 70px; border-bottom: 1px solid ${BORDA};"></div>
+        `}
       </div>
-    `);
-  }
+    </div>
+  `);
 
   return blocos;
 }
 
 // ============================================================
-// RODAPÉ
+// RODAPÉ (inalterado)
 // ============================================================
 function desenharRodape(pdf, numPagina) {
   pdf.setFontSize(9);
@@ -585,7 +857,7 @@ function desenharRodape(pdf, numPagina) {
 }
 
 // ============================================================
-// FUNÇÃO PRINCIPAL
+// FUNÇÃO PRINCIPAL (inalterada, só ordem dos micro-blocos)
 // ============================================================
 export async function gerarPdfPlanejamento(plano) {
   if (!plano || !plano.structured_data) {
@@ -595,7 +867,6 @@ export async function gerarPdfPlanejamento(plano) {
   const sd = plano.structured_data;
   const cab = sd.cabecalho || {};
 
-  // Pré-carrega o SVG do pica-pau (para o html2canvas capturar)
   await preloadImage(PICAPAU_URL);
 
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
