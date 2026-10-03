@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [config, setConfig] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Busca config pública (foto e textos editáveis pelo admin)
+  useEffect(() => {
+    api.get('/landing/config')
+      .then(res => setConfig(res.data?.config || null))
+      .catch(() => setConfig(null));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,12 +34,18 @@ const Login = () => {
     }
   };
 
-  const benefits = [
-    'Continue de onde parou — todo seu histórico salvo',
-    'Acesse os 9 motores de IA pedagógica',
-    'Gerencie seus créditos e plano quando quiser',
-    'Suporte humano para professores brasileiros',
-  ];
+  const loginCfg = config?.login || {};
+  const welcomeTitle = loginCfg.welcome_title || 'Bem-vindo de volta.';
+  const welcomeSubtitle = loginCfg.welcome_subtitle || 'Sua próxima aula inesquecível começa aqui.';
+  const benefits = loginCfg.benefits?.length
+    ? loginCfg.benefits
+    : [
+        'Continue de onde parou — todo seu histórico salvo',
+        'Acesse os 9 motores de IA pedagógica',
+        'Gerencie seus créditos e plano quando quiser',
+        'Suporte humano para professores brasileiros',
+      ];
+  const photo = loginCfg.photo || '';
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
@@ -71,16 +86,16 @@ const Login = () => {
             className="text-3xl md:text-4xl font-bold mb-2 font-heading"
             style={{ color: 'var(--theme-text-primary)' }}
           >
-            Bem-vindo de volta.
+            {welcomeTitle}
           </h1>
           <p className="mb-6" style={{ color: 'var(--theme-text-secondary)' }}>
-            Sua próxima aula inesquecível começa aqui.
+            {welcomeSubtitle}
           </p>
 
           {/* Checklist de benefícios */}
           <ul className="space-y-2.5 mb-8">
-            {benefits.map((b) => (
-              <li key={b} className="flex items-start gap-3 text-sm">
+            {benefits.map((b, i) => (
+              <li key={i} className="flex items-start gap-3 text-sm">
                 <span
                   className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5"
                   style={{ backgroundColor: 'color-mix(in srgb, var(--theme-success) 20%, transparent)' }}
@@ -209,32 +224,46 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Coluna direita — 40% — foto da professora (só desktop) */}
+      {/* Coluna direita — 40% — foto da professora com efeito "através do quadro" */}
       <div
-        className="hidden lg:flex lg:w-2/5 items-center justify-center relative overflow-hidden"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--theme-accent) 8%, white)' }}
+        className="hidden lg:block lg:w-2/5 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, var(--theme-accent) 0%, var(--theme-accent) 45%, color-mix(in srgb, var(--theme-highlight) 70%, var(--theme-accent)) 100%)',
+        }}
       >
-        {/* Elementos decorativos */}
+        {/* Card pastel atrás (o "quadro") */}
         <div
-          className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-20"
+          className="absolute left-1/2 -translate-x-1/2 top-32 bottom-20 w-[340px] rounded-[2rem] shadow-2xl"
+          style={{ backgroundColor: 'var(--theme-bg-light)' }}
+        />
+
+        {/* Elementos decorativos suaves */}
+        <div
+          className="absolute top-12 right-12 w-40 h-40 rounded-full blur-3xl opacity-30"
           style={{ backgroundColor: 'var(--theme-highlight)' }}
         />
         <div
-          className="absolute bottom-0 left-0 w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{ backgroundColor: 'var(--theme-primary)' }}
+          className="absolute bottom-24 left-8 w-48 h-48 rounded-full blur-3xl opacity-20"
+          style={{ backgroundColor: 'var(--theme-bg-light)' }}
         />
 
-        {/* Placeholder da foto */}
-        <div className="relative z-10 text-center p-8">
-          <div
-            className="w-72 h-96 mx-auto rounded-3xl flex items-center justify-center mb-4 border-2 border-dashed"
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.5)',
-              borderColor: 'color-mix(in srgb, var(--theme-accent) 25%, transparent)',
-            }}
-          >
-            <div className="text-center">
-              <span className="text-8xl block mb-3">👩‍🏫</span>
+        {/* Foto emergindo do card */}
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[380px] h-[600px] flex items-end justify-center">
+          {photo ? (
+            <img
+              src={photo}
+              alt="Professora"
+              className="max-h-full object-contain object-bottom drop-shadow-2xl"
+            />
+          ) : (
+            <div
+              className="w-[280px] h-[420px] mb-4 rounded-[2rem] flex flex-col items-center justify-center border-2 border-dashed"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.7)',
+                borderColor: 'color-mix(in srgb, var(--theme-accent) 30%, transparent)',
+              }}
+            >
+              <span className="text-9xl mb-4">👩‍🏫</span>
               <p
                 className="text-sm font-medium"
                 style={{ color: 'var(--theme-text-secondary)' }}
@@ -242,13 +271,7 @@ const Login = () => {
                 Foto da professora
               </p>
             </div>
-          </div>
-          <p
-            className="text-xs italic"
-            style={{ color: 'var(--theme-text-secondary)' }}
-          >
-            Espaço reservado — proporção retrato
-          </p>
+          )}
         </div>
       </div>
     </div>

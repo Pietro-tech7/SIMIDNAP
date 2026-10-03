@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/api';
 
 // Lista de UFs do Brasil
 const UFS = [
@@ -33,8 +34,16 @@ const Register = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [config, setConfig] = useState(null);
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // Busca config pública
+  useEffect(() => {
+    api.get('/landing/config')
+      .then(res => setConfig(res.data?.config || null))
+      .catch(() => setConfig(null));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,6 +83,11 @@ const Register = () => {
       }
     }
   };
+
+  const registerCfg = config?.register || {};
+  const welcomeTitle = registerCfg.welcome_title || 'Crie sua conta.';
+  const welcomeSubtitle = registerCfg.welcome_subtitle || '7 créditos grátis para testar. Sem cartão de crédito.';
+  const photo = registerCfg.photo || '';
 
   const inputStyle = {
     borderColor: 'color-mix(in srgb, var(--theme-accent) 25%, transparent)',
@@ -120,10 +134,10 @@ const Register = () => {
             className="text-3xl md:text-4xl font-bold mb-2 font-heading"
             style={{ color: 'var(--theme-text-primary)' }}
           >
-            Crie sua conta.
+            {welcomeTitle}
           </h1>
           <p className="mb-8" style={{ color: 'var(--theme-text-secondary)' }}>
-            7 créditos grátis para testar. Sem cartão de crédito.
+            {welcomeSubtitle}
           </p>
 
           {/* Formulário */}
@@ -349,30 +363,46 @@ const Register = () => {
         </div>
       </div>
 
-      {/* Coluna direita — 40% — foto da professora (só desktop) */}
+      {/* Coluna direita — 40% — foto da professora com efeito "através do quadro" */}
       <div
-        className="hidden lg:flex lg:w-2/5 items-center justify-center relative overflow-hidden"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--theme-accent) 8%, white)' }}
+        className="hidden lg:block lg:w-2/5 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, var(--theme-accent) 0%, var(--theme-accent) 45%, color-mix(in srgb, var(--theme-highlight) 70%, var(--theme-accent)) 100%)',
+        }}
       >
+        {/* Card pastel atrás (o "quadro") */}
         <div
-          className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-20"
+          className="absolute left-1/2 -translate-x-1/2 top-32 bottom-20 w-[340px] rounded-[2rem] shadow-2xl"
+          style={{ backgroundColor: 'var(--theme-bg-light)' }}
+        />
+
+        {/* Elementos decorativos suaves */}
+        <div
+          className="absolute top-12 right-12 w-40 h-40 rounded-full blur-3xl opacity-30"
           style={{ backgroundColor: 'var(--theme-highlight)' }}
         />
         <div
-          className="absolute bottom-0 left-0 w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{ backgroundColor: 'var(--theme-primary)' }}
+          className="absolute bottom-24 left-8 w-48 h-48 rounded-full blur-3xl opacity-20"
+          style={{ backgroundColor: 'var(--theme-bg-light)' }}
         />
 
-        <div className="relative z-10 text-center p-8">
-          <div
-            className="w-72 h-96 mx-auto rounded-3xl flex items-center justify-center mb-4 border-2 border-dashed"
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.5)',
-              borderColor: 'color-mix(in srgb, var(--theme-accent) 25%, transparent)',
-            }}
-          >
-            <div className="text-center">
-              <span className="text-8xl block mb-3">👩‍🏫</span>
+        {/* Foto emergindo do card */}
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[380px] h-[600px] flex items-end justify-center">
+          {photo ? (
+            <img
+              src={photo}
+              alt="Professora"
+              className="max-h-full object-contain object-bottom drop-shadow-2xl"
+            />
+          ) : (
+            <div
+              className="w-[280px] h-[420px] mb-4 rounded-[2rem] flex flex-col items-center justify-center border-2 border-dashed"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.7)',
+                borderColor: 'color-mix(in srgb, var(--theme-accent) 30%, transparent)',
+              }}
+            >
+              <span className="text-9xl mb-4">👩‍🏫</span>
               <p
                 className="text-sm font-medium"
                 style={{ color: 'var(--theme-text-secondary)' }}
@@ -380,13 +410,7 @@ const Register = () => {
                 Foto da professora
               </p>
             </div>
-          </div>
-          <p
-            className="text-xs italic"
-            style={{ color: 'var(--theme-text-secondary)' }}
-          >
-            Espaço reservado — proporção retrato
-          </p>
+          )}
         </div>
       </div>
     </div>
