@@ -561,6 +561,45 @@ class RegisterSection(BaseModel):
 
 
 # ============================================================
+# PAINEL DO USUÁRIO — textos do Dashboard editáveis pelo admin
+# ============================================================
+class DashboardSection(BaseModel):
+    enabled: bool = True
+    greeting_prefix: str = "Olá,"
+    greeting_suffix: str = "— O PROFESSOR INESQUECÍVEL"
+    subtitle: str = "O que você precisa resolver hoje?"
+    tip_title: str = "💡 Dica do SIMIDNAPE"
+    tip_text: str = (
+        "Comece pelo NeuroAula para planejar sua próxima aula ou use a "
+        "IA para Professor para tirar dúvidas rápidas."
+    )
+
+
+# ============================================================
+# BANNER DO MODO TURBO (antes "API Key") — textos editáveis pelo admin
+# ============================================================
+class ApiBannerSection(BaseModel):
+    enabled: bool = True
+    # Variante badge (pill no header)
+    badge_pill_text: str = "Cadastre sua API"
+    badge_pill_tooltip: str = "Ative o Modo Turbo e libere centenas de créditos por mês"
+    # Variante card (banner grande no Dashboard)
+    card_badge: str = "⚡ Recomendado"
+    card_title: str = "🔑 Ative o Modo Turbo e multiplique seus créditos"
+    card_subtitle: str = (
+        "É gratuita, leva 2 minutos e libera centenas de créditos por mês "
+        "sem custo adicional."
+    )
+    card_bullets: List[str] = Field(default_factory=lambda: [
+        "De 10 para até 500 créditos/mês no plano Básico — e ainda mais nos planos superiores",
+        "Chave gratuita do Google (você não paga nada além da assinatura)",
+        "Tutorial passo a passo com imagens + suporte via WhatsApp",
+    ])
+    cta_primary_text: str = "🚀 Ativar Modo Turbo agora"
+    cta_secondary_text: str = "📖 Ver tutorial"
+
+
+# ============================================================
 # SCHEMA PRINCIPAL
 # ============================================================
 class LandingConfigSchema(BaseModel):
@@ -615,6 +654,8 @@ class LandingConfigSchema(BaseModel):
     error_page: ErrorPageSection = Field(default_factory=ErrorPageSection)
     login: LoginSection = Field(default_factory=LoginSection)
     register: RegisterSection = Field(default_factory=RegisterSection)
+    dashboard: DashboardSection = Field(default_factory=DashboardSection)
+    api_banner: ApiBannerSection = Field(default_factory=ApiBannerSection)
 
 
 class LandingConfigOut(BaseModel):
