@@ -18,6 +18,7 @@ from ...services.landing_asset_service import (
     remover_asset,
     listar_assets,
     SLOTS_VALIDOS,
+    _slot_valido,
 )
 from ...schemas.landing_config import LandingConfigOut
 from ...core.security import decode_token
@@ -142,10 +143,14 @@ async def upload_image(
     Recebe uma imagem e salva no slot especificado.
     Retorna a URL pública para ser usada na config.
     """
-    if slot not in SLOTS_VALIDOS:
+    if not _slot_valido(slot):
         raise HTTPException(
             status_code=400,
-            detail=f"Slot inválido. Use um de: {sorted(SLOTS_VALIDOS)}"
+            detail=(
+                f"Slot inválido: '{slot}'. "
+                f"Use um de: {sorted(SLOTS_VALIDOS)} "
+                f"ou um slot dinâmico (ex: hero_slide_0, hero_slide_1)."
+            )
         )
 
     try:
