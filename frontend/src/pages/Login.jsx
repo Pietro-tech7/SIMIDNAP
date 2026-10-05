@@ -231,9 +231,9 @@ const Login = () => {
           background: 'linear-gradient(135deg, var(--theme-accent) 0%, var(--theme-accent) 45%, color-mix(in srgb, var(--theme-highlight) 70%, var(--theme-accent)) 100%)',
         }}
       >
-        {/* Card pastel — moldura da foto (recorta com overflow-hidden) */}
+        {/* Card pastel — moldura da foto (rounded só no topo, desce até o fim) */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 top-32 bottom-20 w-[340px] rounded-[2rem] shadow-2xl overflow-hidden"
+          className="absolute left-1/2 -translate-x-1/2 top-24 bottom-0 w-[420px] rounded-t-[2.5rem] shadow-2xl overflow-hidden"
           style={{ backgroundColor: 'var(--theme-bg-light)' }}
         >
           {photo ? (
@@ -244,13 +244,10 @@ const Login = () => {
             />
           ) : (
             <div
-              className="w-full h-full flex flex-col items-center justify-center border-2 border-dashed rounded-[2rem]"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.7)',
-                borderColor: 'color-mix(in srgb, var(--theme-accent) 30%, transparent)',
-              }}
+              className="w-full h-full flex flex-col items-center justify-center"
+              style={{ backgroundColor: 'rgba(255,255,255,0.85)' }}
             >
-              <span className="text-9xl mb-4">👩🏫</span>
+              <span className="text-9xl mb-4">👩‍🏫</span>
               <p
                 className="text-sm font-medium"
                 style={{ color: 'var(--theme-text-secondary)' }}
