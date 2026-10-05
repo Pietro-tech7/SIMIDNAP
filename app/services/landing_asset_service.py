@@ -37,6 +37,7 @@ TIPOS_PERMITIDOS = {
     "image/gif": ".gif",
 }
 
+# Slots fixos (nomes exatos aceitos)
 SLOTS_VALIDOS = {
     "hero_image",
     "bg_image",
@@ -47,7 +48,26 @@ SLOTS_VALIDOS = {
     "faq_image",
     "login_photo",
     "register_photo",
+    # Slots novos usados pelo painel admin atual
+    "metrics_bg",
+    "popup_image",
 }
+
+# Prefixos aceitos (slots dinâmicos)
+# Ex: hero_slide_0, hero_slide_1, hero_slide_2...
+SLOTS_PREFIXOS_VALIDOS = (
+    "hero_slide_",
+)
+
+
+def _slot_valido(slot: str) -> bool:
+    """Retorna True se o slot for um slot fixo OU casar com um prefixo válido."""
+    if slot in SLOTS_VALIDOS:
+        return True
+    for prefixo in SLOTS_PREFIXOS_VALIDOS:
+        if slot.startswith(prefixo) and len(slot) > len(prefixo):
+            return True
+    return False
 
 
 # ============================================================
@@ -65,10 +85,12 @@ def salvar_asset(
     Salva (ou substitui) a imagem de um slot.
     Levanta ValueError se o slot, tipo ou tamanho forem inválidos.
     """
-    # Valida slot
-    if slot not in SLOTS_VALIDOS:
+    # Valida slot (aceita fixos + prefixos dinâmicos como hero_slide_0)
+    if not _slot_valido(slot):
         raise ValueError(
-            f"Slot inválido: '{slot}'. Opções: {sorted(SLOTS_VALIDOS)}"
+            f"Slot inválido: '{slot}'. "
+            f"Fixos: {sorted(SLOTS_VALIDOS)} · "
+            f"Prefixos: {list(SLOTS_PREFIXOS_VALIDOS)}"
         )
 
     # Valida tipo
