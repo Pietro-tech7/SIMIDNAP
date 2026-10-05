@@ -231,11 +231,35 @@ const Login = () => {
           background: 'linear-gradient(135deg, var(--theme-accent) 0%, var(--theme-accent) 45%, color-mix(in srgb, var(--theme-highlight) 70%, var(--theme-accent)) 100%)',
         }}
       >
-        {/* Card pastel atrás (o "quadro") */}
+        {/* Card pastel — moldura da foto (recorta com overflow-hidden) */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 top-32 bottom-20 w-[340px] rounded-[2rem] shadow-2xl"
+          className="absolute left-1/2 -translate-x-1/2 top-32 bottom-20 w-[340px] rounded-[2rem] shadow-2xl overflow-hidden"
           style={{ backgroundColor: 'var(--theme-bg-light)' }}
-        />
+        >
+          {photo ? (
+            <img
+              src={photo}
+              alt="Professora"
+              className="w-full h-full object-cover object-top"
+            />
+          ) : (
+            <div
+              className="w-full h-full flex flex-col items-center justify-center border-2 border-dashed rounded-[2rem]"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.7)',
+                borderColor: 'color-mix(in srgb, var(--theme-accent) 30%, transparent)',
+              }}
+            >
+              <span className="text-9xl mb-4">👩🏫</span>
+              <p
+                className="text-sm font-medium"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Foto da professora
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Elementos decorativos suaves */}
         <div
@@ -246,33 +270,6 @@ const Login = () => {
           className="absolute bottom-24 left-8 w-48 h-48 rounded-full blur-3xl opacity-20"
           style={{ backgroundColor: 'var(--theme-bg-light)' }}
         />
-
-        {/* Foto emergindo do card */}
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[380px] h-[600px] flex items-end justify-center">
-          {photo ? (
-            <img
-              src={photo}
-              alt="Professora"
-              className="max-h-full object-contain object-bottom drop-shadow-2xl"
-            />
-          ) : (
-            <div
-              className="w-[280px] h-[420px] mb-4 rounded-[2rem] flex flex-col items-center justify-center border-2 border-dashed"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.7)',
-                borderColor: 'color-mix(in srgb, var(--theme-accent) 30%, transparent)',
-              }}
-            >
-              <span className="text-9xl mb-4">👩‍🏫</span>
-              <p
-                className="text-sm font-medium"
-                style={{ color: 'var(--theme-text-secondary)' }}
-              >
-                Foto da professora
-              </p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
