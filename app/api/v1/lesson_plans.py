@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Form, File, UploadFile
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from ...core.database import get_db
 from ...models.user import User
 from ...schemas.lesson_plan import (
@@ -457,3 +457,171 @@ def remove(
     if not plan:
         raise HTTPException(status_code=404, detail="Plano não encontrado.")
     return None
+
+
+# ============================================================
+# PLANO COM ROTEIRO — geração a partir de esboço
+# Aceita texto colado E/OU até 10 arquivos (foto, PDF, DOCX)
+# ============================================================
+MAX_PAGINAS = 10
+MAX_TAMANHO_MB = 10
+MIMES_ACEITOS = {
+    "image/jpeg", "image/jpg", "image/png", "image/webp",
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+EXTENSOES_ACEITAS = (".jpg", ".jpeg", ".png", ".webp", ".pdf", ".docx")
+
+
+def _mime_aceito(fname: str, mime: str) -> bool:
+    """Verifica se o arquivo tem mime ou extensão aceitos."""
+    mime = (mime or "").lower().strip()
+    fname = (fname or "").lower().strip()
+    if mime in MIMES_ACEITOS:
+        return True
+    if fname.endswith(EXTENSOES_ACEITAS):
+        return True
+    return False
+
+
+@router.post("/generate-from-sketch", response_model=LessonPlanOut, status_code=201)
+def generate_from_sketch(
+    texto: Optional[str] = Form(None),
+    etapa: str = Form(...),
+    ano: Optional[str] = Form(None),
+    serie: Optional[str] = Form(None),
+    referenciais: Optional[str] = Form(None),
+    paginas: Optional[List[UploadFile]] = File(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Gera um plano pedagógico completo a partir de um esboço.
+
+    Entrada (multipart/form-data):
+      - texto: string (opcional)
+      - etapa: "EI" | "EF" | "EM" (obrigatório)
+      - ano: string (opcional)
+      - serie: string (opcional)
+      - referenciais: string JSON (opcional, ex: '["BNCC","SAEPI"]')
+      - paginas: até 10 arquivos (jpg/png/webp/pdf/docx), 10 MB cada
+
+    Retorna: LessonPlanOut (o plano salvo em lesson_plans).
+    """
+    import json as _json
+
+    # ---------- Validações ----------
+    etapa_norm = (etapa or "").strip().upper()
+    if etapa_norm not in ("EI", "EF", "EM"):
+        raise HTTPException(
+            status_code=400,
+            detail="Etapa inválida. Use 'EI', 'EF' ou 'EM'.",
+        )
+
+    lista_paginas = list(paginas or [])
+
+    if not (texto and texto.strip()) and not lista_paginas:
+        raise HTTPException(
+            status_code=400,
+            detail="Envie um texto ou pelo menos um arquivo.",
+        )
+
+    if len(lista_paginas) > MAX_PAGINAS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Máximo de {MAX_PAGINAS} arquivos por geração.",
+        )
+
+    # Parse dos referenciais (vem como string JSON no multipart)
+    refs: List[str] = ["BNCC"]
+    if referenciais:
+        try:
+            refs_parsed = _json.loads(referenciais)
+            if isinstance(refs_parsed, list) and refs_parsed:
+                refs = [str(r) for r in refs_parsed if r]
+        except Exception:
+            pass
+
+    # ---------- Verificar créditos ----------
+    # Usa a mesma tabela de custo do "aula_que_funciona"
+    # (o multimodal consome 2x — feito logo abaixo)
+    pode, custo_base = verificar_creditos(
+        db,
+        str(current_user.id),
+        "aula_que_funciona",
+        diferenciado=False,
+    )
+    if not pode:
+        raise HTTPException(
+            status_code=402,
+            detail="Créditos insuficientes. Faça upgrade do seu plano para continuar.",
+        )
+
+    custo_total = custo_base * 2  # 2 créditos (multimodal)
+
+    # ---------- Ler os arquivos em bytes ----------
+    arquivos_bytes: List[dict] = []
+    for arq in lista_paginas:
+        try:
+            conteudo = arq.file.read()
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Erro ao ler arquivo '{arq.filename}': {e}",
+            )
+
+        if not conteudo:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Arquivo '{arq.filename}' está vazio.",
+            )
+
+        if len(conteudo) > MAX_TAMANHO_MB * 1024 * 1024:
+            mb = len(conteudo) / (1024 * 1024)
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Arquivo '{arq.filename}' tem {mb:.1f} MB. "
+                    f"Máximo: {MAX_TAMANHO_MB} MB por arquivo."
+                ),
+            )
+
+        if not _mime_aceito(arq.filename, arq.content_type):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Formato de '{arq.filename}' não aceito. "
+                    f"Use JPG, PNG, WEBP, PDF ou DOCX."
+                ),
+            )
+
+        arquivos_bytes.append({
+            "filename": arq.filename or "arquivo",
+            "mime_type": arq.content_type or "",
+            "data": conteudo,
+        })
+
+    # ---------- Chama o service ----------
+    try:
+        plan = generate_plano_from_sketch(
+            db=db,
+            user_id=str(current_user.id),
+            texto=texto,
+            etapa=etapa_norm,
+            ano=ano,
+            serie=serie,
+            referenciais=refs,
+            arquivos=arquivos_bytes,
+            user=current_user,
+        )
+    except Exception as e:
+        print(f"[Plano Completo] Erro: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao gerar o plano: {str(e)[:200]}",
+        )
+
+    # ---------- Consome créditos ----------
+    consumir_creditos(db, str(current_user.id), "aula_que_funciona", custo_total)
+
+    return plan

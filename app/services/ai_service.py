@@ -619,6 +619,54 @@ class AIService(BaseAIService):
             return {"erro": f"IA não configurada corretamente: {self._erro_gemini}"}
 
         return self._mock.generate_structured(task_type, payload, diferenciado=diferenciado)
+
+    def generate_structured_multimodal(
+        self,
+        task_type: str,
+        payload: Dict[str, Any],
+        parts_anexos: Optional[List[Any]] = None,
+        user=None,
+    ) -> Dict[str, Any]:
+        """
+        Geração estruturada MULTIMODAL (texto + imagens/PDF/DOCX).
+
+        Usa a chave do usuário quando cadastrada (Modo Turbo),
+        caindo para a chave da plataforma se não houver.
+
+        Args:
+            task_type: identificador (ex: 'plano_completo')
+            payload: dados textuais do formulário
+            parts_anexos: lista de types.Part (imagens/PDF) ou str (texto DOCX extraído)
+            user: instância do usuário (para multi-API key)
+
+        Returns:
+            Dict com o JSON estruturado devolvido pelo Gemini
+        """
+        # Multi-API key
+        gemini = self._gemini
+        if user is not None:
+            try:
+                from .gemini_service import get_gemini_service_for_user
+                gemini = get_gemini_service_for_user(user)
+            except Exception as e:
+                print(f"[AIService] Erro ao obter Gemini do usuário (multimodal): {e}")
+                gemini = self._gemini
+
+        if gemini:
+            try:
+                return gemini.generate_structured_multimodal(
+                    task_type=task_type,
+                    payload=payload,
+                    parts_anexos=parts_anexos,
+                )
+            except Exception as e:
+                print(f"[AIService] ERRO no Gemini (multimodal): {e}")
+                return {"erro": f"IA indisponível no momento: {str(e)}"}
+
+        if self._erro_gemini:
+            return {"erro": f"IA não configurada corretamente: {self._erro_gemini}"}
+
+        return {"erro": "Geração multimodal exige a IA real (Gemini). Mock não suportado."}
     
     def generate_structured_batch(
         self,

@@ -673,3 +673,146 @@ def increment_views(db: Session, plan_id: str) -> bool:
     plan.views = (plan.views or 0) + 1
     db.commit()
     return True
+
+
+# ============================================================
+# PLANO COM ROTEIRO — geração a partir de esboço (texto + arquivos)
+# ============================================================
+def generate_plano_from_sketch(
+    db: Session,
+    user_id: str,
+    texto: Optional[str] = None,
+    etapa: str = "EF",
+    ano: Optional[str] = None,
+    serie: Optional[str] = None,
+    referenciais: Optional[List[str]] = None,
+    arquivos: Optional[List[Dict[str, Any]]] = None,
+    user=None,
+) -> LessonPlan:
+    """
+    Gera um plano pedagógico completo a partir de um esboço.
+
+    Args:
+        texto: texto colado (opcional)
+        etapa: "EI" | "EF" | "EM"
+        ano: ano (opcional, ex: "5" ou "5º")
+        serie: série/turma (opcional, ex: "Pré II")
+        referenciais: lista (ex: ["BNCC", "Currículo do Piauí"])
+        arquivos: lista de dicts {filename, mime_type, data (bytes)}
+        user: instância do usuário (para multi-API key)
+
+    Returns:
+        LessonPlan salvo no banco
+    """
+    from google.genai import types as genai_types
+
+    ai = get_ai_service()
+
+    # ------------------------------------------------------------
+    # 1. Converte arquivos em Parts (imagens/PDF) ou texto (DOCX)
+    # ------------------------------------------------------------
+    parts_anexos: List[Any] = []
+
+    for arq in (arquivos or []):
+        try:
+            fname = str(arq.get("filename") or "arquivo")
+            mime = str(arq.get("mime_type") or "").lower().strip()
+            data = arq.get("data") or b""
+
+            if not data:
+                continue
+
+            fname_lower = fname.lower()
+
+            # DOCX: extrai texto e adiciona como Part de texto
+            if (
+                mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                or fname_lower.endswith(".docx")
+            ):
+                try:
+                    from docx import Document as _DocxDoc
+                    from io import BytesIO as _BytesIO
+                    doc = _DocxDoc(_BytesIO(data))
+                    texto_docx = "\n".join(
+                        p.text for p in doc.paragraphs if p.text.strip()
+                    )
+                    if texto_docx:
+                        parts_anexos.append(
+                            genai_types.Part.from_text(
+                                text=f"=== CONTEÚDO DO ARQUIVO '{fname}' ===\n{texto_docx}"
+                            )
+                        )
+                except Exception as e:
+                    print(f"[plano_completo] Erro ao extrair DOCX '{fname}': {e}")
+                continue
+
+            # Imagens e PDF: aceitos direto pelo Gemini
+            if mime.startswith("image/") or mime == "application/pdf":
+                parts_anexos.append(
+                    genai_types.Part.from_bytes(data=data, mime_type=mime)
+                )
+                continue
+
+            # Fallback por extensão para mime genérico (application/octet-stream)
+            if fname_lower.endswith((".jpg", ".jpeg")):
+                parts_anexos.append(genai_types.Part.from_bytes(data=data, mime_type="image/jpeg"))
+            elif fname_lower.endswith(".png"):
+                parts_anexos.append(genai_types.Part.from_bytes(data=data, mime_type="image/png"))
+            elif fname_lower.endswith(".webp"):
+                parts_anexos.append(genai_types.Part.from_bytes(data=data, mime_type="image/webp"))
+            elif fname_lower.endswith(".pdf"):
+                parts_anexos.append(genai_types.Part.from_bytes(data=data, mime_type="application/pdf"))
+        except Exception as e:
+            print(f"[plano_completo] Erro ao processar arquivo: {e}")
+            continue
+
+    # ------------------------------------------------------------
+    # 2. Monta payload para a IA
+    # ------------------------------------------------------------
+    payload: Dict[str, Any] = {
+        "texto": (texto or "").strip(),
+        "etapa": etapa,
+        "ano": ano or None,
+        "serie": serie or None,
+        "referenciais": referenciais or ["BNCC"],
+        "total_paginas": len(parts_anexos),
+    }
+
+    # ------------------------------------------------------------
+    # 3. Chama a IA (multimodal)
+    # ------------------------------------------------------------
+    structured_data = ai.generate_structured_multimodal(
+        task_type="plano_completo",
+        payload=payload,
+        parts_anexos=parts_anexos if parts_anexos else None,
+        user=user,
+    )
+
+    if isinstance(structured_data, dict) and structured_data.get("erro"):
+        raise Exception(structured_data["erro"])
+
+    # ------------------------------------------------------------
+    # 4. Salva em lesson_plans
+    # ------------------------------------------------------------
+    cab = (structured_data or {}).get("cabecalho", {}) or {}
+    titulo_final = cab.get("titulo") or (texto[:80] if texto else "Plano com Roteiro")
+
+    plan = LessonPlan(
+        user_id=user_id,
+        plan_type="plano_completo",
+        title=titulo_final,
+        subject=None,
+        grade=cab.get("turma") or serie,
+        content=(texto[:500] if texto else None),
+        objective=structured_data.get("objetivo_geral"),
+        structured_data=structured_data,
+        modo="plano_completo",
+        periodo_tipo=None,
+        periodo_inicio=None,
+        periodo_fim=None,
+        total_aulas=len((structured_data or {}).get("dias", [])),
+    )
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return plan
