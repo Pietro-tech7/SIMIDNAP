@@ -47,6 +47,18 @@ const PlanejadorSimidnape = () => {
       disponivel: true,
       cta: 'Abrir Modo Coordenação',
     },
+    {
+      id: 'plano_completo',
+      icone: '📋',
+      nome: 'Plano com Roteiro',
+      subtitulo: 'Envie seu esboço, receba o plano pronto',
+      descricao:
+        'Cole um texto ou envie foto do caderno, PDF ou Word. A IA lê o seu esboço e devolve um plano pedagógico completo alinhado à BNCC — com objetivo, dias, habilidades, recursos, avaliação e culminância. Baixe em PDF ou Word.',
+      cor: 'from-amber-500 to-orange-600',
+      rota: '/planejador/plano-completo',
+      disponivel: true,
+      cta: 'Abrir Plano com Roteiro',
+    },
   ];
 
   const textPrimary = { color: 'var(--theme-text-primary)' };

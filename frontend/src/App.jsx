@@ -13,6 +13,7 @@ import AulaQueFunciona from './pages/AulaQueFunciona';
 import PlanejadorSimidnape from './pages/PlanejadorSimidnape';
 import PlanejadorModoPlanejamento from './pages/PlanejadorModoPlanejamento';
 import PlanejadorModoCoordenacao from './pages/PlanejadorModoCoordenacao';
+import PlanoComRoteiro from './pages/PlanoComRoteiro';
 import MeusPlanejamentos from './pages/MeusPlanejamentos';
 import MeuAcervo from './pages/MeuAcervo';
 import Comunidade from './pages/Comunidade';
@@ -99,6 +100,7 @@ function AppRoutes() {
         <Route path="/planejador" element={<PlanejadorSimidnape />} />
         <Route path="/planejador/planejamento" element={<PlanejadorModoPlanejamento />} />
         <Route path="/planejador/coordenacao" element={<PlanejadorModoCoordenacao />} />
+        <Route path="/planejador/plano-completo" element={<PlanoComRoteiro />} />
         <Route path="/meus-planejamentos" element={<MeusPlanejamentos />} />
         <Route path="/meu-acervo" element={<MeuAcervo />} />
         <Route path="/comunidade" element={<Comunidade />} />
