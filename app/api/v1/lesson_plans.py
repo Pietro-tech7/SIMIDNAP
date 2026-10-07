@@ -460,6 +460,64 @@ def remove(
 
 
 # ============================================================
+# PLANO COM ROTEIRO — exportação em Word (.docx)
+# ============================================================
+@router.post("/export-word/{plan_id}")
+def export_plano_word(
+    plan_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Gera o .docx do plano (qualquer plan_type) salvo do usuário.
+    Retorna o arquivo como download.
+
+    Não consome créditos — apenas exporta o plano que já está salvo.
+    """
+    import re as _re
+    from fastapi import Response
+
+    plan = get_lesson_plan(db, str(current_user.id), plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plano não encontrado.")
+
+    sd = plan.structured_data or {}
+
+    # Se for plano_completo, delega para a função específica
+    if plan.plan_type == "plano_completo":
+        from ...services.word_service import gerar_word_plano_completo
+        try:
+            buffer = gerar_word_plano_completo(sd)
+        except Exception as e:
+            print(f"[Export Word] Erro plano_completo: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Erro ao gerar Word: {str(e)[:200]}",
+            )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Exportação em Word não suportada para plan_type '{plan.plan_type}'.",
+        )
+
+    # Nome do arquivo: slug do título
+    titulo = plan.title or "plano"
+    slug = _re.sub(r"[^a-z0-9]+", "_", titulo.lower()).strip("_")[:60] or "plano"
+    filename = f"{slug}_PLANO.docx"
+
+    return Response(
+        content=buffer.getvalue(),
+        media_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "wordprocessingml.document"
+        ),
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
+# ============================================================
 # PLANO COM ROTEIRO — geração a partir de esboço
 # Aceita texto colado E/OU até 10 arquivos (foto, PDF, DOCX)
 # ============================================================

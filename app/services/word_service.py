@@ -454,6 +454,441 @@ def gerar_word_gabarito(titulo, cabecalho, questoes):
             r2.font.size = Pt(10)
             p.paragraph_format.space_before = Pt(4)
 
+        buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+# ============================================================
+# PLANO COM ROTEIRO — Word editável (.docx)
+# ============================================================
+def gerar_word_plano_completo(plano):
+    """
+    Gera o .docx do PLANO PEDAGÓGICO COMPLETO.
+
+    Args:
+        plano: dicionário com o structured_data do plano, contendo:
+            - cabecalho: {titulo, periodo, turma, tema_geral, faixa_etaria, etapa, referenciais}
+            - objetivo_geral: string
+            - dias: [{data, titulo, conteudos, desenvolvimento, habilidades_bncc, objetivos}]
+            - literatura_infantil: {genero, atividades, habilidades_bncc}
+            - computacao: {tema, objetivo, desenvolvimento, habilidades_bncc}
+            - recursos: [strings]
+            - avaliacao: string
+            - culminancia: string
+            - reflexao_pos_aula: string
+
+    Retorna: BytesIO
+    """
+    doc = Document()
+
+    # Margens
+    for section in doc.sections:
+        section.top_margin = Cm(2)
+        section.bottom_margin = Cm(2)
+        section.left_margin = Cm(2)
+        section.right_margin = Cm(2)
+
+    # Cores da paleta SIMIDNAPE
+    AZUL = RGBColor(0x2C, 0x5F, 0x7C)
+    AZUL_CLARO = RGBColor(0xE8, 0xF0, 0xF5)
+    VERDE = RGBColor(0x5F, 0xA6, 0x8D)
+    OURO = RGBColor(0xD4, 0xA8, 0x43)
+    TEXTO_2 = RGBColor(0x6B, 0x6B, 0x6B)
+
+    cab = plano.get("cabecalho") or {}
+
+    # ============================================================
+    # CABEÇALHO INSTITUCIONAL
+    # ============================================================
+    # Marca SIMIDNAPE
+    p = doc.add_paragraph()
+    run = p.add_run("SIMIDNAPE")
+    run.bold = True
+    run.font.size = Pt(16)
+    run.font.color.rgb = AZUL
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_after = Pt(0)
+
+    p = doc.add_paragraph()
+    run = p.add_run("O Professor Inesquecível")
+    run.italic = True
+    run.font.size = Pt(9)
+    run.font.color.rgb = TEXTO_2
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_after = Pt(2)
+
+    _adicionar_linha_separadora(doc)
+
+    # ============================================================
+    # TÍTULO DO PLANO
+    # ============================================================
+    p = doc.add_paragraph()
+    run = p.add_run("PLANO PEDAGÓGICO COMPLETO")
+    run.bold = True
+    run.font.size = Pt(10)
+    run.font.color.rgb = VERDE
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.space_after = Pt(2)
+
+    titulo = cab.get("titulo") or "Plano com Roteiro"
+    p = doc.add_paragraph()
+    run = p.add_run(titulo)
+    run.bold = True
+    run.font.size = Pt(15)
+    run.font.color.rgb = AZUL
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_after = Pt(8)
+
+    # ============================================================
+    # METADADOS DO CABEÇALHO
+    # ============================================================
+    metadados = []
+    if cab.get("periodo"):       metadados.append(("Período", cab["periodo"]))
+    if cab.get("turma"):         metadados.append(("Turma", cab["turma"]))
+    if cab.get("faixa_etaria"):  metadados.append(("Faixa etária", cab["faixa_etaria"]))
+    if cab.get("etapa"):         metadados.append(("Etapa", cab["etapa"]))
+    if cab.get("tema_geral"):    metadados.append(("Tema", cab["tema_geral"]))
+    refs = cab.get("referenciais")
+    if refs:
+        metadados.append(("Referenciais", ", ".join([str(r) for r in refs])))
+
+    if metadados:
+        table = doc.add_table(rows=len(metadados), cols=2)
+        table.autofit = False
+        table.columns[0].width = Cm(4)
+        table.columns[1].width = Cm(13)
+        _remover_bordas_tabela(table)
+
+        for i, (label, valor) in enumerate(metadados):
+            row = table.rows[i]
+            row.cells[0].width = Cm(4)
+            row.cells[1].width = Cm(13)
+
+            p_lbl = row.cells[0].paragraphs[0]
+            run = p_lbl.add_run(f"{label}:")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            p_lbl.paragraph_format.space_after = Pt(1)
+
+            p_val = row.cells[1].paragraphs[0]
+            run = p_val.add_run(str(valor))
+            run.font.size = Pt(10)
+            p_val.paragraph_format.space_after = Pt(1)
+
+    doc.add_paragraph()
+
+    # ============================================================
+    # OBJETIVO GERAL
+    # ============================================================
+    if plano.get("objetivo_geral"):
+        p = doc.add_paragraph()
+        run = p.add_run("OBJETIVO GERAL")
+        run.bold = True
+        run.font.size = Pt(12)
+        run.font.color.rgb = AZUL
+        p.paragraph_format.space_after = Pt(4)
+
+        p = doc.add_paragraph()
+        run = p.add_run(plano["objetivo_geral"])
+        run.font.size = Pt(11)
+        p.paragraph_format.space_after = Pt(8)
+        p.paragraph_format.line_spacing = 1.15
+
+    # ============================================================
+    # DIAS
+    # ============================================================
+    dias = plano.get("dias") or []
+    for dia in dias:
+        # Cabeçalho do dia (faixa colorida)
+        table = doc.add_table(rows=1, cols=1)
+        table.autofit = False
+        table.columns[0].width = Cm(17)
+        cell = table.rows[0].cells[0]
+        cell.width = Cm(17)
+
+        # Fundo azul
+        shd = OxmlElement("w:shd")
+        shd.set(qn("w:val"), "clear")
+        shd.set(qn("w:color"), "auto")
+        shd.set(qn("w:fill"), "2C5F7C")
+        cell._tc.get_or_add_tcPr().append(shd)
+
+        p = cell.paragraphs[0]
+        run = p.add_run(f"{dia.get('data', '')}  ·  {dia.get('titulo', '')}")
+        run.bold = True
+        run.font.size = Pt(12)
+        run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        p.paragraph_format.space_after = Pt(2)
+
+        doc.add_paragraph()
+
+        # Conteúdos
+        if dia.get("conteudos"):
+            p = doc.add_paragraph()
+            run = p.add_run("Conteúdos: ")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            run2 = p.add_run(" · ".join([str(c) for c in dia["conteudos"]]))
+            run2.font.size = Pt(10)
+            p.paragraph_format.space_after = Pt(3)
+
+        # Desenvolvimento
+        if dia.get("desenvolvimento"):
+            p = doc.add_paragraph()
+            run = p.add_run("Desenvolvimento:")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            p.paragraph_format.space_after = Pt(1)
+
+            p = doc.add_paragraph()
+            run = p.add_run(dia["desenvolvimento"])
+            run.font.size = Pt(10)
+            p.paragraph_format.space_after = Pt(5)
+            p.paragraph_format.line_spacing = 1.15
+
+        # Habilidades BNCC
+        habs = dia.get("habilidades_bncc") or []
+        if habs:
+            p = doc.add_paragraph()
+            run = p.add_run("Habilidades BNCC:")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            p.paragraph_format.space_after = Pt(1)
+
+            for h in habs:
+                cod = h.get("codigo", "") if isinstance(h, dict) else ""
+                txt = h.get("texto", "") if isinstance(h, dict) else ""
+                p = doc.add_paragraph()
+                run = p.add_run(f"  {cod} — ")
+                run.bold = True
+                run.font.size = Pt(10)
+                run.font.color.rgb = VERDE
+                run2 = p.add_run(txt)
+                run2.font.size = Pt(10)
+                p.paragraph_format.space_after = Pt(1)
+                p.paragraph_format.left_indent = Cm(0.5)
+
+        # Objetivos
+        if dia.get("objetivos"):
+            p = doc.add_paragraph()
+            run = p.add_run("Objetivos:")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            p.paragraph_format.space_after = Pt(1)
+
+            for obj in dia["objetivos"]:
+                p = doc.add_paragraph()
+                run = p.add_run(f"  • {obj}")
+                run.font.size = Pt(10)
+                p.paragraph_format.space_after = Pt(1)
+                p.paragraph_format.left_indent = Cm(0.5)
+
+        doc.add_paragraph()
+
+    # ============================================================
+    # LITERATURA INFANTIL
+    # ============================================================
+    lit = plano.get("literatura_infantil") or {}
+    if lit.get("genero") or lit.get("atividades"):
+        p = doc.add_paragraph()
+        run = p.add_run("LITERATURA INFANTIL E PRODUÇÃO TEXTUAL")
+        run.bold = True
+        run.font.size = Pt(12)
+        run.font.color.rgb = AZUL
+        p.paragraph_format.space_after = Pt(4)
+
+        if lit.get("genero"):
+            p = doc.add_paragraph()
+            run = p.add_run("Gênero textual: ")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            run2 = p.add_run(lit["genero"])
+            run2.font.size = Pt(10)
+            p.paragraph_format.space_after = Pt(2)
+
+        if lit.get("atividades"):
+            p = doc.add_paragraph()
+            run = p.add_run("Atividades:")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            p.paragraph_format.space_after = Pt(1)
+
+            for at in lit["atividades"]:
+                p = doc.add_paragraph()
+                run = p.add_run(f"  • {at}")
+                run.font.size = Pt(10)
+                p.paragraph_format.space_after = Pt(1)
+                p.paragraph_format.left_indent = Cm(0.5)
+
+        for h in (lit.get("habilidades_bncc") or []):
+            cod = h.get("codigo", "") if isinstance(h, dict) else ""
+            txt = h.get("texto", "") if isinstance(h, dict) else ""
+            p = doc.add_paragraph()
+            run = p.add_run(f"  {cod} — ")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = VERDE
+            run2 = p.add_run(txt)
+            run2.font.size = Pt(10)
+            p.paragraph_format.space_after = Pt(1)
+            p.paragraph_format.left_indent = Cm(0.5)
+
+        doc.add_paragraph()
+
+    # ============================================================
+    # COMPUTAÇÃO
+    # ============================================================
+    comp = plano.get("computacao") or {}
+    if comp.get("tema"):
+        p = doc.add_paragraph()
+        run = p.add_run("COMPUTAÇÃO")
+        run.bold = True
+        run.font.size = Pt(12)
+        run.font.color.rgb = AZUL
+        p.paragraph_format.space_after = Pt(4)
+
+        if comp.get("tema"):
+            p = doc.add_paragraph()
+            run = p.add_run("Tema: ")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            run2 = p.add_run(comp["tema"])
+            run2.font.size = Pt(10)
+            p.paragraph_format.space_after = Pt(2)
+
+        if comp.get("objetivo"):
+            p = doc.add_paragraph()
+            run = p.add_run("Objetivo: ")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            run2 = p.add_run(comp["objetivo"])
+            run2.font.size = Pt(10)
+            p.paragraph_format.space_after = Pt(2)
+
+        if comp.get("desenvolvimento"):
+            p = doc.add_paragraph()
+            run = p.add_run("Desenvolvimento: ")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = AZUL
+            run2 = p.add_run(comp["desenvolvimento"])
+            run2.font.size = Pt(10)
+            p.paragraph_format.space_after = Pt(3)
+            p.paragraph_format.line_spacing = 1.15
+
+        for h in (comp.get("habilidades_bncc") or []):
+            cod = h.get("codigo", "") if isinstance(h, dict) else ""
+            txt = h.get("texto", "") if isinstance(h, dict) else ""
+            p = doc.add_paragraph()
+            run = p.add_run(f"  {cod} — ")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = VERDE
+            run2 = p.add_run(txt)
+            run2.font.size = Pt(10)
+            p.paragraph_format.space_after = Pt(1)
+            p.paragraph_format.left_indent = Cm(0.5)
+
+        doc.add_paragraph()
+
+    # ============================================================
+    # RECURSOS
+    # ============================================================
+    if plano.get("recursos"):
+        p = doc.add_paragraph()
+        run = p.add_run("RECURSOS")
+        run.bold = True
+        run.font.size = Pt(12)
+        run.font.color.rgb = AZUL
+        p.paragraph_format.space_after = Pt(4)
+
+        p = doc.add_paragraph()
+        run = p.add_run(" · ".join([str(r) for r in plano["recursos"]]))
+        run.font.size = Pt(10)
+        p.paragraph_format.space_after = Pt(8)
+        p.paragraph_format.line_spacing = 1.15
+
+    # ============================================================
+    # AVALIAÇÃO
+    # ============================================================
+    if plano.get("avaliacao"):
+        p = doc.add_paragraph()
+        run = p.add_run("AVALIAÇÃO")
+        run.bold = True
+        run.font.size = Pt(12)
+        run.font.color.rgb = AZUL
+        p.paragraph_format.space_after = Pt(4)
+
+        p = doc.add_paragraph()
+        run = p.add_run(plano["avaliacao"])
+        run.font.size = Pt(10)
+        p.paragraph_format.space_after = Pt(8)
+        p.paragraph_format.line_spacing = 1.15
+
+    # ============================================================
+    # CULMINÂNCIA
+    # ============================================================
+    if plano.get("culminancia"):
+        p = doc.add_paragraph()
+        run = p.add_run("CULMINÂNCIA")
+        run.bold = True
+        run.font.size = Pt(12)
+        run.font.color.rgb = AZUL
+        p.paragraph_format.space_after = Pt(4)
+
+        p = doc.add_paragraph()
+        run = p.add_run(plano["culminancia"])
+        run.font.size = Pt(10)
+        p.paragraph_format.space_after = Pt(8)
+        p.paragraph_format.line_spacing = 1.15
+
+    # ============================================================
+    # REFLEXÃO PÓS-AULA (espaço para escrever)
+    # ============================================================
+    p = doc.add_paragraph()
+    run = p.add_run("REFLEXÃO PÓS-AULA")
+    run.bold = True
+    run.font.size = Pt(12)
+    run.font.color.rgb = OURO
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.space_after = Pt(2)
+
+    p = doc.add_paragraph()
+    run = p.add_run(
+        "Espaço reservado para o professor registrar, após o período, "
+        "o que funcionou bem e o que pode ser ajustado."
+    )
+    run.italic = True
+    run.font.size = Pt(9)
+    run.font.color.rgb = TEXTO_2
+    p.paragraph_format.space_after = Pt(6)
+
+    # 5 linhas em branco para escrever
+    for _ in range(5):
+        p = doc.add_paragraph()
+        pPr = p._p.get_or_add_pPr()
+        pBdr = OxmlElement("w:pBdr")
+        bottom = OxmlElement("w:bottom")
+        bottom.set(qn("w:val"), "single")
+        bottom.set(qn("w:sz"), "4")
+        bottom.set(qn("w:space"), "1")
+        bottom.set(qn("w:color"), "CCCCCC")
+        pBdr.append(bottom)
+        pPr.append(pBdr)
+        p.paragraph_format.space_after = Pt(8)
+
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)
