@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from .inclusion_service import gerar_adaptacoes_inclusivas
 
 
