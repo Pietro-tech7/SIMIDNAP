@@ -41,9 +41,78 @@ function formatarBytes(bytes) {
   return `${kb.toFixed(0)} KB`;
 }
 
+// ============================================================
+// COMPRESSÃO DE IMAGEM (client-side, antes de enviar)
+// Reduz fotos grandes de celular para caber tranquilo no upload.
+// ============================================================
+const LADO_MAXIMO = 1600;   // px no maior lado
+const QUALIDADE = 0.85;     // 0 a 1
+
+function comprimirImagem(file) {
+  return new Promise((resolve) => {
+    // Só comprime imagens (PDF e DOCX passam direto)
+    if (!file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+    // Se já é pequena, não mexe
+    if (file.size <= 500 * 1024) {
+      resolve(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        const maior = Math.max(width, height);
+        if (maior > LADO_MAXIMO) {
+          const fator = LADO_MAXIMO / maior;
+          width = Math.round(width * fator);
+          height = Math.round(height * fator);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            // Se comprimiu e ficou maior (raro), devolve original
+            if (blob.size >= file.size) {
+              resolve(file);
+              return;
+            }
+            const nomeBase = file.name.replace(/\.[^.]+$/, '');
+            const novoFile = new File([blob], `${nomeBase}.jpg`, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(novoFile);
+          },
+          'image/jpeg',
+          QUALIDADE
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
 const PlanoComRoteiro = () => {
   const { user } = useAuth();
-  const inputRef = useRef(null);
+  const inputRef = useRef(null);          // escolher arquivo (input múltiplo)
+  const inputCameraRef = useRef(null);    // tirar foto (câmera traseira)
+  const inputGaleriaRef = useRef(null);   // escolher da galeria
 
   const [texto, setTexto] = useState('');
   const [arquivos, setArquivos] = useState([]);        // [{file, nome, tamanho}]
@@ -53,6 +122,7 @@ const PlanoComRoteiro = () => {
   const [referenciais, setReferenciais] = useState(['BNCC']);
 
   const [gerando, setGerando] = useState(false);
+  const [progresso, setProgresso] = useState(0);         // 0-100 (animação visual)
   const [erro, setErro] = useState('');
   const [resultado, setResultado] = useState(null);
 
@@ -64,7 +134,7 @@ const PlanoComRoteiro = () => {
   // ============================================================
   const podeGerar = () => (texto.trim().length >= 20 || arquivos.length > 0);
 
-  const handleArquivos = (e) => {
+  const handleArquivos = async (e) => {
     setErro('');
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -83,9 +153,18 @@ const PlanoComRoteiro = () => {
         rejeitados.push(`${f.name}: maior que ${MAX_MB} MB`);
         continue;
       }
-      aceitos.push(f);
+
+      // Comprime imagens antes de anexar
+      let final = f;
+      try {
+        final = await comprimirImagem(f);
+      } catch {
+        final = f;
+      }
+      aceitos.push(final);
     }
 
+    // Atualiza o estado com base no total acumulado
     setArquivos((prev) => {
       const combinado = [...prev.map((a) => a.file), ...aceitos];
       const unico = combinado.slice(0, MAX_PAGINAS);
@@ -93,12 +172,24 @@ const PlanoComRoteiro = () => {
     });
 
     if (rejeitados.length) {
-      setErro(
-        `Alguns arquivos foram ignorados:\n${rejeitados.join('\n')}`
-      );
+      setErro(`Alguns arquivos foram ignorados:\n${rejeitados.join('\n')}`);
     }
 
+    // Limpa os 3 inputs
     if (inputRef.current) inputRef.current.value = '';
+    if (inputCameraRef.current) inputCameraRef.current.value = '';
+    if (inputGaleriaRef.current) inputGaleriaRef.current.value = '';
+  };
+
+  // Move um arquivo para cima/baixo na lista (reordenar)
+  const moverArquivo = (idx, direcao) => {
+    setArquivos((prev) => {
+      const arr = [...prev];
+      const novoIdx = direcao === 'up' ? idx - 1 : idx + 1;
+      if (novoIdx < 0 || novoIdx >= arr.length) return prev;
+      [arr[idx], arr[novoIdx]] = [arr[novoIdx], arr[idx]];
+      return arr;
+    });
   };
 
   const removerArquivo = (idx) => {
@@ -137,6 +228,16 @@ const PlanoComRoteiro = () => {
       return;
     }
 
+    // Barra de progresso visual (animação até 90% e completa no fim)
+    setProgresso(5);
+    const intervalo = setInterval(() => {
+      setProgresso((p) => {
+        if (p >= 90) return p;
+        const passo = p < 40 ? 4 : p < 70 ? 2 : 0.8;
+        return Math.min(90, p + passo);
+      });
+    }, 700);
+
     const formData = new FormData();
     formData.append('texto', texto.trim());
     formData.append('etapa', etapa);
@@ -161,7 +262,12 @@ const PlanoComRoteiro = () => {
         'Erro ao gerar o plano. Tente novamente.';
       setErro(msg);
     } finally {
-      setGerando(false);
+      clearInterval(intervalo);
+      setProgresso(100);
+      setTimeout(() => {
+        setGerando(false);
+        setProgresso(0);
+      }, 500);
     }
   };
 
@@ -331,6 +437,23 @@ const PlanoComRoteiro = () => {
               Até {MAX_PAGINAS} arquivos · {MAX_MB} MB cada · JPG, PNG, WEBP, PDF, DOCX
             </p>
 
+            {/* 3 inputs escondidos — um por ação */}
+            <input
+              ref={inputCameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleArquivos}
+              className="hidden"
+            />
+            <input
+              ref={inputGaleriaRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleArquivos}
+              className="hidden"
+            />
             <input
               ref={inputRef}
               type="file"
@@ -340,37 +463,112 @@ const PlanoComRoteiro = () => {
               className="hidden"
             />
 
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              disabled={arquivos.length >= MAX_PAGINAS}
-              className="w-full border-2 border-dashed rounded-xl p-6 text-center transition disabled:opacity-50"
-              style={{ borderColor: BORDA, backgroundColor: CREME }}
-            >
-              <div className="text-4xl mb-2">📷</div>
-              <p className="text-sm font-medium" style={{ color: TEXTO }}>
-                {arquivos.length >= MAX_PAGINAS
-                  ? `Máximo de ${MAX_PAGINAS} arquivos atingido`
-                  : 'Clique para escolher arquivos'}
+            {/* 3 botões explícitos */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => inputCameraRef.current?.click()}
+                disabled={arquivos.length >= MAX_PAGINAS}
+                className="border-2 border-dashed rounded-xl p-4 text-center transition disabled:opacity-50 hover:shadow-sm"
+                style={{ borderColor: BORDA, backgroundColor: CREME }}
+              >
+                <div className="text-3xl mb-1">📷</div>
+                <p className="text-sm font-semibold" style={{ color: TEXTO }}>
+                  Tirar foto
+                </p>
+                <p className="text-[11px] mt-1" style={{ color: TEXTO_2 }}>
+                  Abre a câmera do celular
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => inputGaleriaRef.current?.click()}
+                disabled={arquivos.length >= MAX_PAGINAS}
+                className="border-2 border-dashed rounded-xl p-4 text-center transition disabled:opacity-50 hover:shadow-sm"
+                style={{ borderColor: BORDA, backgroundColor: CREME }}
+              >
+                <div className="text-3xl mb-1">🖼️</div>
+                <p className="text-sm font-semibold" style={{ color: TEXTO }}>
+                  Da galeria
+                </p>
+                <p className="text-[11px] mt-1" style={{ color: TEXTO_2 }}>
+                  Já tem as fotos salvas
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                disabled={arquivos.length >= MAX_PAGINAS}
+                className="border-2 border-dashed rounded-xl p-4 text-center transition disabled:opacity-50 hover:shadow-sm"
+                style={{ borderColor: BORDA, backgroundColor: CREME }}
+              >
+                <div className="text-3xl mb-1">📄</div>
+                <p className="text-sm font-semibold" style={{ color: TEXTO }}>
+                  PDF ou Word
+                </p>
+                <p className="text-[11px] mt-1" style={{ color: TEXTO_2 }}>
+                  Arquivo pronto
+                </p>
+              </button>
+            </div>
+
+            {arquivos.length >= MAX_PAGINAS && (
+              <p className="text-xs mt-2 text-center" style={{ color: CORAL }}>
+                Máximo de {MAX_PAGINAS} arquivos atingido.
               </p>
-              <p className="text-xs mt-1" style={{ color: TEXTO_2 }}>
-                No celular, escolha a câmera para fotografar o caderno
-              </p>
-            </button>
+            )}
 
             {/* Preview dos arquivos */}
             {arquivos.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <p className="text-xs font-semibold" style={{ color: TEXTO_2 }}>
-                  {arquivos.length} arquivo(s) anexado(s)
+              <div className="mt-4">
+                <p className="text-xs font-semibold mb-2" style={{ color: TEXTO_2 }}>
+                  {arquivos.length} de {MAX_PAGINAS} arquivo(s) · ordem importa
                 </p>
-                {arquivos.map((a, i) => (
+
+                {arquivos.length > 6 && (
                   <div
-                    key={i}
-                    className="flex items-center justify-between rounded-lg border p-2"
-                    style={{ borderColor: BORDA, backgroundColor: BRANCO }}
+                    className="rounded-lg p-2 mb-2 text-[11px] border"
+                    style={{
+                      backgroundColor: OURO_CLARO,
+                      borderColor: OURO,
+                      color: TEXTO,
+                    }}
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                    ⚠️ Muitas páginas. A geração pode levar até 90s. Se demorar muito, divida em 2 gerações.
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {arquivos.map((a, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 rounded-lg border p-2"
+                      style={{ borderColor: BORDA, backgroundColor: BRANCO }}
+                    >
+                      {/* Setas de reordenar */}
+                      <div className="flex flex-col flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => moverArquivo(i, 'up')}
+                          disabled={i === 0}
+                          className="text-[10px] leading-none px-1 disabled:opacity-20"
+                          style={{ color: TEXTO_2 }}
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moverArquivo(i, 'down')}
+                          disabled={i === arquivos.length - 1}
+                          className="text-[10px] leading-none px-1 disabled:opacity-20"
+                          style={{ color: TEXTO_2 }}
+                        >
+                          ▼
+                        </button>
+                      </div>
+
                       <span className="text-xl flex-shrink-0">
                         {a.nome.toLowerCase().endsWith('.pdf')
                           ? '📄'
@@ -378,6 +576,7 @@ const PlanoComRoteiro = () => {
                           ? '📝'
                           : '🖼️'}
                       </span>
+
                       <div className="min-w-0 flex-1">
                         <p
                           className="text-xs font-medium truncate"
@@ -389,17 +588,18 @@ const PlanoComRoteiro = () => {
                           {formatarBytes(a.tamanho)}
                         </p>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removerArquivo(i)}
+                        className="text-xs px-2 py-1 flex-shrink-0"
+                        style={{ color: CORAL }}
+                      >
+                        ✕
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removerArquivo(i)}
-                      className="text-xs px-2 py-1 flex-shrink-0"
-                      style={{ color: CORAL }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -548,6 +748,30 @@ const PlanoComRoteiro = () => {
                 {gerando ? '✨ Lendo seu esboço...' : '✨ Gerar plano com roteiro'}
               </button>
             </div>
+
+            {gerando && (
+              <div className="mt-5">
+                <div className="flex items-center justify-between mb-2 text-xs text-white/90">
+                  <span>
+                    {progresso < 20 && '📖 Lendo seu esboço...'}
+                    {progresso >= 20 && progresso < 45 && '🔍 Identificando a estrutura do plano...'}
+                    {progresso >= 45 && progresso < 70 && '📚 Buscando habilidades BNCC...'}
+                    {progresso >= 70 && progresso < 90 && '✍️ Estruturando o roteiro dos dias...'}
+                    {progresso >= 90 && '✨ Finalizando o plano...'}
+                  </span>
+                  <span className="font-mono">{Math.round(progresso)}%</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-white/30 overflow-hidden">
+                  <div
+                    className="h-full bg-white transition-all duration-500"
+                    style={{ width: `${progresso}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-white/70 mt-2 italic">
+                  Isso pode levar entre 30 e 90 segundos. Não feche a página.
+                </p>
+              </div>
+            )}
           </div>
         </>
       )}
