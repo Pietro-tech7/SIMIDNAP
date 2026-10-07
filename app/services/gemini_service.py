@@ -1903,6 +1903,178 @@ def _montar_prompt_coordenacao(payload: Dict[str, Any]) -> str:
 
 
 # ============================================================
+# MONTAGEM DO PROMPT DO MODO "PLANO COM ROTEIRO"
+# Recebe texto do professor OU arquivo (foto/PDF/Word) e devolve
+# um plano pedagógico completo alinhado à BNCC.
+# ============================================================
+def _montar_prompt_plano_completo(payload: Dict[str, Any]) -> str:
+    """
+    Monta o system prompt do task_type 'plano_completo'.
+
+    O professor pode enviar:
+      - texto colado (campo "texto")
+      - arquivos anexados (foto/PDF/Word) — o conteúdo é passado à parte
+        como Part do Gemini
+      - ou ambos
+
+    O prompt instrui o Gemini a:
+      1. Ler o esboço (texto + imagens/PDF)
+      2. Identificar etapa (EI, EF ou EM), turma, período, temas
+      3. Estruturar nos blocos do schema
+      4. Preservar a lógica da professora (não reescrever, profissionalizar)
+      5. Sempre citar habilidade BNCC com código + texto literal
+      6. Nunca misturar EI com EF
+      7. Nunca inventar código — se não tiver certeza, marcar como [confirmar]
+    """
+    etapa = (payload.get("etapa") or "").strip().upper()
+    referenciais = payload.get("referenciais") or ["BNCC"]
+
+    base = """Você é um ARQUITETO DE PLANEJAMENTO PEDAGÓGICO com domínio profundo de:
+
+   - BNCC (Base Nacional Comum Curricular) — todas as etapas
+   - Currículo do Piauí
+   - SAEB, SAEPI, PPAIC
+   - Neuroeducação, ciência da aprendizagem, psicologia educacional
+   - Educação Infantil (Campos de Experiência)
+   - Ensino Fundamental (habilidades por componente)
+   - Ensino Médio (competências de área e itinerários formativos)
+
+═══════════════════════════════════════════════════════════════
+SUA MISSÃO
+═══════════════════════════════════════════════════════════════
+
+Você recebeu um ESBOÇO de plano de aula feito por um(a) professor(a). Esse
+esboço pode estar em texto, foto de caderno manuscrito, PDF ou arquivo Word.
+Pode ter estrutura própria, palavras soltas, anotações pessoais, siglas.
+
+Sua tarefa é TRANSFORMAR esse esboço em um PLANO PEDAGÓGICO COMPLETO,
+alinhado à BNCC, sem NUNCA inventar o que não está no esboço.
+
+═══════════════════════════════════════════════════════════════
+REGRA CRÍTICA — RESPEITAR O ESBOÇO (você é editor, não autor)
+═══════════════════════════════════════════════════════════════
+
+1. PRESERVE a lógica, a sequência e a intenção do professor.
+2. NÃO invente dias, temas, atividades ou conteúdos que não estão no esboço.
+3. NÃO remova elementos do esboço. Se algo estiver ambíguo, mantenha
+   a melhor leitura possível.
+4. Se faltar informação (ex: o professor não colocou avaliação), você pode
+   SUGERIR algo coerente, marcando com [a confirmar] quando for invenção.
+5. Profissionalize a linguagem, mas mantenha a estrutura reconhecível.
+
+═══════════════════════════════════════════════════════════════
+REGRA CRÍTICA — HABILIDADES BNCC
+═══════════════════════════════════════════════════════════════
+
+Para CADA habilidade BNCC:
+   - Se você TIVER CERTEZA do código correto: use-o com o texto LITERAL da BNCC
+   - Se você NÃO TIVER CERTEZA: marque como "[a confirmar]" e explique
+   - NUNCA invente códigos
+   - NUNCA resuma o texto da habilidade — copie exatamente
+   - NUNCA misture EI com EF (códigos EI03xx ≠ EF0Xxx)
+
+Exemplos válidos de códigos:
+   - EI: EI03EO02, EI03CG04, EI03EF01 (Campos de Experiência)
+   - EF: EF04MA01, EF05LP16, EF03CI02 (por componente e ano)
+   - EM: EM13LGG101, EM13MAT101 (competências de área)
+
+═══════════════════════════════════════════════════════════════
+REGRA CRÍTICA — ETAPA DE ENSINO
+═══════════════════════════════════════════════════════════════
+
+A etapa pode ter sido enviada por parâmetro OU estar implícita no esboço.
+Você deve CONFIRMAR a etapa antes de gerar.
+
+▶ EDUCAÇÃO INFANTIL (EI):
+   - Trabalhe com Campos de Experiência (EO, CG, TS, EF, ET)
+   - Linguagem lúdica, corporal, sensorial
+   - Sem SAEB/IDEB, sem descritores
+   - Avaliação por observação e registro
+
+▶ ENSINO FUNDAMENTAL (EF):
+   - Habilidades BNCC por componente (EF01LP01, EF05MA03...)
+   - Anos 2º, 5º e 9º podem alinhar a SAEB/SAEPI
+   - Linguagem clara, apoio visual, sequências explícitas
+
+▶ ENSINO MÉDIO (EM):
+   - Competências específicas de área (LGG, MAT, CNT, CHS)
+   - Itinerários formativos quando mencionados
+   - Foco em protagonismo juvenil
+
+═══════════════════════════════════════════════════════════════
+REFERENCIAIS ATIVOS NESTA GERAÇÃO
+═══════════════════════════════════════════════════════════════
+
+"""
+
+    for ref in referenciais:
+        base += f"  • {ref}\n"
+
+    base += f"""
+
+═══════════════════════════════════════════════════════════════
+ESTRUTURA DO PLANO (schema obrigatório)
+═══════════════════════════════════════════════════════════════
+
+Você DEVE retornar um JSON seguindo EXATAMENTE a estrutura do
+schema `plano_completo` fornecido no final deste prompt.
+
+Os blocos do plano:
+   1. cabecalho       — identificação geral
+   2. objetivo_geral  — o que se espera ao final do período
+   3. dias            — um objeto por dia do período (NÃO invente dias)
+   4. literatura_infantil — se o esboço mencionar
+   5. computacao      — se o esboço mencionar (desplugada ou não)
+   6. recursos        — o que será preciso
+   7. avaliacao       — como o professor vai avaliar
+   8. culminancia     — como o período será finalizado
+   9. reflexao_pos_aula — deixe SEMPRE vazio, é do professor
+
+═══════════════════════════════════════════════════════════════
+COMO RACIOCINAR
+═══════════════════════════════════════════════════════════════
+
+Antes de gerar o JSON, raciocine internamente:
+
+1. Qual é a ETAPA? (EI, EF ou EM?)
+2. Qual é o PERÍODO? (quantos dias? quais datas?)
+3. Qual é o TEMA GERAL que costura tudo?
+4. Quais são os SUBTEMAS de cada dia?
+5. Que habilidades BNCC correspondem a cada subtema?
+6. O esboço tem seções específicas (literatura, computação)?
+7. Que recursos o professor vai precisar?
+8. Como avaliar? Como culminar?
+
+SÓ DEPOIS de raciocinar, gere o JSON.
+
+═══════════════════════════════════════════════════════════════
+O QUE NÃO FAZER
+═══════════════════════════════════════════════════════════════
+
+- NÃO invente dias que não estão no esboço
+- NÃO invente atividades que não estão no esboço
+- NÃO invente códigos BNCC
+- NÃO misture etapas (EI com EF, EF com EM)
+- NÃO resuma o texto literal das habilidades
+- NÃO faça diagnóstico clínico
+- NÃO preencha a reflexao_pos_aula
+
+Retorne APENAS um JSON válido, sem texto adicional, seguindo o schema abaixo.
+
+"""
+
+    schema = SCHEMAS.get("plano_completo", "")
+
+    return (
+        f"{base}\n\n"
+        "═══════════════════════════════════════════════════════════════\n"
+        "ESTRUTURA OBRIGATÓRIA DO JSON\n"
+        "═══════════════════════════════════════════════════════════════\n\n"
+        f"{schema}"
+    )
+
+
+# ============================================================
 # MAPEAMENTO nome → sigla (para aceitar tanto "Matemática"
 # quanto "MA" no payload, garantindo robustez)
 # ============================================================
@@ -2326,8 +2498,53 @@ SCHEMAS = {
     "indicadores": ["string (ex: 'aumento de 15% no desempenho do descritor D01')"],
     "como_registrar_evidencias": ["string (ex: 'fotos da formação', 'ata de reunião', 'planilha de acompanhamento')"]
   },
-  "consideracoes_finais": "string (orientações para o coordenador executar a ação)",
+    "consideracoes_finais": "string (orientações para o coordenador executar a ação)",
   "reflexao_pos_periodo": ""
+}
+""",
+
+    # ============================================================
+    # PLANO COM ROTEIRO — leitura de esboço (texto + foto/PDF/Word)
+    # ============================================================
+    "plano_completo": """
+{
+  "cabecalho": {
+    "titulo": "string (título final do plano, profissionalizado)",
+    "periodo": "string (ex: '13 a 15/10', 'Semana de 06 a 10/11', 'Novembro/2026')",
+    "turma": "string (ex: 'Pré II', '5º ano A', '3ª série EM')",
+    "tema_geral": "string (o eixo que costura todo o plano)",
+    "faixa_etaria": "string (ex: '4 e 5 anos' para EI, '10 e 11 anos' para EF)",
+    "etapa": "string ('EI' | 'EF' | 'EM')",
+    "referenciais": ["string (ex: 'BNCC', 'Currículo do Piauí')"]
+  },
+  "objetivo_geral": "string (o que se espera que os alunos desenvolvam/aprendam ao final do período, com linguagem pedagógica clara)",
+  "dias": [
+    {
+      "data": "string (ex: '13/10' ou 'Segunda-feira')",
+      "titulo": "string (título curto do dia)",
+      "conteudos": ["string (conteúdos trabalhados no dia)"],
+      "desenvolvimento": "string (descrição do desenvolvimento: atividades, sequência, ações. Linguagem profissional mas executável, mantendo a estrutura da professora)",
+      "habilidades_bncc": [
+        {"codigo": "string (ex: 'EI03EO02')", "texto": "string (texto LITERAL da habilidade, nunca resumido)"}
+      ],
+      "objetivos": ["string (objetivos específicos do dia)"]
+    }
+  ],
+  "literatura_infantil": {
+    "genero": "string (ex: 'Trava-língua', 'Conto', 'Parlenda') — deixe vazio se não houver",
+    "atividades": ["string (atividades de leitura, produção textual, etc.)"],
+    "habilidades_bncc": [{"codigo": "string", "texto": "string (texto literal)"}]
+  },
+  "computacao": {
+    "tema": "string (ex: 'Competição das pegadas') — deixe vazio se não houver",
+    "objetivo": "string",
+    "desenvolvimento": "string",
+    "habilidades_bncc": [{"codigo": "string", "texto": "string (texto literal)"}]
+  },
+  "recursos": ["string (recursos necessários — use os que aparecem no esboço, NÃO invente)"],
+  "avaliacao": "string (como o professor vai avaliar se a aprendizagem aconteceu — observação, produções, participação)",
+  "culminancia": "string (como o período será finalizado/socializado)",
+  "reflexao_pos_aula": ""
 }
 """,
 }
@@ -3798,6 +4015,104 @@ class GeminiService:
         self.controle.registrar_uso()
         return {"erro": f"Todos os modelos falharam no lote {batch_start}-{batch_end}: {ultimo_erro}"}
 
+    # --------------------------------------------------------
+    # GERAÇÃO ESTRUTURADA MULTIMODAL (texto + imagens/PDF)
+    # Usado pelo Modo "Plano com Roteiro".
+    # --------------------------------------------------------
+    def generate_structured_multimodal(
+        self,
+        task_type: str,
+        payload: Dict[str, Any],
+        parts_anexos: Optional[List[Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Geração estruturada com suporte multimodal.
+
+        Args:
+            task_type: identificador do task (ex: 'plano_completo')
+            payload: dados textuais do formulário
+            parts_anexos: lista de `types.Part` (imagens/PDF) geradas
+                          pelo chamador via `types.Part.from_bytes()`
+
+        Retorna:
+            Dict com o JSON estruturado devolvido pelo Gemini
+        """
+        if not self.controle.pode_usar():
+            return {"erro": self.controle.mensagem_limite()}
+
+        if task_type not in SCHEMAS:
+            return {"erro": f"Tipo não suportado: {task_type}"}
+
+        # Monta o system prompt específico
+        if task_type == "plano_completo":
+            system_prompt = _montar_prompt_plano_completo(payload)
+        elif task_type == "planejamento":
+            system_prompt = _montar_prompt_planejamento(payload)
+        elif task_type == "coordenacao":
+            system_prompt = _montar_prompt_coordenacao(payload)
+        else:
+            system_prompt = _system_para_task(task_type, diferenciado=False)
+
+        # Monta o conteúdo: [Part_anexo, ..., prompt_texto]
+        texto_input = (
+            f"Dados da solicitação:\n{json.dumps(payload, ensure_ascii=False, indent=2)}\n\n"
+            "Gere o JSON conforme a estrutura especificada."
+        )
+
+        # O conteúdo é uma lista: primeiro os anexos, depois o texto
+        conteudo: List[Any] = []
+        if parts_anexos:
+            conteudo.extend(parts_anexos)
+        conteudo.append(texto_input)
+
+        max_tokens = 32768  # multimodal tende a ser mais longo
+
+        ultimo_erro = None
+        for modelo in MODELOS_CHAT:
+            try:
+                print(f"[Gemini] Multimodal ({task_type}, {len(parts_anexos or [])} anexos) — tentando: {modelo}")
+                response = self._executar_com_retry(
+                    self.client.models.generate_content,
+                    model=modelo,
+                    contents=conteudo,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        temperature=0.75,
+                        max_output_tokens=max_tokens,
+                        response_mime_type="application/json",
+                        thinking_config=_thinking_config(),
+                    ),
+                )
+                self.controle.registrar_uso()
+                texto = response.text.strip()
+                if texto.startswith("```"):
+                    texto = texto.split("```")[1]
+                    if texto.startswith("json"):
+                        texto = texto[4:]
+                texto = texto.strip()
+
+                try:
+                    resultado = json.loads(texto)
+                    print(f"[Gemini] Multimodal sucesso: {modelo}")
+                    return resultado
+                except json.JSONDecodeError:
+                    resultado = self._reparar_json(texto)
+                    if resultado is not None:
+                        print(f"[Gemini] Multimodal sucesso (JSON reparado): {modelo}")
+                        return resultado
+                    raise
+            except json.JSONDecodeError as e:
+                print(f"[Gemini] Multimodal JSON inválido com {modelo}: {e}")
+                ultimo_erro = e
+                continue
+            except Exception as e:
+                print(f"[Gemini] Multimodal falha em {modelo}: {e}")
+                ultimo_erro = e
+                continue
+
+        self.controle.registrar_uso()
+        return {"erro": f"Todos os modelos falharam: {ultimo_erro}"}
+    
     # --------------------------------------------------------
     # GERAÇÃO ESTRUTURADA COM STREAMING
     # --------------------------------------------------------
