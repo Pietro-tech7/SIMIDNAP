@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, Query
+git remote set-url origin https://github.com/Pietro-tech7/SIMIDNAP.git
+git remote -vfrom fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
